@@ -1,0 +1,21 @@
+(* AI点位: {{ 变量名称HMI }} - {{ 变量描述 }} *)
+AI_ALARM_{{ 变量名称HMI }}(
+    IN:={{ 硬点通道号 }},
+    ENG_MAX:={{ 量程高限 }},
+    ENG_MIN:={{ 量程低限 }},
+    MAIN_EN:={{ 变量名称HMI }}_WHZZT,
+    MAIN_V:={{ 变量名称HMI }}_WHZ,
+    HH_A_EN:=TRUE,
+    HH_LIMIT:={{ 变量名称HMI }}_HiHiLimit,
+    H_A_EN:=TRUE,
+    H_LIMIT:={{ 变量名称HMI }}_HiLimit,
+    L_A_EN:=TRUE,
+    L_LIMIT:={{ 变量名称HMI }}_LoLimit,
+    LL_A_EN:=TRUE,
+    LL_LIMIT:={{ 变量名称HMI }}_LoLoLimit,
+    OUT=>{{ 变量名称HMI }},
+    HH_ALARM=>{{ 变量名称HMI }}_HH,
+    H_ALARM=>{{ 变量名称HMI }}_H,
+    L_ALARM=>{{ 变量名称HMI }}_L,
+    LL_ALARM=>{{ 变量名称HMI }}_LL
+);
