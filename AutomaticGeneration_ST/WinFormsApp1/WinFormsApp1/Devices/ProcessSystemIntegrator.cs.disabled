@@ -1,0 +1,1474 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using WinFormsApp1.Devices.Base;
+using WinFormsApp1.Devices.Interfaces;
+using WinFormsApp1.Devices.Controllers;
+using AutomaticGeneration_ST.Models;
+using Newtonsoft.Json;
+using System.Collections.Concurrent;
+
+namespace WinFormsApp1.Devices
+{
+    /// <summary>
+    /// 工艺系统集成器 - 管理复杂工艺流程和设备间协调控制
+    /// </summary>
+    public class ProcessSystemIntegrator
+    {
+        #region 工艺系统枚举
+
+        /// <summary>
+        /// 工艺系统类型
+        /// </summary>
+        public enum ProcessSystemType
+        {
+            /// <summary>
+            /// 连续工艺系统
+            /// </summary>
+            ContinuousProcess,
+            
+            /// <summary>
+            /// 间歇工艺系统
+            /// </summary>
+            BatchProcess,
+            
+            /// <summary>
+            /// 半连续工艺系统
+            /// </summary>
+            SemiContinuousProcess,
+            
+            /// <summary>
+            /// 多产品柔性工艺
+            /// </summary>
+            FlexibleProcess,
+            
+            /// <summary>
+            /// 循环工艺系统
+            /// </summary>
+            CyclicProcess
+        }
+
+        /// <summary>
+        /// 工艺状态
+        /// </summary>
+        public enum ProcessState
+        {
+            /// <summary>
+            /// 停止状态
+            /// </summary>
+            Stopped,
+            
+            /// <summary>
+            /// 准备中
+            /// </summary>
+            Preparing,
+            
+            /// <summary>
+            /// 运行中
+            /// </summary>
+            Running,
+            
+            /// <summary>
+            /// 暂停中
+            /// </summary>
+            Paused,
+            
+            /// <summary>
+            /// 完成状态
+            /// </summary>
+            Completed,
+            
+            /// <summary>
+            /// 故障状态
+            /// </summary>
+            Fault,
+            
+            /// <summary>
+            /// 紧急停车
+            /// </summary>
+            Emergency
+        }
+
+        /// <summary>
+        /// 设备连接类型
+        /// </summary>
+        public enum DeviceConnectionType
+        {
+            /// <summary>
+            /// 串行连接
+            /// </summary>
+            Series,
+            
+            /// <summary>
+            /// 并行连接
+            /// </summary>
+            Parallel,
+            
+            /// <summary>
+            /// 反馈连接
+            /// </summary>
+            Feedback,
+            
+            /// <summary>
+            /// 旁路连接
+            /// </summary>
+            Bypass,
+            
+            /// <summary>
+            /// 选择连接
+            /// </summary>
+            Selective
+        }
+
+        #endregion
+
+        #region 内部类定义
+
+        /// <summary>
+        /// 工艺步骤定义
+        /// </summary>
+        public class ProcessStep
+        {
+            public string StepId { get; set; } = "";
+            public string StepName { get; set; } = "";
+            public string Description { get; set; } = "";
+            public List<string> RequiredDevices { get; set; } = new();
+            public Dictionary<string, object> Parameters { get; set; } = new();
+            public List<string> PreConditions { get; set; } = new();
+            public List<string> PostConditions { get; set; } = new();
+            public TimeSpan ExpectedDuration { get; set; }
+            public int Priority { get; set; } = 1;
+            public bool IsOptional { get; set; } = false;
+        }
+
+        /// <summary>
+        /// 设备连接定义
+        /// </summary>
+        public class DeviceConnection
+        {
+            public string ConnectionId { get; set; } = "";
+            public string SourceDeviceId { get; set; } = "";
+            public string TargetDeviceId { get; set; } = "";
+            public DeviceConnectionType ConnectionType { get; set; }
+            public Dictionary<string, string> PointMappings { get; set; } = new();
+            public List<string> InterlockConditions { get; set; } = new();
+            public bool IsActive { get; set; } = true;
+        }
+
+        /// <summary>
+        /// 工艺配方定义
+        /// </summary>
+        public class ProcessRecipe
+        {
+            public string RecipeId { get; set; } = "";
+            public string RecipeName { get; set; } = "";
+            public string Version { get; set; } = "1.0";
+            public ProcessSystemType ProcessType { get; set; }
+            public List<ProcessStep> Steps { get; set; } = new();
+            public Dictionary<string, object> GlobalParameters { get; set; } = new();
+            public DateTime CreatedTime { get; set; } = DateTime.Now;
+            public string CreatedBy { get; set; } = "";
+        }
+
+        /// <summary>
+        /// 执行上下文
+        /// </summary>
+        public class ProcessExecutionContext
+        {
+            public string ExecutionId { get; set; } = "";
+            public ProcessRecipe Recipe { get; set; } = new();
+            public int CurrentStepIndex { get; set; } = 0;
+            public ProcessState State { get; set; } = ProcessState.Stopped;
+            public DateTime StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
+            public Dictionary<string, object> RuntimeData { get; set; } = new();
+            public List<string> ExecutionLog { get; set; } = new();
+        }
+
+        #endregion
+
+        #region 私有字段
+
+        private readonly ConcurrentDictionary<string, ProcessRecipe> _recipes = new();
+        private readonly ConcurrentDictionary<string, ProcessExecutionContext> _executionContexts = new();
+        private readonly ConcurrentDictionary<string, DeviceConnection> _deviceConnections = new();
+        private readonly Dictionary<string, List<string>> _deviceDependencies = new();
+        
+        private CompositeDeviceManager _deviceManager;
+        private ProcessState _systemState = ProcessState.Stopped;
+        private System.Threading.Timer? _coordinationTimer;
+        private readonly object _lockObject = new object();
+
+        #endregion
+
+        #region 事件定义
+
+        /// <summary>
+        /// 工艺状态变更事件参数
+        /// </summary>
+        public class ProcessStateChangedEventArgs : EventArgs
+        {
+            public string ExecutionId { get; set; } = "";
+            public ProcessState OldState { get; set; }
+            public ProcessState NewState { get; set; }
+            public string CurrentStep { get; set; } = "";
+            public DateTime Timestamp { get; set; } = DateTime.Now;
+        }
+
+        /// <summary>
+        /// 步骤完成事件参数
+        /// </summary>
+        public class StepCompletedEventArgs : EventArgs
+        {
+            public string ExecutionId { get; set; } = "";
+            public ProcessStep CompletedStep { get; set; } = new();
+            public bool Success { get; set; }
+            public string Message { get; set; } = "";
+            public TimeSpan ActualDuration { get; set; }
+            public DateTime Timestamp { get; set; } = DateTime.Now;
+        }
+
+        #endregion
+
+        #region 事件
+
+        /// <summary>
+        /// 工艺状态变更事件
+        /// </summary>
+        public event EventHandler<ProcessStateChangedEventArgs>? ProcessStateChanged;
+
+        /// <summary>
+        /// 步骤完成事件
+        /// </summary>
+        public event EventHandler<StepCompletedEventArgs>? StepCompleted;
+
+        /// <summary>
+        /// 系统报警事件
+        /// </summary>
+        public event EventHandler<string>? SystemAlarmOccurred;
+
+        #endregion
+
+        #region 构造函数
+
+        public ProcessSystemIntegrator(CompositeDeviceManager deviceManager)
+        {
+            _deviceManager = deviceManager ?? throw new ArgumentNullException(nameof(deviceManager));
+            InitializeIntegrator();
+        }
+
+        #endregion
+
+        #region 公共属性
+
+        /// <summary>
+        /// 系统状态
+        /// </summary>
+        public ProcessState SystemState => _systemState;
+
+        /// <summary>
+        /// 配方数量
+        /// </summary>
+        public int RecipeCount => _recipes.Count;
+
+        /// <summary>
+        /// 活动执行数量
+        /// </summary>
+        public int ActiveExecutionCount => _executionContexts.Count(ctx => 
+            ctx.Value.State == ProcessState.Running || ctx.Value.State == ProcessState.Paused);
+
+        /// <summary>
+        /// 设备连接数量
+        /// </summary>
+        public int DeviceConnectionCount => _deviceConnections.Count;
+
+        #endregion
+
+        #region 初始化方法
+
+        /// <summary>
+        /// 初始化集成器
+        /// </summary>
+        private void InitializeIntegrator()
+        {
+            // 订阅设备管理器事件
+            _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
+            _deviceManager.DeviceAlarmOccurred += OnDeviceAlarmOccurred;
+
+            // 启动协调定时器
+            StartCoordinationTimer();
+
+            // 加载默认配方
+            LoadDefaultRecipes();
+        }
+
+        /// <summary>
+        /// 启动协调定时器
+        /// </summary>
+        private void StartCoordinationTimer()
+        {
+            _coordinationTimer = new System.Threading.Timer(
+                CoordinationCallback,
+                null,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(2)); // 每2秒协调一次
+        }
+
+        /// <summary>
+        /// 协调回调
+        /// </summary>
+        private void CoordinationCallback(object? state)
+        {
+            try
+            {
+                lock (_lockObject)
+                {
+                    // 检查所有执行上下文
+                    foreach (var context in _executionContexts.Values)
+                    {
+                        if (context.State == ProcessState.Running)
+                        {
+                            ProcessExecutionStep(context);
+                        }
+                    }
+
+                    // 协调设备连接
+                    CoordinateDeviceConnections();
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemAlarmOccurred?.Invoke(this, $"协调过程出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 加载默认配方
+        /// </summary>
+        private void LoadDefaultRecipes()
+        {
+            // 创建示例配方：简单的储罐填充工艺
+            var fillTankRecipe = new ProcessRecipe
+            {
+                RecipeId = "FILL_TANK_001",
+                RecipeName = "储罐填充工艺",
+                ProcessType = ProcessSystemType.BatchProcess,
+                Steps = new List<ProcessStep>
+                {
+                    new ProcessStep
+                    {
+                        StepId = "STEP_001",
+                        StepName = "预检查",
+                        Description = "检查储罐状态和进料条件",
+                        RequiredDevices = new List<string> { "TANK_001" },
+                        ExpectedDuration = TimeSpan.FromMinutes(2),
+                        PreConditions = new List<string> { "储罐液位 < 高液位", "进料阀关闭" }
+                    },
+                    new ProcessStep
+                    {
+                        StepId = "STEP_002", 
+                        StepName = "启动进料泵",
+                        Description = "启动进料泵开始填充",
+                        RequiredDevices = new List<string> { "PUMP_001", "TANK_001" },
+                        ExpectedDuration = TimeSpan.FromMinutes(30),
+                        PreConditions = new List<string> { "泵站正常", "储罐准备完成" }
+                    },
+                    new ProcessStep
+                    {
+                        StepId = "STEP_003",
+                        StepName = "填充完成",
+                        Description = "停止进料泵，关闭相关阀门",
+                        RequiredDevices = new List<string> { "PUMP_001", "VALVE_001" },
+                        ExpectedDuration = TimeSpan.FromMinutes(1),
+                        PostConditions = new List<string> { "储罐液位达到目标", "所有阀门关闭" }
+                    }
+                }
+            };
+
+            _recipes[fillTankRecipe.RecipeId] = fillTankRecipe;
+
+            // 创建示例配方：反应器批次工艺
+            var reactorBatchRecipe = new ProcessRecipe
+            {
+                RecipeId = "REACTOR_BATCH_001",
+                RecipeName = "反应器批次工艺",
+                ProcessType = ProcessSystemType.BatchProcess,
+                Steps = new List<ProcessStep>
+                {
+                    new ProcessStep
+                    {
+                        StepId = "REACT_001",
+                        StepName = "预热反应器",
+                        Description = "将反应器加热到反应温度",
+                        RequiredDevices = new List<string> { "REACTOR_001", "HEAT_EXCHANGER_001" },
+                        ExpectedDuration = TimeSpan.FromMinutes(45),
+                        Parameters = new Dictionary<string, object> { ["TargetTemperature"] = 80.0 }
+                    },
+                    new ProcessStep
+                    {
+                        StepId = "REACT_002",
+                        StepName = "加料反应",
+                        Description = "加入反应物开始反应",
+                        RequiredDevices = new List<string> { "REACTOR_001", "PUMP_001" },
+                        ExpectedDuration = TimeSpan.FromHours(2),
+                        Parameters = new Dictionary<string, object> { ["FeedRate"] = 0.5, ["ReactionTime"] = 120 }
+                    },
+                    new ProcessStep
+                    {
+                        StepId = "REACT_003",
+                        StepName = "冷却出料",
+                        Description = "冷却反应器并出料",
+                        RequiredDevices = new List<string> { "REACTOR_001", "HEAT_EXCHANGER_001" },
+                        ExpectedDuration = TimeSpan.FromMinutes(30),
+                        Parameters = new Dictionary<string, object> { ["CoolingTemperature"] = 30.0 }
+                    }
+                }
+            };
+
+            _recipes[reactorBatchRecipe.RecipeId] = reactorBatchRecipe;
+        }
+
+        #endregion
+
+        #region 配方管理方法
+
+        /// <summary>
+        /// 添加配方
+        /// </summary>
+        public DeviceOperationResult AddRecipe(ProcessRecipe recipe)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(recipe.RecipeId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = "配方ID不能为空"
+                    };
+                }
+
+                if (_recipes.ContainsKey(recipe.RecipeId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"配方 '{recipe.RecipeId}' 已存在"
+                    };
+                }
+
+                // 验证配方
+                var validationResult = ValidateRecipe(recipe);
+                if (!validationResult.Success)
+                {
+                    return validationResult;
+                }
+
+                _recipes[recipe.RecipeId] = recipe;
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"配方 '{recipe.RecipeId}' 添加成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"添加配方失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 获取配方
+        /// </summary>
+        public ProcessRecipe? GetRecipe(string recipeId)
+        {
+            return _recipes.TryGetValue(recipeId, out var recipe) ? recipe : null;
+        }
+
+        /// <summary>
+        /// 获取所有配方
+        /// </summary>
+        public IReadOnlyDictionary<string, ProcessRecipe> GetAllRecipes()
+        {
+            return _recipes;
+        }
+
+        /// <summary>
+        /// 删除配方
+        /// </summary>
+        public DeviceOperationResult RemoveRecipe(string recipeId)
+        {
+            try
+            {
+                if (!_recipes.ContainsKey(recipeId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"配方 '{recipeId}' 不存在"
+                    };
+                }
+
+                // 检查是否有正在执行的实例
+                var activeExecutions = _executionContexts.Values
+                    .Where(ctx => ctx.Recipe.RecipeId == recipeId && 
+                                  (ctx.State == ProcessState.Running || ctx.State == ProcessState.Paused))
+                    .ToList();
+
+                if (activeExecutions.Any())
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"配方 '{recipeId}' 正在执行中，无法删除"
+                    };
+                }
+
+                _recipes.TryRemove(recipeId, out _);
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"配方 '{recipeId}' 删除成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"删除配方失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        #endregion
+
+        #region 工艺执行方法
+
+        /// <summary>
+        /// 启动工艺执行
+        /// </summary>
+        public async Task<DeviceOperationResult> StartProcessExecutionAsync(string recipeId)
+        {
+            try
+            {
+                if (!_recipes.TryGetValue(recipeId, out var recipe))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"配方 '{recipeId}' 不存在"
+                    };
+                }
+
+                // 检查设备可用性
+                var deviceCheckResult = CheckRequiredDevices(recipe);
+                if (!deviceCheckResult.Success)
+                {
+                    return deviceCheckResult;
+                }
+
+                // 创建执行上下文
+                var executionId = GenerateExecutionId();
+                var context = new ProcessExecutionContext
+                {
+                    ExecutionId = executionId,
+                    Recipe = recipe,
+                    State = ProcessState.Preparing,
+                    StartTime = DateTime.Now,
+                    RuntimeData = new Dictionary<string, object>(recipe.GlobalParameters)
+                };
+
+                _executionContexts[executionId] = context;
+
+                // 准备执行环境
+                await PrepareExecutionEnvironmentAsync(context);
+
+                // 开始执行
+                context.State = ProcessState.Running;
+                context.ExecutionLog.Add($"工艺执行开始: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+                ProcessStateChanged?.Invoke(this, new ProcessStateChangedEventArgs
+                {
+                    ExecutionId = executionId,
+                    OldState = ProcessState.Stopped,
+                    NewState = ProcessState.Running,
+                    CurrentStep = context.Recipe.Steps.FirstOrDefault()?.StepName ?? ""
+                });
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"工艺执行已启动，执行ID: {executionId}",
+                    Data = new Dictionary<string, object> { ["ExecutionId"] = executionId }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"启动工艺执行失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 停止工艺执行
+        /// </summary>
+        public async Task<DeviceOperationResult> StopProcessExecutionAsync(string executionId)
+        {
+            try
+            {
+                if (!_executionContexts.TryGetValue(executionId, out var context))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"执行上下文 '{executionId}' 不存在"
+                    };
+                }
+
+                if (context.State == ProcessState.Stopped)
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = true,
+                        Message = "工艺执行已处于停止状态"
+                    };
+                }
+
+                var oldState = context.State;
+                context.State = ProcessState.Stopped;
+                context.EndTime = DateTime.Now;
+                context.ExecutionLog.Add($"工艺执行停止: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+                // 停止相关设备
+                await StopRelatedDevicesAsync(context);
+
+                ProcessStateChanged?.Invoke(this, new ProcessStateChangedEventArgs
+                {
+                    ExecutionId = executionId,
+                    OldState = oldState,
+                    NewState = ProcessState.Stopped,
+                    CurrentStep = ""
+                });
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"工艺执行已停止"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"停止工艺执行失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 暂停工艺执行
+        /// </summary>
+        public DeviceOperationResult PauseProcessExecution(string executionId)
+        {
+            try
+            {
+                if (!_executionContexts.TryGetValue(executionId, out var context))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"执行上下文 '{executionId}' 不存在"
+                    };
+                }
+
+                if (context.State != ProcessState.Running)
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = "只能暂停正在运行的工艺"
+                    };
+                }
+
+                context.State = ProcessState.Paused;
+                context.ExecutionLog.Add($"工艺执行暂停: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+                ProcessStateChanged?.Invoke(this, new ProcessStateChangedEventArgs
+                {
+                    ExecutionId = executionId,
+                    OldState = ProcessState.Running,
+                    NewState = ProcessState.Paused,
+                    CurrentStep = GetCurrentStepName(context)
+                });
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = "工艺执行已暂停"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"暂停工艺执行失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 恢复工艺执行
+        /// </summary>
+        public DeviceOperationResult ResumeProcessExecution(string executionId)
+        {
+            try
+            {
+                if (!_executionContexts.TryGetValue(executionId, out var context))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"执行上下文 '{executionId}' 不存在"
+                    };
+                }
+
+                if (context.State != ProcessState.Paused)
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = "只能恢复暂停的工艺"
+                    };
+                }
+
+                context.State = ProcessState.Running;
+                context.ExecutionLog.Add($"工艺执行恢复: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+                ProcessStateChanged?.Invoke(this, new ProcessStateChangedEventArgs
+                {
+                    ExecutionId = executionId,
+                    OldState = ProcessState.Paused,
+                    NewState = ProcessState.Running,
+                    CurrentStep = GetCurrentStepName(context)
+                });
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = "工艺执行已恢复"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"恢复工艺执行失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        #endregion
+
+        #region 设备连接管理
+
+        /// <summary>
+        /// 添加设备连接
+        /// </summary>
+        public DeviceOperationResult AddDeviceConnection(DeviceConnection connection)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(connection.ConnectionId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = "连接ID不能为空"
+                    };
+                }
+
+                if (_deviceConnections.ContainsKey(connection.ConnectionId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"连接 '{connection.ConnectionId}' 已存在"
+                    };
+                }
+
+                // 验证设备存在
+                var sourceDevice = _deviceManager.GetDevice(connection.SourceDeviceId);
+                var targetDevice = _deviceManager.GetDevice(connection.TargetDeviceId);
+
+                if (sourceDevice == null)
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"源设备 '{connection.SourceDeviceId}' 不存在"
+                    };
+                }
+
+                if (targetDevice == null)
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"目标设备 '{connection.TargetDeviceId}' 不存在"
+                    };
+                }
+
+                _deviceConnections[connection.ConnectionId] = connection;
+
+                // 更新设备依赖关系
+                UpdateDeviceDependencies(connection);
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"设备连接 '{connection.ConnectionId}' 添加成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"添加设备连接失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 获取设备连接
+        /// </summary>
+        public IReadOnlyDictionary<string, DeviceConnection> GetDeviceConnections()
+        {
+            return _deviceConnections;
+        }
+
+        /// <summary>
+        /// 移除设备连接
+        /// </summary>
+        public DeviceOperationResult RemoveDeviceConnection(string connectionId)
+        {
+            try
+            {
+                if (!_deviceConnections.ContainsKey(connectionId))
+                {
+                    return new DeviceOperationResult
+                    {
+                        Success = false,
+                        Message = $"连接 '{connectionId}' 不存在"
+                    };
+                }
+
+                _deviceConnections.TryRemove(connectionId, out _);
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"设备连接 '{connectionId}' 删除成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"删除设备连接失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        #endregion
+
+        #region 私有方法
+
+        /// <summary>
+        /// 验证配方
+        /// </summary>
+        private DeviceOperationResult ValidateRecipe(ProcessRecipe recipe)
+        {
+            var errors = new List<string>();
+
+            if (recipe.Steps == null || recipe.Steps.Count == 0)
+            {
+                errors.Add("配方必须包含至少一个步骤");
+            }
+
+            foreach (var step in recipe.Steps ?? new List<ProcessStep>())
+            {
+                if (string.IsNullOrWhiteSpace(step.StepId))
+                {
+                    errors.Add($"步骤ID不能为空");
+                }
+
+                foreach (var deviceId in step.RequiredDevices)
+                {
+                    if (_deviceManager.GetDevice(deviceId) == null)
+                    {
+                        errors.Add($"步骤 '{step.StepId}' 需要的设备 '{deviceId}' 不存在");
+                    }
+                }
+            }
+
+            if (errors.Any())
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"配方验证失败: {string.Join(", ", errors)}"
+                };
+            }
+
+            return new DeviceOperationResult { Success = true };
+        }
+
+        /// <summary>
+        /// 检查所需设备
+        /// </summary>
+        private DeviceOperationResult CheckRequiredDevices(ProcessRecipe recipe)
+        {
+            var unavailableDevices = new List<string>();
+
+            foreach (var step in recipe.Steps)
+            {
+                foreach (var deviceId in step.RequiredDevices)
+                {
+                    var device = _deviceManager.GetDevice(deviceId);
+                    if (device == null)
+                    {
+                        unavailableDevices.Add(deviceId);
+                    }
+                    else if (device.CurrentState == DeviceState.Fault)
+                    {
+                        unavailableDevices.Add($"{deviceId}(故障状态)");
+                    }
+                }
+            }
+
+            if (unavailableDevices.Any())
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"以下设备不可用: {string.Join(", ", unavailableDevices)}"
+                };
+            }
+
+            return new DeviceOperationResult { Success = true };
+        }
+
+        /// <summary>
+        /// 准备执行环境
+        /// </summary>
+        private async Task PrepareExecutionEnvironmentAsync(ProcessExecutionContext context)
+        {
+            // 初始化所需设备
+            var allRequiredDevices = context.Recipe.Steps
+                .SelectMany(s => s.RequiredDevices)
+                .Distinct()
+                .ToList();
+
+            foreach (var deviceId in allRequiredDevices)
+            {
+                var device = _deviceManager.GetDevice(deviceId);
+                if (device != null && device.CurrentState == DeviceState.Stopped)
+                {
+                    await device.InitializeAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理执行步骤
+        /// </summary>
+        private async void ProcessExecutionStep(ProcessExecutionContext context)
+        {
+            if (context.CurrentStepIndex >= context.Recipe.Steps.Count)
+            {
+                // 所有步骤完成
+                await CompleteProcessExecutionAsync(context);
+                return;
+            }
+
+            var currentStep = context.Recipe.Steps[context.CurrentStepIndex];
+            var stepStartTime = DateTime.Now;
+
+            try
+            {
+                // 检查前置条件
+                if (!CheckStepPreConditions(currentStep, context))
+                {
+                    context.ExecutionLog.Add($"步骤 '{currentStep.StepName}' 前置条件不满足");
+                    return;
+                }
+
+                // 执行步骤
+                var stepResult = await ExecuteStepAsync(currentStep, context);
+
+                if (stepResult.Success)
+                {
+                    // 步骤完成
+                    var actualDuration = DateTime.Now - stepStartTime;
+                    context.ExecutionLog.Add($"步骤 '{currentStep.StepName}' 完成，耗时: {actualDuration.TotalMinutes:F1}分钟");
+
+                    StepCompleted?.Invoke(this, new StepCompletedEventArgs
+                    {
+                        ExecutionId = context.ExecutionId,
+                        CompletedStep = currentStep,
+                        Success = true,
+                        Message = stepResult.Message,
+                        ActualDuration = actualDuration
+                    });
+
+                    // 移动到下一步
+                    context.CurrentStepIndex++;
+                }
+                else
+                {
+                    // 步骤失败
+                    context.State = ProcessState.Fault;
+                    context.ExecutionLog.Add($"步骤 '{currentStep.StepName}' 执行失败: {stepResult.Message}");
+
+                    StepCompleted?.Invoke(this, new StepCompletedEventArgs
+                    {
+                        ExecutionId = context.ExecutionId,
+                        CompletedStep = currentStep,
+                        Success = false,
+                        Message = stepResult.Message,
+                        ActualDuration = DateTime.Now - stepStartTime
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                context.State = ProcessState.Fault;
+                context.ExecutionLog.Add($"步骤 '{currentStep.StepName}' 执行异常: {ex.Message}");
+                SystemAlarmOccurred?.Invoke(this, $"工艺步骤执行异常: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 执行步骤
+        /// </summary>
+        private async Task<DeviceOperationResult> ExecuteStepAsync(ProcessStep step, ProcessExecutionContext context)
+        {
+            // 根据步骤类型和设备执行相应操作
+            try
+            {
+                foreach (var deviceId in step.RequiredDevices)
+                {
+                    var device = _deviceManager.GetDevice(deviceId);
+                    if (device == null) continue;
+
+                    // 根据步骤参数配置设备
+                    await ConfigureDeviceForStepAsync(device, step, context);
+
+                    // 启动设备（如果需要）
+                    if (device.CurrentState == DeviceState.Stopped)
+                    {
+                        var result = await device.StartAsync();
+                        if (!result.Success)
+                        {
+                            return result;
+                        }
+                    }
+                }
+
+                // 等待步骤完成条件
+                await WaitForStepCompletionAsync(step, context);
+
+                return new DeviceOperationResult
+                {
+                    Success = true,
+                    Message = $"步骤 '{step.StepName}' 执行成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DeviceOperationResult
+                {
+                    Success = false,
+                    Message = $"步骤执行失败: {ex.Message}",
+                    Exception = ex
+                };
+            }
+        }
+
+        /// <summary>
+        /// 为步骤配置设备
+        /// </summary>
+        private async Task ConfigureDeviceForStepAsync(ICompositeDevice device, ProcessStep step, ProcessExecutionContext context)
+        {
+            // 根据设备类型和步骤参数进行配置
+            foreach (var parameter in step.Parameters)
+            {
+                device.SetParameter(parameter.Key, parameter.Value);
+            }
+
+            // 特定设备类型的配置
+            switch (device.DeviceType)
+            {
+                case CompositeDeviceType.ReactorController:
+                    if (device is ReactorController reactor)
+                    {
+                        if (step.Parameters.ContainsKey("TargetTemperature"))
+                        {
+                            reactor.TargetTemperature = Convert.ToDouble(step.Parameters["TargetTemperature"]);
+                        }
+                    }
+                    break;
+
+                case CompositeDeviceType.PumpController:
+                    if (device is PumpController pump)
+                    {
+                        if (step.Parameters.ContainsKey("FeedRate"))
+                        {
+                            pump.SetRunningParameters(0, 0, Convert.ToDouble(step.Parameters["FeedRate"]));
+                        }
+                    }
+                    break;
+
+                case CompositeDeviceType.HeatExchangerController:
+                    if (device is HeatExchangerController heatExchanger)
+                    {
+                        if (step.Parameters.ContainsKey("CoolingTemperature"))
+                        {
+                            heatExchanger.ColdSideTargetOutletTemp = Convert.ToDouble(step.Parameters["CoolingTemperature"]);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 等待步骤完成
+        /// </summary>
+        private async Task WaitForStepCompletionAsync(ProcessStep step, ProcessExecutionContext context)
+        {
+            var timeout = DateTime.Now.Add(step.ExpectedDuration.Add(TimeSpan.FromMinutes(10))); // 允许10分钟的超时缓冲
+
+            while (DateTime.Now < timeout)
+            {
+                if (CheckStepPostConditions(step, context))
+                {
+                    return; // 步骤完成
+                }
+
+                await Task.Delay(1000); // 每秒检查一次
+            }
+
+            throw new TimeoutException($"步骤 '{step.StepName}' 执行超时");
+        }
+
+        /// <summary>
+        /// 检查步骤前置条件
+        /// </summary>
+        private bool CheckStepPreConditions(ProcessStep step, ProcessExecutionContext context)
+        {
+            // 简化的条件检查逻辑
+            foreach (var condition in step.PreConditions)
+            {
+                // 这里应该实现具体的条件检查逻辑
+                // 目前返回true以简化示例
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 检查步骤后置条件
+        /// </summary>
+        private bool CheckStepPostConditions(ProcessStep step, ProcessExecutionContext context)
+        {
+            // 简化的条件检查逻辑
+            // 实际应用中需要根据具体的条件类型进行判断
+            return true;
+        }
+
+        /// <summary>
+        /// 完成工艺执行
+        /// </summary>
+        private async Task CompleteProcessExecutionAsync(ProcessExecutionContext context)
+        {
+            context.State = ProcessState.Completed;
+            context.EndTime = DateTime.Now;
+            context.ExecutionLog.Add($"工艺执行完成: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+            ProcessStateChanged?.Invoke(this, new ProcessStateChangedEventArgs
+            {
+                ExecutionId = context.ExecutionId,
+                OldState = ProcessState.Running,
+                NewState = ProcessState.Completed,
+                CurrentStep = ""
+            });
+
+            // 清理执行上下文（可选）
+            // _executionContexts.TryRemove(context.ExecutionId, out _);
+        }
+
+        /// <summary>
+        /// 停止相关设备
+        /// </summary>
+        private async Task StopRelatedDevicesAsync(ProcessExecutionContext context)
+        {
+            var allDevices = context.Recipe.Steps
+                .SelectMany(s => s.RequiredDevices)
+                .Distinct()
+                .ToList();
+
+            foreach (var deviceId in allDevices)
+            {
+                var device = _deviceManager.GetDevice(deviceId);
+                if (device != null && device.CurrentState == DeviceState.Running)
+                {
+                    try
+                    {
+                        await device.StopAsync();
+                    }
+                    catch
+                    {
+                        // 忽略停止设备时的错误
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取当前步骤名称
+        /// </summary>
+        private string GetCurrentStepName(ProcessExecutionContext context)
+        {
+            if (context.CurrentStepIndex < context.Recipe.Steps.Count)
+            {
+                return context.Recipe.Steps[context.CurrentStepIndex].StepName;
+            }
+            return "";
+        }
+
+        /// <summary>
+        /// 生成执行ID
+        /// </summary>
+        private string GenerateExecutionId()
+        {
+            return $"EXEC_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..6]}";
+        }
+
+        /// <summary>
+        /// 更新设备依赖关系
+        /// </summary>
+        private void UpdateDeviceDependencies(DeviceConnection connection)
+        {
+            if (!_deviceDependencies.ContainsKey(connection.SourceDeviceId))
+            {
+                _deviceDependencies[connection.SourceDeviceId] = new List<string>();
+            }
+
+            if (!_deviceDependencies[connection.SourceDeviceId].Contains(connection.TargetDeviceId))
+            {
+                _deviceDependencies[connection.SourceDeviceId].Add(connection.TargetDeviceId);
+            }
+        }
+
+        /// <summary>
+        /// 协调设备连接
+        /// </summary>
+        private void CoordinateDeviceConnections()
+        {
+            foreach (var connection in _deviceConnections.Values.Where(c => c.IsActive))
+            {
+                try
+                {
+                    var sourceDevice = _deviceManager.GetDevice(connection.SourceDeviceId);
+                    var targetDevice = _deviceManager.GetDevice(connection.TargetDeviceId);
+
+                    if (sourceDevice != null && targetDevice != null)
+                    {
+                        CoordinateDevicePair(sourceDevice, targetDevice, connection);
+                    }
+                }
+                catch
+                {
+                    // 忽略协调错误
+                }
+            }
+        }
+
+        /// <summary>
+        /// 协调设备对
+        /// </summary>
+        private void CoordinateDevicePair(ICompositeDevice sourceDevice, ICompositeDevice targetDevice, DeviceConnection connection)
+        {
+            // 根据连接类型执行协调逻辑
+            switch (connection.ConnectionType)
+            {
+                case DeviceConnectionType.Series:
+                    // 串行连接：确保上游设备正常时才启动下游设备
+                    if (sourceDevice.CurrentState == DeviceState.Running && 
+                        targetDevice.CurrentState == DeviceState.Stopped)
+                    {
+                        _ = Task.Run(async () => await targetDevice.StartAsync());
+                    }
+                    break;
+
+                case DeviceConnectionType.Parallel:
+                    // 并行连接：同时控制两个设备
+                    if (sourceDevice.CurrentState != targetDevice.CurrentState)
+                    {
+                        // 同步设备状态
+                    }
+                    break;
+
+                case DeviceConnectionType.Feedback:
+                    // 反馈连接：根据下游状态调整上游
+                    break;
+            }
+
+            // 执行点位映射
+            foreach (var mapping in connection.PointMappings)
+            {
+                var sourcePoint = sourceDevice.AssociatedPoints.FirstOrDefault(p => p.Id == mapping.Key);
+                var targetPoint = targetDevice.AssociatedPoints.FirstOrDefault(p => p.Id == mapping.Value);
+
+                if (sourcePoint != null && targetPoint != null)
+                {
+                    // 执行数据传输（这里需要实现具体的数据传输逻辑）
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设备状态变更事件处理
+        /// </summary>
+        private void OnDeviceStatusChanged(object? sender, CompositeDeviceManager.DeviceStatusChangedEventArgs e)
+        {
+            // 检查是否影响正在执行的工艺
+            foreach (var context in _executionContexts.Values.Where(c => c.State == ProcessState.Running))
+            {
+                var currentStep = context.Recipe.Steps.ElementAtOrDefault(context.CurrentStepIndex);
+                if (currentStep?.RequiredDevices.Contains(e.DeviceId) == true)
+                {
+                    if (e.NewStatus == "Fault")
+                    {
+                        context.State = ProcessState.Fault;
+                        context.ExecutionLog.Add($"设备 '{e.DeviceId}' 故障，工艺执行中断");
+                        
+                        SystemAlarmOccurred?.Invoke(this, $"设备故障导致工艺中断: {e.DeviceId}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设备报警事件处理
+        /// </summary>
+        private void OnDeviceAlarmOccurred(object? sender, CompositeDeviceManager.DeviceAlarmEventArgs e)
+        {
+            if (e.AlarmType == "Error")
+            {
+                SystemAlarmOccurred?.Invoke(this, $"设备报警: {e.DeviceName} - {e.AlarmMessage}");
+            }
+        }
+
+        #endregion
+
+        #region 公共查询方法
+
+        /// <summary>
+        /// 获取执行状态
+        /// </summary>
+        public ProcessExecutionContext? GetExecutionContext(string executionId)
+        {
+            return _executionContexts.TryGetValue(executionId, out var context) ? context : null;
+        }
+
+        /// <summary>
+        /// 获取所有执行上下文
+        /// </summary>
+        public IReadOnlyDictionary<string, ProcessExecutionContext> GetAllExecutionContexts()
+        {
+            return _executionContexts;
+        }
+
+        /// <summary>
+        /// 获取系统统计信息
+        /// </summary>
+        public Dictionary<string, object> GetSystemStatistics()
+        {
+            return new Dictionary<string, object>
+            {
+                ["SystemState"] = _systemState.ToString(),
+                ["RecipeCount"] = _recipes.Count,
+                ["ActiveExecutions"] = ActiveExecutionCount,
+                ["CompletedExecutions"] = _executionContexts.Count(ctx => ctx.Value.State == ProcessState.Completed),
+                ["FaultExecutions"] = _executionContexts.Count(ctx => ctx.Value.State == ProcessState.Fault),
+                ["DeviceConnectionCount"] = _deviceConnections.Count,
+                ["LastUpdate"] = DateTime.Now
+            };
+        }
+
+        #endregion
+
+        #region 资源释放
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        public void Dispose()
+        {
+            try
+            {
+                // 停止协调定时器
+                _coordinationTimer?.Dispose();
+
+                // 停止所有执行
+                foreach (var context in _executionContexts.Values.Where(c => c.State == ProcessState.Running))
+                {
+                    context.State = ProcessState.Stopped;
+                }
+
+                // 取消事件订阅
+                if (_deviceManager != null)
+                {
+                    _deviceManager.DeviceStatusChanged -= OnDeviceStatusChanged;
+                    _deviceManager.DeviceAlarmOccurred -= OnDeviceAlarmOccurred;
+                }
+
+                _recipes.Clear();
+                _executionContexts.Clear();
+                _deviceConnections.Clear();
+                _deviceDependencies.Clear();
+            }
+            catch
+            {
+                // 忽略释放时的错误
+            }
+        }
+
+        #endregion
+    }
+}

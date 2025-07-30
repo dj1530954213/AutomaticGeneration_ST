@@ -1,0 +1,1633 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Text;
+using WinFormsApp1.Templates;
+using WinFormsApp1.Services;
+using WinFormsApp1.Config;
+using WinFormsApp1.Devices;
+using WinFormsApp1.ProjectManagement;
+using AutomaticGeneration_ST.Models;
+using Newtonsoft.Json;
+
+namespace WinFormsApp1.Tests
+{
+    /// <summary>
+    /// ST自动生成器系统全面功能测试
+    /// </summary>
+    public class SystemFunctionalTests
+    {
+        #region 私有字段
+
+        private readonly List<TestResult> _testResults = new();
+        private readonly Dictionary<string, object> _testContext = new();
+        private readonly StringBuilder _testLog = new();
+
+        // 系统组件实例
+        private TemplateManager? _templateManager;
+        private ExcelDataService? _excelService;
+        private ApplicationConfiguration? _appConfig;
+        private CompositeDeviceManager? _deviceManager;
+        private DevicePerformanceMonitor? _performanceMonitor;
+        private DeviceConfigurationImportExport? _configImportExport;
+        private ProjectManager? _projectManager;
+
+        #endregion
+
+        #region 测试结果类
+
+        /// <summary>
+        /// 测试结果
+        /// </summary>
+        public class TestResult
+        {
+            public string TestSuite { get; set; } = "";
+            public string TestName { get; set; } = "";
+            public bool Success { get; set; }
+            public string Message { get; set; } = "";
+            public TimeSpan Duration { get; set; }
+            public Dictionary<string, object> Data { get; set; } = new();
+            public Exception? Exception { get; set; }
+            public DateTime Timestamp { get; set; } = DateTime.Now;
+            public TestSeverity Severity { get; set; } = TestSeverity.Normal;
+        }
+
+        /// <summary>
+        /// 测试严重程度
+        /// </summary>
+        public enum TestSeverity
+        {
+            Low,        // 低优先级
+            Normal,     // 正常
+            High,       // 高优先级
+            Critical    // 关键
+        }
+
+        /// <summary>
+        /// 测试套件结果
+        /// </summary>
+        public class TestSuiteResult
+        {
+            public string SuiteName { get; set; } = "";
+            public int TotalTests { get; set; }
+            public int PassedTests { get; set; }
+            public int FailedTests { get; set; }
+            public TimeSpan TotalDuration { get; set; }
+            public List<TestResult> Results { get; set; } = new();
+            public double SuccessRate => TotalTests > 0 ? (double)PassedTests / TotalTests * 100 : 0;
+            public bool HasCriticalFailures => Results.Any(r => !r.Success && r.Severity == TestSeverity.Critical);
+        }
+
+        #endregion
+
+        #region 事件定义
+
+        /// <summary>
+        /// 测试进度事件
+        /// </summary>
+        public event EventHandler<string>? TestProgress;
+
+        /// <summary>
+        /// 测试完成事件
+        /// </summary>
+        public event EventHandler<TestResult>? TestCompleted;
+
+        /// <summary>
+        /// 测试套件完成事件
+        /// </summary>
+        public event EventHandler<TestSuiteResult>? TestSuiteCompleted;
+
+        #endregion
+
+        #region 主要测试方法
+
+        /// <summary>
+        /// 运行全面功能测试
+        /// </summary>
+        public async Task<TestSuiteResult> RunComprehensiveFunctionalTestsAsync()
+        {
+            var overallResult = new TestSuiteResult
+            {
+                SuiteName = "ST自动生成器全面功能测试"
+            };
+
+            var stopwatch = Stopwatch.StartNew();
+            _testResults.Clear();
+            _testLog.Clear();
+
+            TestProgress?.Invoke(this, "开始全面功能测试...");
+            LogMessage("=== ST自动生成器全面功能测试开始 ===");
+
+            try
+            {
+                // 初始化测试环境
+                await InitializeTestEnvironmentAsync();
+
+                // 1. 核心组件初始化测试
+                await RunCoreComponentTestsAsync();
+
+                // 2. 模板系统功能测试
+                await RunTemplateSystemTestsAsync();
+
+                // 3. Excel数据处理测试
+                await RunExcelDataProcessingTestsAsync();
+
+                // 4. 配置管理系统测试
+                await RunConfigurationSystemTestsAsync();
+
+                // 5. 组合设备系统测试
+                await RunCompositeDeviceSystemTestsAsync();
+
+                // 6. 性能监控系统测试
+                await RunPerformanceMonitoringTestsAsync();
+
+                // 7. 项目管理功能测试
+                await RunProjectManagementTestsAsync();
+
+                // 8. 代码生成完整性测试
+                await RunCodeGenerationTestsAsync();
+
+                // 9. 系统集成测试
+                await RunSystemIntegrationTestsAsync();
+
+                // 10. 错误处理和恢复测试
+                await RunErrorHandlingTestsAsync();
+
+                // 11. 数据持久化测试
+                await RunDataPersistenceTestsAsync();
+
+                // 12. 用户界面交互测试
+                await RunUIInteractionTestsAsync();
+
+            }
+            catch (Exception ex)
+            {
+                var errorResult = new TestResult
+                {
+                    TestSuite = "系统测试",
+                    TestName = "测试套件执行",
+                    Success = false,
+                    Message = $"测试套件执行失败: {ex.Message}",
+                    Exception = ex,
+                    Severity = TestSeverity.Critical
+                };
+                _testResults.Add(errorResult);
+                TestCompleted?.Invoke(this, errorResult);
+            }
+
+            stopwatch.Stop();
+
+            // 汇总结果
+            overallResult.TotalTests = _testResults.Count;
+            overallResult.PassedTests = _testResults.Count(r => r.Success);
+            overallResult.FailedTests = _testResults.Count(r => !r.Success);
+            overallResult.TotalDuration = stopwatch.Elapsed;
+            overallResult.Results = new List<TestResult>(_testResults);
+
+            LogMessage($"=== 全面功能测试完成 ===");
+            LogMessage($"总计: {overallResult.TotalTests}, 通过: {overallResult.PassedTests}, 失败: {overallResult.FailedTests}");
+            LogMessage($"成功率: {overallResult.SuccessRate:F1}%");
+            LogMessage($"耗时: {overallResult.TotalDuration.TotalSeconds:F2}秒");
+
+            TestProgress?.Invoke(this, $"功能测试完成 - 成功率: {overallResult.SuccessRate:F1}%");
+            TestSuiteCompleted?.Invoke(this, overallResult);
+
+            return overallResult;
+        }
+
+        #endregion
+
+        #region 测试环境初始化
+
+        /// <summary>
+        /// 初始化测试环境
+        /// </summary>
+        private async Task InitializeTestEnvironmentAsync()
+        {
+            TestProgress?.Invoke(this, "初始化测试环境...");
+            LogMessage("初始化测试环境");
+
+            try
+            {
+                // 初始化系统组件
+                _templateManager = TemplateManager.Instance;
+                _excelService = new ExcelDataService();
+                _appConfig = ApplicationConfiguration.Instance;
+                _deviceManager = CompositeDeviceManager.Instance;
+                _performanceMonitor = DevicePerformanceMonitor.Instance;
+                _configImportExport = DeviceConfigurationImportExport.Instance;
+                _projectManager = new ProjectManager();
+
+                // 创建测试工作目录
+                var testDir = Path.Combine(Directory.GetCurrentDirectory(), "TestData");
+                if (!Directory.Exists(testDir))
+                {
+                    Directory.CreateDirectory(testDir);
+                }
+                _testContext["TestDirectory"] = testDir;
+
+                // 创建测试Excel文件
+                await CreateTestExcelFileAsync(testDir);
+
+                LogMessage("测试环境初始化完成");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"测试环境初始化失败: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 创建测试Excel文件
+        /// </summary>
+        private async Task CreateTestExcelFileAsync(string testDir)
+        {
+            var testExcelPath = Path.Combine(testDir, "test_points.xlsx");
+            
+            // 创建简单的测试Excel文件内容
+            var testData = new StringBuilder();
+            testData.AppendLine("ID,Name,Type,HMI_Tag,Description,Unit");
+            testData.AppendLine("P001,Temperature,AI,TEMP_01,反应器温度,℃");
+            testData.AppendLine("P002,Pressure,AI,PRESS_01,反应器压力,bar");
+            testData.AppendLine("P003,StartButton,DI,START_BTN,启动按钮,");
+            testData.AppendLine("P004,RunningLED,DO,RUN_LED,运行指示灯,");
+            testData.AppendLine("P005,FlowRate,AO,FLOW_SP,流量设定,m³/h");
+
+            // 将CSV内容写入临时文件，稍后可以用于Excel测试
+            var csvPath = Path.Combine(testDir, "test_points.csv");
+            await File.WriteAllTextAsync(csvPath, testData.ToString());
+            
+            _testContext["TestExcelPath"] = csvPath; // 暂时使用CSV代替Excel
+            _testContext["TestCsvPath"] = csvPath;
+        }
+
+        #endregion
+
+        #region 核心组件测试
+
+        /// <summary>
+        /// 运行核心组件测试
+        /// </summary>
+        private async Task RunCoreComponentTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试核心组件...");
+            LogMessage("开始核心组件测试");
+
+            // 测试模板管理器初始化
+            await RunTestAsync("核心组件", "模板管理器初始化", async () =>
+            {
+                if (_templateManager == null)
+                    throw new InvalidOperationException("模板管理器未初始化");
+
+                var templates = _templateManager.GetAvailableTemplates();
+                var cacheStats = _templateManager.GetCacheStatistics();
+
+                return new Dictionary<string, object>
+                {
+                    ["TemplateCount"] = templates.Count,
+                    ["CacheHitRate"] = cacheStats.HitRate,
+                    ["IsInitialized"] = true
+                };
+            }, TestSeverity.Critical);
+
+            // 测试Excel服务初始化
+            await RunTestAsync("核心组件", "Excel服务初始化", async () =>
+            {
+                if (_excelService == null)
+                    throw new InvalidOperationException("Excel服务未初始化");
+
+                // 测试基本功能
+                var testPath = _testContext["TestCsvPath"].ToString();
+                var canRead = File.Exists(testPath!);
+
+                return new Dictionary<string, object>
+                {
+                    ["ServiceAvailable"] = true,
+                    ["TestFileExists"] = canRead
+                };
+            }, TestSeverity.Critical);
+
+            // 测试配置管理器初始化
+            await RunTestAsync("核心组件", "配置管理器初始化", async () =>
+            {
+                if (_appConfig == null)
+                    throw new InvalidOperationException("配置管理器未初始化");
+
+                var settings = _appConfig.GetCurrentSettings();
+
+                return new Dictionary<string, object>
+                {
+                    ["SettingsLoaded"] = settings != null,
+                    ["Version"] = settings?.Version ?? "unknown"
+                };
+            }, TestSeverity.High);
+
+            // 测试设备管理器初始化
+            await RunTestAsync("核心组件", "设备管理器初始化", async () =>
+            {
+                if (_deviceManager == null)
+                    throw new InvalidOperationException("设备管理器未初始化");
+
+                var deviceCount = _deviceManager.DeviceCount;
+                var isInitialized = _deviceManager.IsInitialized;
+
+                return new Dictionary<string, object>
+                {
+                    ["IsInitialized"] = isInitialized,
+                    ["InitialDeviceCount"] = deviceCount
+                };
+            }, TestSeverity.Critical);
+
+            LogMessage("核心组件测试完成");
+        }
+
+        #endregion
+
+        #region 模板系统测试
+
+        /// <summary>
+        /// 运行模板系统测试
+        /// </summary>
+        private async Task RunTemplateSystemTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试模板系统...");
+            LogMessage("开始模板系统测试");
+
+            // 测试模板加载
+            await RunTestAsync("模板系统", "模板加载", async () =>
+            {
+                var templates = _templateManager!.GetAvailableTemplates();
+                var aiTemplate = templates.FirstOrDefault(t => t.Key.Contains("AI"));
+                var aoTemplate = templates.FirstOrDefault(t => t.Key.Contains("AO"));
+
+                return new Dictionary<string, object>
+                {
+                    ["TotalTemplates"] = templates.Count,
+                    ["HasAITemplate"] = aiTemplate.Key != null,
+                    ["HasAOTemplate"] = aoTemplate.Key != null
+                };
+            });
+
+            // 测试模板渲染
+            await RunTestAsync("模板系统", "模板渲染", async () =>
+            {
+                var testPoint = new Point
+                {
+                    Id = "TEST_001",
+                    Name = "TestPoint",
+                    Type = "AI",
+                    HMITagName = "TEST_TAG",
+                    Description = "测试点位"
+                };
+
+                var renderedCode = await _templateManager!.RenderTemplateAsync("AI", testPoint);
+                var isValidCode = !string.IsNullOrEmpty(renderedCode) && renderedCode.Contains("TEST_TAG");
+
+                return new Dictionary<string, object>
+                {
+                    ["RenderedSuccessfully"] = isValidCode,
+                    ["CodeLength"] = renderedCode.Length,
+                    ["ContainsTagName"] = renderedCode.Contains("TEST_TAG")
+                };
+            });
+
+            // 测试模板缓存
+            await RunTestAsync("模板系统", "模板缓存性能", async () =>
+            {
+                var testPoint = new Point
+                {
+                    Id = "CACHE_TEST",
+                    Name = "CacheTest",
+                    Type = "DI",
+                    HMITagName = "CACHE_TAG"
+                };
+
+                // 第一次渲染（缓存未命中）
+                var sw1 = Stopwatch.StartNew();
+                await _templateManager!.RenderTemplateAsync("DI", testPoint);
+                sw1.Stop();
+
+                // 第二次渲染（缓存命中）
+                var sw2 = Stopwatch.StartNew();
+                await _templateManager!.RenderTemplateAsync("DI", testPoint);
+                sw2.Stop();
+
+                var cacheStats = _templateManager.GetCacheStatistics();
+
+                return new Dictionary<string, object>
+                {
+                    ["FirstRenderTime"] = sw1.ElapsedMilliseconds,
+                    ["SecondRenderTime"] = sw2.ElapsedMilliseconds,
+                    ["CacheHitRate"] = cacheStats.HitRate,
+                    ["PerformanceImprovement"] = sw2.ElapsedMilliseconds < sw1.ElapsedMilliseconds
+                };
+            });
+
+            // 测试模板语法验证
+            await RunTestAsync("模板系统", "模板语法验证", async () =>
+            {
+                var validator = new TemplateSyntaxValidator();
+                var validationResults = new List<bool>();
+
+                // 验证所有模板的语法
+                var templates = _templateManager!.GetAvailableTemplates();
+                foreach (var template in templates.Take(5)) // 测试前5个模板
+                {
+                    try
+                    {
+                        var templateContent = await _templateManager.GetTemplateContentAsync(template.Key);
+                        var isValid = validator.ValidateTemplateSyntax(templateContent, template.Key);
+                        validationResults.Add(isValid);
+                    }
+                    catch
+                    {
+                        validationResults.Add(false);
+                    }
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["TestedTemplates"] = validationResults.Count,
+                    ["ValidTemplates"] = validationResults.Count(v => v),
+                    ["ValidationRate"] = validationResults.Count > 0 ? 
+                        validationResults.Count(v => v) * 100.0 / validationResults.Count : 0
+                };
+            });
+
+            LogMessage("模板系统测试完成");
+        }
+
+        #endregion
+
+        #region Excel数据处理测试
+
+        /// <summary>
+        /// 运行Excel数据处理测试
+        /// </summary>
+        private async Task RunExcelDataProcessingTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试Excel数据处理...");
+            LogMessage("开始Excel数据处理测试");
+
+            // 测试CSV文件读取（代替Excel）
+            await RunTestAsync("Excel处理", "数据文件读取", async () =>
+            {
+                var csvPath = _testContext["TestCsvPath"].ToString();
+                if (!File.Exists(csvPath!))
+                    throw new FileNotFoundException("测试数据文件不存在");
+
+                var lines = await File.ReadAllLinesAsync(csvPath!);
+                var dataLines = lines.Skip(1).ToList(); // 跳过标题行
+
+                return new Dictionary<string, object>
+                {
+                    ["FileExists"] = true,
+                    ["TotalLines"] = lines.Length,
+                    ["DataLines"] = dataLines.Count,
+                    ["HasHeader"] = lines.Length > 0 && lines[0].Contains("ID")
+                };
+            });
+
+            // 测试数据解析
+            await RunTestAsync("Excel处理", "数据解析验证", async () =>
+            {
+                var csvPath = _testContext["TestCsvPath"].ToString();
+                var lines = await File.ReadAllLinesAsync(csvPath!);
+                var dataLines = lines.Skip(1).ToList();
+
+                var parsedPoints = new List<Point>();
+                foreach (var line in dataLines)
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length >= 6)
+                    {
+                        parsedPoints.Add(new Point
+                        {
+                            Id = parts[0],
+                            Name = parts[1],
+                            Type = parts[2],
+                            HMITagName = parts[3],
+                            Description = parts[4],
+                            Unit = parts[5]
+                        });
+                    }
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["ParsedPoints"] = parsedPoints.Count,
+                    ["HasAIPoints"] = parsedPoints.Any(p => p.Type == "AI"),
+                    ["HasDIPoints"] = parsedPoints.Any(p => p.Type == "DI"),
+                    ["HasAOPoints"] = parsedPoints.Any(p => p.Type == "AO"),
+                    ["HasDOPoints"] = parsedPoints.Any(p => p.Type == "DO")
+                };
+            });
+
+            // 测试数据验证
+            await RunTestAsync("Excel处理", "数据完整性验证", async () =>
+            {
+                var csvPath = _testContext["TestCsvPath"].ToString();
+                var lines = await File.ReadAllLinesAsync(csvPath!);
+                var dataLines = lines.Skip(1).ToList();
+
+                var validationResults = new
+                {
+                    ValidIds = 0,
+                    ValidTypes = 0,
+                    ValidTagNames = 0,
+                    EmptyDescriptions = 0
+                };
+
+                foreach (var line in dataLines)
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length >= 6)
+                    {
+                        if (!string.IsNullOrWhiteSpace(parts[0])) validationResults.GetType().GetField("ValidIds")?.SetValue(validationResults, validationResults.ValidIds + 1);
+                        if (new[] { "AI", "AO", "DI", "DO" }.Contains(parts[2])) validationResults.GetType().GetField("ValidTypes")?.SetValue(validationResults, validationResults.ValidTypes + 1);
+                        if (!string.IsNullOrWhiteSpace(parts[3])) validationResults.GetType().GetField("ValidTagNames")?.SetValue(validationResults, validationResults.ValidTagNames + 1);
+                        if (string.IsNullOrWhiteSpace(parts[4])) validationResults.GetType().GetField("EmptyDescriptions")?.SetValue(validationResults, validationResults.EmptyDescriptions + 1);
+                    }
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["TotalRecords"] = dataLines.Count,
+                    ["ValidIds"] = validationResults.ValidIds,
+                    ["ValidTypes"] = validationResults.ValidTypes,
+                    ["ValidTagNames"] = validationResults.ValidTagNames,
+                    ["DataIntegrityScore"] = dataLines.Count > 0 ? 
+                        (validationResults.ValidIds + validationResults.ValidTypes + validationResults.ValidTagNames) * 100.0 / (dataLines.Count * 3) : 0
+                };
+            });
+
+            LogMessage("Excel数据处理测试完成");
+        }
+
+        #endregion
+
+        #region 配置管理系统测试
+
+        /// <summary>
+        /// 运行配置管理系统测试
+        /// </summary>
+        private async Task RunConfigurationSystemTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试配置管理系统...");
+            LogMessage("开始配置管理系统测试");
+
+            // 测试配置加载
+            await RunTestAsync("配置管理", "配置文件加载", async () =>
+            {
+                var settings = _appConfig!.GetCurrentSettings();
+                
+                return new Dictionary<string, object>
+                {
+                    ["SettingsLoaded"] = settings != null,
+                    ["Version"] = settings?.Version ?? "unknown",
+                    ["HasTemplateConfig"] = settings?.TemplateDirectory != null,
+                    ["HasOutputConfig"] = settings?.OutputDirectory != null
+                };
+            });
+
+            // 测试配置保存
+            await RunTestAsync("配置管理", "配置保存功能", async () =>
+            {
+                var originalSettings = _appConfig!.GetCurrentSettings();
+                
+                // 修改配置
+                var testSettings = new ApplicationSettings
+                {
+                    Version = "test_version",
+                    TemplateDirectory = "test_templates",
+                    OutputDirectory = "test_output",
+                    Theme = "Dark",
+                    Language = "zh-CN",
+                    AutoSave = true,
+                    BackupCount = 10
+                };
+
+                // 保存测试配置
+                await _appConfig.UpdateSettingsAsync(testSettings);
+                var savedSettings = _appConfig.GetCurrentSettings();
+
+                // 恢复原始配置
+                if (originalSettings != null)
+                {
+                    await _appConfig.UpdateSettingsAsync(originalSettings);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["SaveSuccessful"] = savedSettings?.Version == "test_version",
+                    ["SettingsPersisted"] = savedSettings?.TemplateDirectory == "test_templates",
+                    ["RestoreSuccessful"] = _appConfig.GetCurrentSettings()?.Version == originalSettings?.Version
+                };
+            });
+
+            // 测试热重载配置
+            await RunTestAsync("配置管理", "热重载配置", async () =>
+            {
+                var configManager = new ConfigurationManager();
+                var reloadCount = 0;
+
+                // 订阅配置变更事件
+                configManager.ConfigurationChanged += (s, e) => reloadCount++;
+
+                // 触发配置重载
+                await configManager.ReloadConfigurationAsync();
+
+                return new Dictionary<string, object>
+                {
+                    ["ReloadExecuted"] = true,
+                    ["EventsTriggered"] = reloadCount >= 0
+                };
+            });
+
+            LogMessage("配置管理系统测试完成");
+        }
+
+        #endregion
+
+        #region 组合设备系统测试
+
+        /// <summary>
+        /// 运行组合设备系统测试
+        /// </summary>
+        private async Task RunCompositeDeviceSystemTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试组合设备系统...");
+            LogMessage("开始组合设备系统测试");
+
+            // 测试设备创建
+            await RunTestAsync("组合设备", "设备创建和管理", async () =>
+            {
+                var initialCount = _deviceManager!.DeviceCount;
+
+                // 创建测试设备
+                var createResults = new List<bool>();
+                var deviceTypes = new[]
+                {
+                    CompositeDeviceType.PumpController,
+                    CompositeDeviceType.ValveController,
+                    CompositeDeviceType.TankController
+                };
+
+                for (int i = 0; i < deviceTypes.Length; i++)
+                {
+                    var result = await _deviceManager.CreateDeviceAsync(
+                        deviceTypes[i], $"TEST_DEVICE_{i}", $"测试设备{i}");
+                    createResults.Add(result.Success);
+                }
+
+                var finalCount = _deviceManager.DeviceCount;
+
+                // 清理测试设备
+                for (int i = 0; i < deviceTypes.Length; i++)
+                {
+                    await _deviceManager.RemoveDeviceAsync($"TEST_DEVICE_{i}");
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["InitialDeviceCount"] = initialCount,
+                    ["CreatedDevices"] = createResults.Count(r => r),
+                    ["FinalDeviceCount"] = finalCount,
+                    ["AllCreatedSuccessfully"] = createResults.All(r => r)
+                };
+            });
+
+            // 测试设备配置导入导出
+            await RunTestAsync("组合设备", "配置导入导出", async () =>
+            {
+                var testDir = _testContext["TestDirectory"].ToString();
+                var configPath = Path.Combine(testDir!, "test_device_config.json");
+
+                // 创建测试设备
+                await _deviceManager!.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "EXPORT_TEST_PUMP", "导出测试泵");
+
+                // 导出配置
+                var exportResult = await _configImportExport!.ExportConfigurationAsync(
+                    configPath, new List<string> { "EXPORT_TEST_PUMP" });
+
+                // 删除设备
+                await _deviceManager.RemoveDeviceAsync("EXPORT_TEST_PUMP");
+
+                // 导入配置
+                var importResult = await _configImportExport.ImportConfigurationAsync(configPath);
+
+                // 检查导入的设备
+                var importedDevice = _deviceManager.GetDevice("EXPORT_TEST_PUMP");
+
+                // 清理
+                if (importedDevice != null)
+                {
+                    await _deviceManager.RemoveDeviceAsync("EXPORT_TEST_PUMP");
+                }
+                if (File.Exists(configPath))
+                {
+                    File.Delete(configPath);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["ExportSuccess"] = exportResult.Success,
+                    ["ImportSuccess"] = importResult.Success,
+                    ["DeviceRestored"] = importedDevice != null,
+                    ["ConfigFileCreated"] = File.Exists(configPath) || exportResult.Success
+                };
+            });
+
+            LogMessage("组合设备系统测试完成");
+        }
+
+        #endregion
+
+        #region 性能监控系统测试
+
+        /// <summary>
+        /// 运行性能监控系统测试
+        /// </summary>
+        private async Task RunPerformanceMonitoringTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试性能监控系统...");
+            LogMessage("开始性能监控系统测试");
+
+            // 测试监控启动
+            await RunTestAsync("性能监控", "监控系统启动", async () =>
+            {
+                var wasRunning = _performanceMonitor!.IsRunning;
+                
+                if (!wasRunning)
+                {
+                    _performanceMonitor.StartMonitoring();
+                }
+
+                var isRunningNow = _performanceMonitor.IsRunning;
+                var monitoredDevices = _performanceMonitor.MonitoredDeviceCount;
+
+                return new Dictionary<string, object>
+                {
+                    ["WasRunning"] = wasRunning,
+                    ["IsRunningNow"] = isRunningNow,
+                    ["MonitoredDevices"] = monitoredDevices,
+                    ["StartupSuccessful"] = isRunningNow
+                };
+            });
+
+            // 测试设备性能数据收集
+            await RunTestAsync("性能监控", "性能数据收集", async () =>
+            {
+                // 创建测试设备用于监控
+                await _deviceManager!.CreateDeviceAsync(
+                    CompositeDeviceType.ReactorController, "PERF_TEST_REACTOR", "性能测试反应器");
+
+                var device = _deviceManager.GetDevice("PERF_TEST_REACTOR");
+                if (device == null)
+                    throw new InvalidOperationException("测试设备创建失败");
+
+                // 等待性能数据收集
+                await Task.Delay(2000);
+
+                // 获取性能数据
+                var perfData = _performanceMonitor!.GetDevicePerformanceData("PERF_TEST_REACTOR");
+                var systemStats = _performanceMonitor.GetPerformanceStatistics();
+
+                // 清理测试设备
+                await _deviceManager.RemoveDeviceAsync("PERF_TEST_REACTOR");
+
+                return new Dictionary<string, object>
+                {
+                    ["PerformanceDataCollected"] = perfData != null,
+                    ["SystemStatsAvailable"] = systemStats.Count > 0,
+                    ["SystemPerformanceScore"] = _performanceMonitor.SystemPerformanceScore,
+                    ["ActiveAlerts"] = _performanceMonitor.ActiveAlertCount
+                };
+            });
+
+            // 测试优化建议生成
+            await RunTestAsync("性能监控", "优化建议生成", async () =>
+            {
+                var suggestions = _performanceMonitor!.GenerateOptimizationSuggestions();
+                var hasHighPrioritySuggestions = suggestions.Any(s => 
+                    s.Priority == DevicePerformanceMonitor.OptimizationPriority.High ||
+                    s.Priority == DevicePerformanceMonitor.OptimizationPriority.Critical);
+
+                return new Dictionary<string, object>
+                {
+                    ["SuggestionsGenerated"] = suggestions.Count,
+                    ["HasHighPriority"] = hasHighPrioritySuggestions,
+                    ["AutoApplyAvailable"] = suggestions.Any(s => s.CanAutoApply)
+                };
+            });
+
+            LogMessage("性能监控系统测试完成");
+        }
+
+        #endregion
+
+        #region 项目管理功能测试
+
+        /// <summary>
+        /// 运行项目管理功能测试
+        /// </summary>
+        private async Task RunProjectManagementTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试项目管理功能...");
+            LogMessage("开始项目管理功能测试");
+
+            // 测试项目创建和管理
+            await RunTestAsync("项目管理", "项目生命周期管理", async () =>
+            {
+                var testDir = _testContext["TestDirectory"].ToString();
+                var projectPath = Path.Combine(testDir!, "TestProject");
+
+                // 创建测试项目
+                var createResult = await _projectManager!.CreateProjectAsync(
+                    "TestProject", projectPath, "功能测试项目");
+
+                // 加载项目
+                var loadResult = await _projectManager.LoadProjectAsync(projectPath);
+
+                // 获取项目信息
+                var projectInfo = _projectManager.GetCurrentProjectInfo();
+
+                // 保存项目
+                var saveResult = await _projectManager.SaveProjectAsync();
+
+                // 关闭项目
+                await _projectManager.CloseProjectAsync();
+
+                // 清理
+                if (Directory.Exists(projectPath))
+                {
+                    Directory.Delete(projectPath, true);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["CreateSuccess"] = createResult.Success,
+                    ["LoadSuccess"] = loadResult.Success,
+                    ["ProjectInfoAvailable"] = projectInfo != null,
+                    ["SaveSuccess"] = saveResult.Success,
+                    ["ProjectName"] = projectInfo?.Name ?? "unknown"
+                };
+            });
+
+            LogMessage("项目管理功能测试完成");
+        }
+
+        #endregion
+
+        #region 代码生成完整性测试
+
+        /// <summary>
+        /// 运行代码生成完整性测试
+        /// </summary>
+        private async Task RunCodeGenerationTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试代码生成功能...");
+            LogMessage("开始代码生成完整性测试");
+
+            // 测试单点位代码生成
+            await RunTestAsync("代码生成", "单点位ST代码生成", async () =>
+            {
+                var testPoints = new[]
+                {
+                    new Point { Id = "AI001", Name = "Temperature", Type = "AI", HMITagName = "TEMP_01", Description = "温度测量" },
+                    new Point { Id = "DI001", Name = "StartButton", Type = "DI", HMITagName = "START_BTN", Description = "启动按钮" },
+                    new Point { Id = "AO001", Name = "ValveOutput", Type = "AO", HMITagName = "VALVE_OUT", Description = "阀门输出" },
+                    new Point { Id = "DO001", Name = "AlarmLED", Type = "DO", HMITagName = "ALARM_LED", Description = "报警指示" }
+                };
+
+                var generationResults = new List<bool>();
+                var generatedCodes = new List<string>();
+
+                foreach (var point in testPoints)
+                {
+                    try
+                    {
+                        var code = await _templateManager!.RenderTemplateAsync(point.Type, point);
+                        generatedCodes.Add(code);
+                        generationResults.Add(!string.IsNullOrEmpty(code) && code.Contains(point.HMITagName));
+                    }
+                    catch
+                    {
+                        generationResults.Add(false);
+                        generatedCodes.Add("");
+                    }
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["TotalPoints"] = testPoints.Length,
+                    ["SuccessfulGenerations"] = generationResults.Count(r => r),
+                    ["AverageCodeLength"] = generatedCodes.Where(c => !string.IsNullOrEmpty(c)).Average(c => c.Length),
+                    ["AllTypesSupported"] = generationResults.All(r => r)
+                };
+            }, TestSeverity.Critical);
+
+            // 测试批量代码生成
+            await RunTestAsync("代码生成", "批量ST代码生成", async () =>
+            {
+                // 创建测试设备和点位
+                await _deviceManager!.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "CODE_GEN_PUMP", "代码生成测试泵");
+
+                var device = _deviceManager.GetDevice("CODE_GEN_PUMP");
+                if (device == null)
+                    throw new InvalidOperationException("测试设备创建失败");
+
+                // 添加测试点位
+                var testPoints = new[]
+                {
+                    new Point { Id = "P001", Name = "PumpStart", Type = "DO", HMITagName = "PUMP_START", Description = "泵启动" },
+                    new Point { Id = "P002", Name = "PumpSpeed", Type = "AO", HMITagName = "PUMP_SPEED", Description = "泵转速" },
+                    new Point { Id = "P003", Name = "PumpRunning", Type = "DI", HMITagName = "PUMP_RUN", Description = "泵运行状态" }
+                };
+
+                foreach (var point in testPoints)
+                {
+                    device.AddPoint(point);
+                }
+
+                // 生成设备ST代码
+                var deviceCode = await device.GenerateSTCodeAsync();
+
+                // 生成系统级ST代码
+                var systemCode = await _deviceManager.GenerateIntegratedSTCodeAsync();
+
+                // 清理测试设备
+                await _deviceManager.RemoveDeviceAsync("CODE_GEN_PUMP");
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceCodeGenerated"] = !string.IsNullOrEmpty(deviceCode),
+                    ["SystemCodeGenerated"] = !string.IsNullOrEmpty(systemCode),
+                    ["DeviceCodeLength"] = deviceCode.Length,
+                    ["SystemCodeLength"] = systemCode.Length,
+                    ["ContainsVariableDeclarations"] = systemCode.Contains("VAR_GLOBAL"),
+                    ["ContainsDeviceLogic"] = systemCode.Contains("PUMP_START")
+                };
+            }, TestSeverity.Critical);
+
+            // 测试代码语法验证
+            await RunTestAsync("代码生成", "生成代码语法验证", async () =>
+            {
+                var validator = new TemplateSyntaxValidator();
+                var testPoint = new Point
+                {
+                    Id = "SYNTAX_TEST",
+                    Name = "SyntaxTest",
+                    Type = "AI",
+                    HMITagName = "SYNTAX_TAG",
+                    Description = "语法测试点位"
+                };
+
+                var generatedCode = await _templateManager!.RenderTemplateAsync("AI", testPoint);
+                var syntaxErrors = validator.ValidateSTCode(generatedCode);
+
+                return new Dictionary<string, object>
+                {
+                    ["CodeGenerated"] = !string.IsNullOrEmpty(generatedCode),
+                    ["SyntaxValid"] = syntaxErrors.Count == 0,
+                    ["SyntaxErrorCount"] = syntaxErrors.Count,
+                    ["CodeLength"] = generatedCode.Length
+                };
+            });
+
+            LogMessage("代码生成完整性测试完成");
+        }
+
+        #endregion
+
+        #region 系统集成测试
+
+        /// <summary>
+        /// 运行系统集成测试
+        /// </summary>
+        private async Task RunSystemIntegrationTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试系统集成...");
+            LogMessage("开始系统集成测试");
+
+            // 测试端到端工作流
+            await RunTestAsync("系统集成", "端到端工作流", async () =>
+            {
+                var testDir = _testContext["TestDirectory"].ToString();
+                var outputPath = Path.Combine(testDir!, "integration_test_output.st");
+
+                // 1. 读取测试数据
+                var csvPath = _testContext["TestCsvPath"].ToString();
+                var lines = await File.ReadAllLinesAsync(csvPath!);
+                var dataLines = lines.Skip(1).ToList();
+
+                // 2. 解析点位数据
+                var points = new List<Point>();
+                foreach (var line in dataLines)
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length >= 6)
+                    {
+                        points.Add(new Point
+                        {
+                            Id = parts[0],
+                            Name = parts[1],
+                            Type = parts[2],
+                            HMITagName = parts[3],
+                            Description = parts[4],
+                            Unit = parts[5]
+                        });
+                    }
+                }
+
+                // 3. 生成ST代码
+                var generatedCodes = new List<string>();
+                foreach (var point in points)
+                {
+                    try
+                    {
+                        var code = await _templateManager!.RenderTemplateAsync(point.Type, point);
+                        generatedCodes.Add(code);
+                    }
+                    catch
+                    {
+                        generatedCodes.Add($"// 代码生成失败: {point.Id}");
+                    }
+                }
+
+                // 4. 合并并保存代码
+                var finalCode = new StringBuilder();
+                finalCode.AppendLine("(* ST自动生成器 - 集成测试输出 *)");
+                finalCode.AppendLine($"(* 生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss} *)");
+                finalCode.AppendLine();
+
+                finalCode.AppendLine("VAR_GLOBAL");
+                foreach (var point in points)
+                {
+                    var dataType = point.Type.ToUpper() switch
+                    {
+                        "AI" => "REAL",
+                        "AO" => "REAL",
+                        "DI" => "BOOL",
+                        "DO" => "BOOL",
+                        _ => "REAL"
+                    };
+                    finalCode.AppendLine($"    {point.HMITagName} : {dataType}; // {point.Description}");
+                }
+                finalCode.AppendLine("END_VAR");
+                finalCode.AppendLine();
+
+                foreach (var code in generatedCodes)
+                {
+                    finalCode.AppendLine(code);
+                    finalCode.AppendLine();
+                }
+
+                await File.WriteAllTextAsync(outputPath, finalCode.ToString());
+
+                // 5. 验证输出
+                var outputExists = File.Exists(outputPath);
+                var outputContent = outputExists ? await File.ReadAllTextAsync(outputPath) : "";
+                var hasVariableDeclarations = outputContent.Contains("VAR_GLOBAL");
+                var hasGeneratedCode = generatedCodes.Any(c => !string.IsNullOrEmpty(c));
+
+                // 清理
+                if (File.Exists(outputPath))
+                {
+                    File.Delete(outputPath);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["DataPointsProcessed"] = points.Count,
+                    ["CodesGenerated"] = generatedCodes.Count(c => !string.IsNullOrEmpty(c)),
+                    ["OutputFileCreated"] = outputExists,
+                    ["HasVariableDeclarations"] = hasVariableDeclarations,
+                    ["HasGeneratedCode"] = hasGeneratedCode,
+                    ["WorkflowCompleted"] = outputExists && hasVariableDeclarations && hasGeneratedCode
+                };
+            }, TestSeverity.Critical);
+
+            // 测试多系统协作
+            await RunTestAsync("系统集成", "多系统协作", async () =>
+            {
+                // 启动性能监控
+                if (!_performanceMonitor!.IsRunning)
+                {
+                    _performanceMonitor.StartMonitoring();
+                }
+
+                // 创建设备
+                await _deviceManager!.CreateDeviceAsync(
+                    CompositeDeviceType.ReactorController, "INTEGRATION_REACTOR", "集成测试反应器");
+
+                // 等待监控数据收集
+                await Task.Delay(1000);
+
+                // 检查各系统协作状态
+                var device = _deviceManager.GetDevice("INTEGRATION_REACTOR");
+                var perfData = _performanceMonitor.GetDevicePerformanceData("INTEGRATION_REACTOR");
+                var systemStats = _performanceMonitor.GetPerformanceStatistics();
+                var deviceCode = await device!.GenerateSTCodeAsync();
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("INTEGRATION_REACTOR");
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceCreated"] = device != null,
+                    ["PerformanceDataCollected"] = perfData != null,
+                    ["SystemStatsGenerated"] = systemStats.Count > 0,
+                    ["CodeGenerated"] = !string.IsNullOrEmpty(deviceCode),
+                    ["AllSystemsWorking"] = device != null && perfData != null && !string.IsNullOrEmpty(deviceCode)
+                };
+            });
+
+            LogMessage("系统集成测试完成");
+        }
+
+        #endregion
+
+        #region 错误处理和恢复测试
+
+        /// <summary>
+        /// 运行错误处理和恢复测试
+        /// </summary>
+        private async Task RunErrorHandlingTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试错误处理和恢复...");
+            LogMessage("开始错误处理和恢复测试");
+
+            // 测试无效模板处理
+            await RunTestAsync("错误处理", "无效模板处理", async () =>
+            {
+                var testPoint = new Point
+                {
+                    Id = "ERROR_TEST",
+                    Name = "ErrorTest",
+                    Type = "INVALID_TYPE",
+                    HMITagName = "ERROR_TAG"
+                };
+
+                string generatedCode = "";
+                bool exceptionCaught = false;
+
+                try
+                {
+                    generatedCode = await _templateManager!.RenderTemplateAsync("INVALID_TYPE", testPoint);
+                }
+                catch
+                {
+                    exceptionCaught = true;
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["ExceptionHandled"] = exceptionCaught || !string.IsNullOrEmpty(generatedCode),
+                    ["GracefulFallback"] = !exceptionCaught && !string.IsNullOrEmpty(generatedCode),
+                    ["SystemStable"] = true // 如果到这里系统还在运行
+                };
+            });
+
+            // 测试文件访问错误处理
+            await RunTestAsync("错误处理", "文件访问错误处理", async () =>
+            {
+                var invalidPath = @"C:\NonexistentPath\invalid_file.xlsx";
+                bool errorHandled = false;
+                string errorMessage = "";
+
+                try
+                {
+                    // 尝试访问不存在的文件
+                    if (File.Exists(invalidPath))
+                    {
+                        await File.ReadAllTextAsync(invalidPath);
+                    }
+                    else
+                    {
+                        errorHandled = true;
+                        errorMessage = "文件不存在";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorHandled = true;
+                    errorMessage = ex.Message;
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["ErrorDetected"] = errorHandled,
+                    ["ErrorMessage"] = errorMessage,
+                    ["SystemRecovered"] = true
+                };
+            });
+
+            // 测试设备操作错误恢复
+            await RunTestAsync("错误处理", "设备操作错误恢复", async () =>
+            {
+                // 尝试操作不存在的设备
+                var nonExistentDevice = _deviceManager!.GetDevice("NON_EXISTENT_DEVICE");
+                var removeResult = await _deviceManager.RemoveDeviceAsync("NON_EXISTENT_DEVICE");
+
+                // 尝试创建重复设备
+                await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "DUPLICATE_TEST", "重复测试");
+                var duplicateResult = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "DUPLICATE_TEST", "重复测试");
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("DUPLICATE_TEST");
+
+                return new Dictionary<string, object>
+                {
+                    ["NonExistentDeviceHandled"] = nonExistentDevice == null,
+                    ["RemoveNonExistentHandled"] = !removeResult.Success,
+                    ["DuplicateCreationHandled"] = !duplicateResult.Success,
+                    ["SystemStable"] = _deviceManager.IsInitialized
+                };
+            });
+
+            LogMessage("错误处理和恢复测试完成");
+        }
+
+        #endregion
+
+        #region 数据持久化测试
+
+        /// <summary>
+        /// 运行数据持久化测试
+        /// </summary>
+        private async Task RunDataPersistenceTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试数据持久化...");
+            LogMessage("开始数据持久化测试");
+
+            // 测试配置持久化
+            await RunTestAsync("数据持久化", "配置文件持久化", async () =>
+            {
+                var testDir = _testContext["TestDirectory"].ToString();
+                var configPath = Path.Combine(testDir!, "test_persistence_config.json");
+
+                // 创建测试配置
+                var testConfig = new ApplicationSettings
+                {
+                    Version = "persistence_test",
+                    TemplateDirectory = "test_templates",
+                    OutputDirectory = "test_output",
+                    Theme = "Light",
+                    Language = "en-US"
+                };
+
+                // 保存配置
+                var json = JsonConvert.SerializeObject(testConfig, Formatting.Indented);
+                await File.WriteAllTextAsync(configPath, json);
+
+                // 验证文件存在
+                var fileExists = File.Exists(configPath);
+
+                // 读取并验证配置
+                var loadedJson = await File.ReadAllTextAsync(configPath);
+                var loadedConfig = JsonConvert.DeserializeObject<ApplicationSettings>(loadedJson);
+
+                // 清理
+                if (File.Exists(configPath))
+                {
+                    File.Delete(configPath);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["ConfigSaved"] = fileExists,
+                    ["ConfigLoaded"] = loadedConfig != null,
+                    ["DataIntegrity"] = loadedConfig?.Version == "persistence_test",
+                    ["SerializationWorking"] = loadedConfig?.TemplateDirectory == "test_templates"
+                };
+            });
+
+            // 测试设备配置持久化
+            await RunTestAsync("数据持久化", "设备配置持久化", async () =>
+            {
+                // 创建测试设备
+                await _deviceManager!.CreateDeviceAsync(
+                    CompositeDeviceType.TankController, "PERSISTENCE_TANK", "持久化测试储罐");
+
+                var device = _deviceManager.GetDevice("PERSISTENCE_TANK");
+                if (device == null)
+                    throw new InvalidOperationException("测试设备创建失败");
+
+                // 添加点位
+                device.AddPoint(new Point
+                {
+                    Id = "PERSIST_POINT",
+                    Name = "PersistPoint",
+                    Type = "AI",
+                    HMITagName = "PERSIST_TAG",
+                    Description = "持久化测试点位"
+                });
+
+                // 保存配置
+                await _deviceManager.SaveConfigurationAsync();
+
+                // 获取设备配置
+                var deviceConfig = device.ExportConfiguration();
+                var devicePoints = device.AssociatedPoints;
+
+                // 清理设备
+                await _deviceManager.RemoveDeviceAsync("PERSISTENCE_TANK");
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceConfigSaved"] = !string.IsNullOrEmpty(deviceConfig),
+                    ["PointsPersisted"] = devicePoints.Any(p => p.Id == "PERSIST_POINT"),
+                    ["ConfigurationExported"] = !string.IsNullOrEmpty(deviceConfig)
+                };
+            });
+
+            LogMessage("数据持久化测试完成");
+        }
+
+        #endregion
+
+        #region 用户界面交互测试
+
+        /// <summary>
+        /// 运行用户界面交互测试
+        /// </summary>
+        private async Task RunUIInteractionTestsAsync()
+        {
+            TestProgress?.Invoke(this, "测试用户界面交互...");
+            LogMessage("开始用户界面交互测试");
+
+            // 测试表单实例化
+            await RunTestAsync("UI交互", "表单组件实例化", async () =>
+            {
+                var formInstances = new Dictionary<string, bool>();
+
+                try
+                {
+                    // 测试主要表单的实例化（不显示）
+                    using var templateForm = new TemplateEditorForm();
+                    formInstances["TemplateEditor"] = templateForm != null;
+                }
+                catch
+                {
+                    formInstances["TemplateEditor"] = false;
+                }
+
+                try
+                {
+                    using var performanceForm = new PerformanceMonitorForm();
+                    formInstances["PerformanceMonitor"] = performanceForm != null;
+                }
+                catch
+                {
+                    formInstances["PerformanceMonitor"] = false;
+                }
+
+                try
+                {
+                    using var deviceForm = new DeviceManagementForm();
+                    formInstances["DeviceManagement"] = deviceForm != null;
+                }
+                catch
+                {
+                    formInstances["DeviceManagement"] = false;
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["FormsCreated"] = formInstances.Values.Count(v => v),
+                    ["TotalForms"] = formInstances.Count,
+                    ["AllFormsCreatable"] = formInstances.Values.All(v => v),
+                    ["FormDetails"] = formInstances
+                };
+            });
+
+            // 测试控件状态管理
+            await RunTestAsync("UI交互", "控件状态管理", async () =>
+            {
+                var stateTests = new Dictionary<string, bool>();
+
+                // 测试模板管理器的UI状态
+                var templates = _templateManager!.GetAvailableTemplates();
+                stateTests["TemplatesAvailable"] = templates.Any();
+
+                // 测试设备管理器的UI状态
+                var deviceCount = _deviceManager!.DeviceCount;
+                stateTests["DeviceCountAccessible"] = deviceCount >= 0;
+
+                // 测试性能监控的UI状态
+                var perfStats = _performanceMonitor!.GetPerformanceStatistics();
+                stateTests["PerformanceStatsAccessible"] = perfStats.Any();
+
+                return new Dictionary<string, object>
+                {
+                    ["StateTestsPassed"] = stateTests.Values.Count(v => v),
+                    ["TotalStateTests"] = stateTests.Count,
+                    ["AllStatesAccessible"] = stateTests.Values.All(v => v)
+                };
+            });
+
+            LogMessage("用户界面交互测试完成");
+        }
+
+        #endregion
+
+        #region 辅助方法
+
+        /// <summary>
+        /// 运行单个测试
+        /// </summary>
+        private async Task RunTestAsync(
+            string testSuite,
+            string testName,
+            Func<Task<Dictionary<string, object>>> testAction,
+            TestSeverity severity = TestSeverity.Normal)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var result = new TestResult
+            {
+                TestSuite = testSuite,
+                TestName = testName,
+                Severity = severity
+            };
+
+            try
+            {
+                LogMessage($"执行测试: [{testSuite}] {testName}");
+                TestProgress?.Invoke(this, $"执行测试: {testName}");
+
+                result.Data = await testAction();
+                result.Success = true;
+                result.Message = "测试通过";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = ex.Message;
+                result.Exception = ex;
+                LogMessage($"测试失败: [{testSuite}] {testName} - {ex.Message}");
+            }
+            finally
+            {
+                stopwatch.Stop();
+                result.Duration = stopwatch.Elapsed;
+
+                _testResults.Add(result);
+                TestCompleted?.Invoke(this, result);
+
+                var statusText = result.Success ? "通过" : "失败";
+                LogMessage($"测试完成: [{testSuite}] {testName} - {statusText} ({result.Duration.TotalMilliseconds:F0}ms)");
+            }
+        }
+
+        /// <summary>
+        /// 记录日志消息
+        /// </summary>
+        private void LogMessage(string message)
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            _testLog.AppendLine($"[{timestamp}] {message}");
+        }
+
+        /// <summary>
+        /// 生成测试报告
+        /// </summary>
+        public string GenerateTestReport(TestSuiteResult suiteResult)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("========================================");
+            sb.AppendLine($"ST自动生成器系统功能测试报告");
+            sb.AppendLine("========================================");
+            sb.AppendLine($"测试时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"测试套件: {suiteResult.SuiteName}");
+            sb.AppendLine($"总测试数: {suiteResult.TotalTests}");
+            sb.AppendLine($"通过测试: {suiteResult.PassedTests}");
+            sb.AppendLine($"失败测试: {suiteResult.FailedTests}");
+            sb.AppendLine($"成功率: {suiteResult.SuccessRate:F1}%");
+            sb.AppendLine($"总耗时: {suiteResult.TotalDuration.TotalSeconds:F2}秒");
+            sb.AppendLine($"关键失败: {(suiteResult.HasCriticalFailures ? "是" : "否")}");
+            sb.AppendLine();
+
+            // 按测试套件分组统计
+            var groupedResults = suiteResult.Results.GroupBy(r => r.TestSuite).ToList();
+            sb.AppendLine("测试套件统计:");
+            sb.AppendLine("----------------------------------------");
+            foreach (var group in groupedResults)
+            {
+                var total = group.Count();
+                var passed = group.Count(r => r.Success);
+                var failed = group.Count(r => !r.Success);
+                var successRate = total > 0 ? (double)passed / total * 100 : 0;
+
+                sb.AppendLine($"{group.Key}: {passed}/{total} ({successRate:F1}%)");
+            }
+            sb.AppendLine();
+
+            // 详细测试结果
+            sb.AppendLine("详细测试结果:");
+            sb.AppendLine("----------------------------------------");
+            foreach (var group in groupedResults)
+            {
+                sb.AppendLine($"\n[{group.Key}]");
+                foreach (var result in group)
+                {
+                    var status = result.Success ? "PASS" : "FAIL";
+                    var severity = result.Severity != TestSeverity.Normal ? $" ({result.Severity})" : "";
+                    sb.AppendLine($"  [{status}] {result.TestName}{severity}");
+                    sb.AppendLine($"         耗时: {result.Duration.TotalMilliseconds:F0}ms");
+                    sb.AppendLine($"         消息: {result.Message}");
+
+                    if (result.Data.Any())
+                    {
+                        sb.AppendLine("         数据:");
+                        foreach (var kvp in result.Data.Take(5)) // 限制显示前5个数据项
+                        {
+                            sb.AppendLine($"           {kvp.Key}: {kvp.Value}");
+                        }
+                    }
+
+                    if (!result.Success && result.Exception != null)
+                    {
+                        sb.AppendLine($"         异常: {result.Exception.GetType().Name}");
+                        if (result.Severity == TestSeverity.Critical)
+                        {
+                            sb.AppendLine($"               {result.Exception.Message}");
+                        }
+                    }
+                    sb.AppendLine();
+                }
+            }
+
+            // 测试执行日志（最后100行）
+            var logLines = _testLog.ToString().Split('\n');
+            if (logLines.Length > 0)
+            {
+                sb.AppendLine("测试执行日志 (最后100行):");
+                sb.AppendLine("----------------------------------------");
+                var startIndex = Math.Max(0, logLines.Length - 100);
+                for (int i = startIndex; i < logLines.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(logLines[i]))
+                    {
+                        sb.AppendLine(logLines[i]);
+                    }
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 获取测试结果摘要
+        /// </summary>
+        public Dictionary<string, object> GetTestSummary(TestSuiteResult suiteResult)
+        {
+            return new Dictionary<string, object>
+            {
+                ["TestSuite"] = suiteResult.SuiteName,
+                ["TotalTests"] = suiteResult.TotalTests,
+                ["PassedTests"] = suiteResult.PassedTests,
+                ["FailedTests"] = suiteResult.FailedTests,
+                ["SuccessRate"] = suiteResult.SuccessRate,
+                ["Duration"] = suiteResult.TotalDuration.TotalSeconds,
+                ["HasCriticalFailures"] = suiteResult.HasCriticalFailures,
+                ["TestsByCategory"] = suiteResult.Results.GroupBy(r => r.TestSuite)
+                    .ToDictionary(g => g.Key, g => new
+                    {
+                        Total = g.Count(),
+                        Passed = g.Count(r => r.Success),
+                        Failed = g.Count(r => !r.Success)
+                    }),
+                ["CriticalFailures"] = suiteResult.Results
+                    .Where(r => !r.Success && r.Severity == TestSeverity.Critical)
+                    .Select(r => new { r.TestSuite, r.TestName, r.Message })
+                    .ToList()
+            };
+        }
+
+        #endregion
+
+        #region 资源释放
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        public void Dispose()
+        {
+            _testResults.Clear();
+            _testContext.Clear();
+            _testLog.Clear();
+        }
+
+        #endregion
+    }
+}

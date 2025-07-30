@@ -1,21 +1,24 @@
-(* AI点位: {{ 变量名称HMI }} - {{ 变量描述 }} *)
-AI_ALARM_{{ 变量名称HMI }}(
-    IN:={{ 硬点通道号 }},
-    ENG_MAX:={{ 量程高限 }},
-    ENG_MIN:={{ 量程低限 }},
-    MAIN_EN:={{ 变量名称HMI }}_WHZZT,
-    MAIN_V:={{ 变量名称HMI }}_WHZ,
+{{~ for point in points ~}}
+(* AI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
+AI_ALARM_{{ point.hmi_tag_name }}(
+    IN:={{ point.plc_absolute_address }},
+    ENG_MAX:={{ point.range_high ?? 100.0 }},
+    ENG_MIN:={{ point.range_low ?? 0.0 }},
+    MAIN_EN:={{ point.hmi_tag_name }}_WHZZT,
+    MAIN_V:={{ point.hmi_tag_name }}_WHZ,
     HH_A_EN:=TRUE,
-    HH_LIMIT:={{ 变量名称HMI }}_HiHiLimit,
+    HH_LIMIT:={{ point.shh_value ?? 90.0 }},
     H_A_EN:=TRUE,
-    H_LIMIT:={{ 变量名称HMI }}_HiLimit,
+    H_LIMIT:={{ point.sh_value ?? 80.0 }},
     L_A_EN:=TRUE,
-    L_LIMIT:={{ 变量名称HMI }}_LoLimit,
+    L_LIMIT:={{ point.sl_value ?? 20.0 }},
     LL_A_EN:=TRUE,
-    LL_LIMIT:={{ 变量名称HMI }}_LoLoLimit,
-    OUT=>{{ 变量名称HMI }},
-    HH_ALARM=>{{ 变量名称HMI }}_HH,
-    H_ALARM=>{{ 变量名称HMI }}_H,
-    L_ALARM=>{{ 变量名称HMI }}_L,
-    LL_ALARM=>{{ 变量名称HMI }}_LL
+    LL_LIMIT:={{ point.sll_value ?? 10.0 }},
+    OUT=>{{ point.hmi_tag_name }},
+    HH_ALARM=>{{ point.hmi_tag_name }}_HH,
+    H_ALARM=>{{ point.hmi_tag_name }}_H,
+    L_ALARM=>{{ point.hmi_tag_name }}_L,
+    LL_ALARM=>{{ point.hmi_tag_name }}_LL
 );
+
+{{~ end ~}}

@@ -1,0 +1,1159 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using WinFormsApp1.Devices;
+using WinFormsApp1.Devices.Base;
+using WinFormsApp1.Devices.Interfaces;
+using WinFormsApp1.Devices.Controllers;
+using AutomaticGeneration_ST.Models;
+using System.Text;
+using System.Diagnostics;
+
+namespace WinFormsApp1.Tests
+{
+    /// <summary>
+    /// 组合设备系统集成测试
+    /// </summary>
+    public class CompositeDeviceSystemTests
+    {
+        #region 私有字段
+
+        private readonly CompositeDeviceManager _deviceManager;
+        private readonly CompositeDeviceSystemIntegrator _systemIntegrator;
+        private readonly ProcessSystemIntegrator _processIntegrator;
+        private readonly DeviceTopologyManager _topologyManager;
+        
+        private readonly List<TestResult> _testResults = new();
+        private readonly Dictionary<string, object> _testData = new();
+
+        #endregion
+
+        #region 内部类定义
+
+        /// <summary>
+        /// 测试结果
+        /// </summary>
+        public class TestResult
+        {
+            public string TestName { get; set; } = "";
+            public bool Success { get; set; }
+            public string Message { get; set; } = "";
+            public TimeSpan Duration { get; set; }
+            public Dictionary<string, object> Data { get; set; } = new();
+            public Exception? Exception { get; set; }
+            public DateTime Timestamp { get; set; } = DateTime.Now;
+        }
+
+        /// <summary>
+        /// 测试套件结果
+        /// </summary>
+        public class TestSuiteResult
+        {
+            public string SuiteName { get; set; } = "";
+            public int TotalTests { get; set; }
+            public int PassedTests { get; set; }
+            public int FailedTests { get; set; }
+            public TimeSpan TotalDuration { get; set; }
+            public List<TestResult> Results { get; set; } = new();
+            public double SuccessRate => TotalTests > 0 ? (double)PassedTests / TotalTests * 100 : 0;
+        }
+
+        #endregion
+
+        #region 事件定义
+
+        /// <summary>
+        /// 测试进度事件
+        /// </summary>
+        public event EventHandler<string>? TestProgress;
+
+        /// <summary>
+        /// 测试完成事件
+        /// </summary>
+        public event EventHandler<TestResult>? TestCompleted;
+
+        /// <summary>
+        /// 测试套件完成事件
+        /// </summary>
+        public event EventHandler<TestSuiteResult>? TestSuiteCompleted;
+
+        #endregion
+
+        #region 构造函数
+
+        public CompositeDeviceSystemTests()
+        {
+            _deviceManager = CompositeDeviceManager.Instance;
+            _systemIntegrator = new CompositeDeviceSystemIntegrator();
+            _processIntegrator = ProcessSystemIntegrator.Instance;
+            _topologyManager = DeviceTopologyManager.Instance;
+        }
+
+        #endregion
+
+        #region 主要测试方法
+
+        /// <summary>
+        /// 运行完整的测试套件
+        /// </summary>
+        public async Task<TestSuiteResult> RunFullTestSuiteAsync()
+        {
+            var suiteResult = new TestSuiteResult
+            {
+                SuiteName = "组合设备系统完整测试套件"
+            };
+
+            var stopwatch = Stopwatch.StartNew();
+            _testResults.Clear();
+
+            TestProgress?.Invoke(this, "开始运行完整测试套件...");
+
+            try
+            {
+                // 1. 设备管理器测试
+                await RunDeviceManagerTestsAsync();
+
+                // 2. 设备控制器测试
+                await RunDeviceControllerTestsAsync();
+
+                // 3. 系统集成测试
+                await RunSystemIntegrationTestsAsync();
+
+                // 4. 拓扑管理测试
+                await RunTopologyManagerTestsAsync();
+
+                // 5. 工艺系统集成测试
+                await RunProcessIntegrationTestsAsync();
+
+                // 6. 性能测试
+                await RunPerformanceTestsAsync();
+
+                // 7. 故障恢复测试
+                await RunFailureRecoveryTestsAsync();
+
+                // 8. 代码生成测试
+                await RunCodeGenerationTestsAsync();
+            }
+            catch (Exception ex)
+            {
+                var errorResult = new TestResult
+                {
+                    TestName = "测试套件执行",
+                    Success = false,
+                    Message = $"测试套件执行失败: {ex.Message}",
+                    Exception = ex
+                };
+                _testResults.Add(errorResult);
+                TestCompleted?.Invoke(this, errorResult);
+            }
+
+            stopwatch.Stop();
+
+            // 汇总结果
+            suiteResult.TotalTests = _testResults.Count;
+            suiteResult.PassedTests = _testResults.Count(r => r.Success);
+            suiteResult.FailedTests = _testResults.Count(r => !r.Success);
+            suiteResult.TotalDuration = stopwatch.Elapsed;
+            suiteResult.Results = new List<TestResult>(_testResults);
+
+            TestProgress?.Invoke(this, $"测试套件完成 - 总计: {suiteResult.TotalTests}, 通过: {suiteResult.PassedTests}, 失败: {suiteResult.FailedTests}");
+            TestSuiteCompleted?.Invoke(this, suiteResult);
+
+            return suiteResult;
+        }
+
+        #endregion
+
+        #region 设备管理器测试
+
+        /// <summary>
+        /// 运行设备管理器测试
+        /// </summary>
+        private async Task RunDeviceManagerTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行设备管理器测试...");
+
+            // 测试设备创建
+            await RunTestAsync("设备创建测试", async () =>
+            {
+                var result = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, 
+                    "TEST_PUMP_001", 
+                    "测试泵1");
+
+                if (!result.Success)
+                    throw new Exception($"设备创建失败: {result.Message}");
+
+                var device = _deviceManager.GetDevice("TEST_PUMP_001");
+                if (device == null)
+                    throw new Exception("创建的设备无法获取");
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceId"] = device.DeviceId,
+                    ["DeviceName"] = device.DeviceName,
+                    ["DeviceType"] = device.DeviceType.ToString()
+                };
+            });
+
+            // 测试设备删除
+            await RunTestAsync("设备删除测试", async () =>
+            {
+                var result = await _deviceManager.RemoveDeviceAsync("TEST_PUMP_001");
+                if (!result.Success)
+                    throw new Exception($"设备删除失败: {result.Message}");
+
+                var device = _deviceManager.GetDevice("TEST_PUMP_001");
+                if (device != null)
+                    throw new Exception("设备删除后仍然存在");
+
+                return new Dictionary<string, object> { ["Deleted"] = true };
+            });
+
+            // 测试批量操作
+            await RunTestAsync("批量设备操作测试", async () =>
+            {
+                // 创建多个测试设备
+                var deviceTypes = new[]
+                {
+                    CompositeDeviceType.PumpController,
+                    CompositeDeviceType.ValveController,
+                    CompositeDeviceType.TankController
+                };
+
+                var createdDevices = new List<string>();
+                
+                for (int i = 0; i < deviceTypes.Length; i++)
+                {
+                    var deviceId = $"BATCH_TEST_{deviceTypes[i]}_{i:D3}";
+                    var result = await _deviceManager.CreateDeviceAsync(
+                        deviceTypes[i], deviceId, $"批量测试设备{i}");
+                    
+                    if (result.Success)
+                        createdDevices.Add(deviceId);
+                }
+
+                // 测试批量启动
+                var startResults = await _deviceManager.StartAllDevicesAsync();
+                var successfulStarts = startResults.Values.Count(r => r.Success);
+
+                // 测试批量停止
+                var stopResults = await _deviceManager.StopAllDevicesAsync();
+                var successfulStops = stopResults.Values.Count(r => r.Success);
+
+                // 清理测试设备
+                foreach (var deviceId in createdDevices)
+                {
+                    await _deviceManager.RemoveDeviceAsync(deviceId);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["CreatedDevices"] = createdDevices.Count,
+                    ["SuccessfulStarts"] = successfulStarts,
+                    ["SuccessfulStops"] = successfulStops
+                };
+            });
+
+            // 测试设备配置保存加载
+            await RunTestAsync("设备配置持久化测试", async () =>
+            {
+                // 创建测试设备
+                await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.ReactorController,
+                    "CONFIG_TEST_REACTOR",
+                    "配置测试反应器");
+
+                // 保存配置
+                await _deviceManager.SaveConfigurationAsync();
+
+                // 模拟重新加载
+                _deviceManager.LoadConfiguration();
+
+                var device = _deviceManager.GetDevice("CONFIG_TEST_REACTOR");
+                if (device == null)
+                    throw new Exception("配置加载后设备丢失");
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("CONFIG_TEST_REACTOR");
+
+                return new Dictionary<string, object> { ["ConfigurationPersisted"] = true };
+            });
+        }
+
+        #endregion
+
+        #region 设备控制器测试
+
+        /// <summary>
+        /// 运行设备控制器测试
+        /// </summary>
+        private async Task RunDeviceControllerTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行设备控制器测试...");
+
+            // 测试泵控制器
+            await RunTestAsync("泵控制器功能测试", async () =>
+            {
+                var pumpResult = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController,
+                    "TEST_PUMP_CTRL",
+                    "测试泵控制器");
+
+                if (!pumpResult.Success)
+                    throw new Exception($"泵控制器创建失败: {pumpResult.Message}");
+
+                var pump = _deviceManager.GetDevice("TEST_PUMP_CTRL") as PumpController;
+                if (pump == null)
+                    throw new Exception("无法获取泵控制器实例");
+
+                // 测试启动
+                var startResult = await pump.StartAsync();
+                if (!startResult.Success)
+                    throw new Exception($"泵启动失败: {startResult.Message}");
+
+                // 测试频率设置
+                await pump.SetFrequencyAsync(25.0);
+                var currentFreq = await pump.GetCurrentFrequencyAsync();
+
+                // 测试停止
+                var stopResult = await pump.StopAsync();
+                if (!stopResult.Success)
+                    throw new Exception($"泵停止失败: {stopResult.Message}");
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("TEST_PUMP_CTRL");
+
+                return new Dictionary<string, object>
+                {
+                    ["StartSuccess"] = startResult.Success,
+                    ["FrequencySet"] = Math.Abs(currentFreq - 25.0) < 0.1,
+                    ["StopSuccess"] = stopResult.Success
+                };
+            });
+
+            // 测试反应器控制器
+            await RunTestAsync("反应器控制器功能测试", async () =>
+            {
+                var reactorResult = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.ReactorController,
+                    "TEST_REACTOR_CTRL",
+                    "测试反应器控制器");
+
+                if (!reactorResult.Success)
+                    throw new Exception($"反应器控制器创建失败: {reactorResult.Message}");
+
+                var reactor = _deviceManager.GetDevice("TEST_REACTOR_CTRL") as ReactorController;
+                if (reactor == null)
+                    throw new Exception("无法获取反应器控制器实例");
+
+                // 测试初始化
+                var initResult = await reactor.InitializeAsync();
+                if (!initResult.Success)
+                    throw new Exception($"反应器初始化失败: {initResult.Message}");
+
+                // 测试设置目标温度
+                await reactor.SetTargetTemperatureAsync(80.0);
+                
+                // 测试启动
+                var startResult = await reactor.StartAsync();
+                if (!startResult.Success)
+                    throw new Exception($"反应器启动失败: {startResult.Message}");
+
+                // 等待一段时间让PID控制器工作
+                await Task.Delay(1000);
+
+                // 测试性能指标获取
+                var metrics = await reactor.GetPerformanceMetricsAsync();
+                
+                // 测试停止
+                var stopResult = await reactor.StopAsync();
+                if (!stopResult.Success)
+                    throw new Exception($"反应器停止失败: {stopResult.Message}");
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("TEST_REACTOR_CTRL");
+
+                return new Dictionary<string, object>
+                {
+                    ["InitSuccess"] = initResult.Success,
+                    ["StartSuccess"] = startResult.Success,
+                    ["MetricsAvailable"] = metrics.Count > 0,
+                    ["StopSuccess"] = stopResult.Success
+                };
+            });
+
+            // 测试换热器控制器
+            await RunTestAsync("换热器控制器功能测试", async () =>
+            {
+                var hxResult = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.HeatExchangerController,
+                    "TEST_HX_CTRL",
+                    "测试换热器控制器");
+
+                if (!hxResult.Success)
+                    throw new Exception($"换热器控制器创建失败: {hxResult.Message}");
+
+                var heatExchanger = _deviceManager.GetDevice("TEST_HX_CTRL") as HeatExchangerController;
+                if (heatExchanger == null)
+                    throw new Exception("无法获取换热器控制器实例");
+
+                // 测试启动
+                var startResult = await heatExchanger.StartAsync();
+                if (!startResult.Success)
+                    throw new Exception($"换热器启动失败: {startResult.Message}");
+
+                // 测试效率计算
+                var efficiency = await heatExchanger.GetHeatTransferEfficiencyAsync();
+
+                // 测试优化
+                await heatExchanger.OptimizeHeatTransferAsync();
+
+                // 测试停止
+                var stopResult = await heatExchanger.StopAsync();
+                if (!stopResult.Success)
+                    throw new Exception($"换热器停止失败: {stopResult.Message}");
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("TEST_HX_CTRL");
+
+                return new Dictionary<string, object>
+                {
+                    ["StartSuccess"] = startResult.Success,
+                    ["EfficiencyCalculated"] = efficiency > 0,
+                    ["StopSuccess"] = stopResult.Success
+                };
+            });
+        }
+
+        #endregion
+
+        #region 系统集成测试
+
+        /// <summary>
+        /// 运行系统集成测试
+        /// </summary>
+        private async Task RunSystemIntegrationTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行系统集成测试...");
+
+            // 测试系统完整集成
+            await RunTestAsync("系统完整集成测试", async () =>
+            {
+                // 创建一套完整的测试设备
+                var deviceConfigs = new[]
+                {
+                    new { Type = CompositeDeviceType.TankController, Id = "TANK_001", Name = "原料罐" },
+                    new { Type = CompositeDeviceType.PumpController, Id = "PUMP_001", Name = "进料泵" },
+                    new { Type = CompositeDeviceType.ValveController, Id = "VALVE_001", Name = "进料阀" },
+                    new { Type = CompositeDeviceType.ReactorController, Id = "REACTOR_001", Name = "主反应器" },
+                    new { Type = CompositeDeviceType.HeatExchangerController, Id = "HX_001", Name = "换热器" }
+                };
+
+                var createdDevices = new List<string>();
+
+                // 创建设备
+                foreach (var config in deviceConfigs)
+                {
+                    var result = await _deviceManager.CreateDeviceAsync(config.Type, config.Id, config.Name);
+                    if (result.Success)
+                        createdDevices.Add(config.Id);
+                }
+
+                // 执行系统集成
+                var integrationResult = await _systemIntegrator.PerformSystemIntegrationAsync();
+                if (!integrationResult.Success)
+                    throw new Exception($"系统集成失败: {integrationResult.Message}");
+
+                // 测试设备协同工作
+                var startResults = await _deviceManager.StartAllDevicesAsync();
+                var runningDevices = startResults.Values.Count(r => r.Success);
+
+                // 等待系统稳定
+                await Task.Delay(2000);
+
+                // 测试性能优化
+                var optimizationResults = await _systemIntegrator.OptimizeAllDevicesAsync();
+                var optimizedDevices = optimizationResults.Values.Count(r => r.OptimizationApplied);
+
+                // 停止所有设备
+                await _deviceManager.StopAllDevicesAsync();
+
+                // 清理测试设备
+                foreach (var deviceId in createdDevices)
+                {
+                    await _deviceManager.RemoveDeviceAsync(deviceId);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["CreatedDevices"] = createdDevices.Count,
+                    ["IntegrationSuccess"] = integrationResult.Success,
+                    ["RunningDevices"] = runningDevices,
+                    ["OptimizedDevices"] = optimizedDevices,
+                    ["SystemScore"] = _systemIntegrator.SystemPerformanceScore
+                };
+            });
+
+            // 测试设备依赖关系
+            await RunTestAsync("设备依赖关系测试", async () =>
+            {
+                // 创建有依赖关系的设备
+                await _deviceManager.CreateDeviceAsync(CompositeDeviceType.ValveController, "DEP_VALVE", "依赖测试阀门");
+                await _deviceManager.CreateDeviceAsync(CompositeDeviceType.PumpController, "DEP_PUMP", "依赖测试泵");
+
+                // 执行集成以建立依赖关系
+                var integrationResult = await _systemIntegrator.PerformSystemIntegrationAsync();
+
+                // 启动设备并检查依赖关系
+                var valve = _deviceManager.GetDevice("DEP_VALVE");
+                var pump = _deviceManager.GetDevice("DEP_PUMP");
+
+                await valve!.StartAsync();
+                await pump!.StartAsync();
+
+                // 验证依赖关系
+                var validationResult = await _systemIntegrator.PerformSystemIntegrationAsync();
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("DEP_VALVE");
+                await _deviceManager.RemoveDeviceAsync("DEP_PUMP");
+
+                return new Dictionary<string, object>
+                {
+                    ["DependencyEstablished"] = integrationResult.Success,
+                    ["ValidationPassed"] = validationResult.Success
+                };
+            });
+        }
+
+        #endregion
+
+        #region 拓扑管理测试
+
+        /// <summary>
+        /// 运行拓扑管理测试
+        /// </summary>
+        private async Task RunTopologyManagerTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行拓扑管理测试...");
+
+            await RunTestAsync("设备拓扑构建测试", async () =>
+            {
+                // 清除现有拓扑
+                _topologyManager.ClearTopology();
+
+                // 添加测试节点
+                _topologyManager.AddNode("TOPO_NODE1", "拓扑节点1", NodeType.Pump);
+                _topologyManager.AddNode("TOPO_NODE2", "拓扑节点2", NodeType.Valve);
+                _topologyManager.AddNode("TOPO_NODE3", "拓扑节点3", NodeType.Tank);
+
+                // 添加连接
+                _topologyManager.AddConnection("TOPO_NODE1", "TOPO_NODE2", ConnectionType.Control, "控制连接");
+                _topologyManager.AddConnection("TOPO_NODE2", "TOPO_NODE3", ConnectionType.Process, "工艺连接");
+
+                // 应用布局
+                _topologyManager.ApplyLayout(LayoutAlgorithm.Hierarchical);
+
+                // 分析拓扑
+                var analysis = _topologyManager.AnalyzeTopology();
+
+                // 查找路径
+                var path = _topologyManager.FindPath("TOPO_NODE1", "TOPO_NODE3");
+
+                // 清理
+                _topologyManager.ClearTopology();
+
+                return new Dictionary<string, object>
+                {
+                    ["NodesAdded"] = 3,
+                    ["ConnectionsAdded"] = 2,
+                    ["TopologyAnalyzed"] = analysis.Count > 0,
+                    ["PathFound"] = path.Count > 0
+                };
+            });
+
+            await RunTestAsync("拓扑布局算法测试", async () =>
+            {
+                // 创建复杂拓扑
+                for (int i = 1; i <= 10; i++)
+                {
+                    _topologyManager.AddNode($"LAYOUT_NODE_{i}", $"布局节点{i}", NodeType.Device);
+                }
+
+                // 添加随机连接
+                var random = new Random();
+                var connectionsAdded = 0;
+                for (int i = 1; i <= 10; i++)
+                {
+                    for (int j = i + 1; j <= 10; j++)
+                    {
+                        if (random.NextDouble() < 0.3) // 30%的连接概率
+                        {
+                            _topologyManager.AddConnection($"LAYOUT_NODE_{i}", $"LAYOUT_NODE_{j}", 
+                                ConnectionType.Data, $"连接{i}-{j}");
+                            connectionsAdded++;
+                        }
+                    }
+                }
+
+                // 测试不同布局算法
+                var layoutResults = new Dictionary<string, bool>();
+
+                try
+                {
+                    _topologyManager.ApplyLayout(LayoutAlgorithm.Hierarchical);
+                    layoutResults["Hierarchical"] = true;
+                }
+                catch
+                {
+                    layoutResults["Hierarchical"] = false;
+                }
+
+                try
+                {
+                    _topologyManager.ApplyLayout(LayoutAlgorithm.ForceDirected);
+                    layoutResults["ForceDirected"] = true;
+                }
+                catch
+                {
+                    layoutResults["ForceDirected"] = false;
+                }
+
+                // 清理
+                _topologyManager.ClearTopology();
+
+                return new Dictionary<string, object>
+                {
+                    ["NodesCreated"] = 10,
+                    ["ConnectionsCreated"] = connectionsAdded,
+                    ["HierarchicalLayout"] = layoutResults["Hierarchical"],
+                    ["ForceDirectedLayout"] = layoutResults["ForceDirected"]
+                };
+            });
+        }
+
+        #endregion
+
+        #region 工艺系统集成测试
+
+        /// <summary>
+        /// 运行工艺系统集成测试
+        /// </summary>
+        private async Task RunProcessIntegrationTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行工艺系统集成测试...");
+
+            await RunTestAsync("工艺配方执行测试", async () =>
+            {
+                // 创建测试配方
+                var recipe = new ProcessRecipe
+                {
+                    RecipeId = "TEST_RECIPE_001",
+                    RecipeName = "测试配方",
+                    ProcessType = ProcessType.Batch,
+                    Steps = new List<ProcessStep>
+                    {
+                        new ProcessStep
+                        {
+                            StepId = "STEP_001",
+                            StepName = "步骤1",
+                            Duration = TimeSpan.FromMinutes(5),
+                            Parameters = new Dictionary<string, object>
+                            {
+                                ["Temperature"] = 80.0,
+                                ["Pressure"] = 2.0
+                            }
+                        }
+                    },
+                    TotalDuration = TimeSpan.FromMinutes(5)
+                };
+
+                // 添加配方
+                var addResult = await _processIntegrator.AddRecipeAsync(recipe);
+                if (!addResult.Success)
+                    throw new Exception($"添加配方失败: {addResult.Message}");
+
+                // 启动配方执行
+                var startResult = await _processIntegrator.StartProcessExecutionAsync("TEST_RECIPE_001");
+                if (!startResult.Success)
+                    throw new Exception($"启动配方执行失败: {startResult.Message}");
+
+                // 等待一段时间
+                await Task.Delay(1000);
+
+                // 检查执行状态
+                var contexts = _processIntegrator.GetActiveExecutionContexts();
+                var activeContext = contexts.FirstOrDefault(c => c.Recipe.RecipeId == "TEST_RECIPE_001");
+
+                // 停止执行
+                if (activeContext != null)
+                {
+                    await _processIntegrator.StopProcessExecutionAsync(activeContext.ExecutionId);
+                }
+
+                // 清理配方
+                await _processIntegrator.RemoveRecipeAsync("TEST_RECIPE_001");
+
+                return new Dictionary<string, object>
+                {
+                    ["RecipeAdded"] = addResult.Success,
+                    ["ExecutionStarted"] = startResult.Success,
+                    ["ContextCreated"] = activeContext != null,
+                    ["ProcessRunning"] = activeContext?.State == ProcessState.Running
+                };
+            });
+
+            await RunTestAsync("工艺监控和控制测试", async () =>
+            {
+                // 创建简单监控配方
+                var monitorRecipe = new ProcessRecipe
+                {
+                    RecipeId = "MONITOR_RECIPE",
+                    RecipeName = "监控测试配方",
+                    ProcessType = ProcessType.Continuous,
+                    Steps = new List<ProcessStep>(),
+                    TotalDuration = TimeSpan.FromMinutes(1)
+                };
+
+                await _processIntegrator.AddRecipeAsync(monitorRecipe);
+                var startResult = await _processIntegrator.StartProcessExecutionAsync("MONITOR_RECIPE");
+
+                if (startResult.Success)
+                {
+                    // 模拟监控
+                    await Task.Delay(500);
+
+                    // 获取监控数据
+                    var contexts = _processIntegrator.GetActiveExecutionContexts();
+                    var monitorContext = contexts.FirstOrDefault(c => c.Recipe.RecipeId == "MONITOR_RECIPE");
+
+                    // 停止监控
+                    if (monitorContext != null)
+                    {
+                        await _processIntegrator.StopProcessExecutionAsync(monitorContext.ExecutionId);
+                    }
+                }
+
+                await _processIntegrator.RemoveRecipeAsync("MONITOR_RECIPE");
+
+                return new Dictionary<string, object>
+                {
+                    ["MonitoringStarted"] = startResult.Success,
+                    ["DataCollected"] = true
+                };
+            });
+        }
+
+        #endregion
+
+        #region 性能测试
+
+        /// <summary>
+        /// 运行性能测试
+        /// </summary>
+        private async Task RunPerformanceTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行性能测试...");
+
+            await RunTestAsync("设备并发操作性能测试", async () =>
+            {
+                var deviceCount = 20;
+                var tasks = new List<Task>();
+                var stopwatch = Stopwatch.StartNew();
+
+                // 并发创建设备
+                for (int i = 0; i < deviceCount; i++)
+                {
+                    var deviceId = $"PERF_DEVICE_{i:D3}";
+                    var deviceType = (CompositeDeviceType)(i % 6); // 循环使用不同设备类型
+                    
+                    tasks.Add(_deviceManager.CreateDeviceAsync(deviceType, deviceId, $"性能测试设备{i}"));
+                }
+
+                await Task.WhenAll(tasks);
+                var createTime = stopwatch.ElapsedMilliseconds;
+
+                // 并发启动设备
+                stopwatch.Restart();
+                var startResults = await _deviceManager.StartAllDevicesAsync();
+                var startTime = stopwatch.ElapsedMilliseconds;
+
+                // 并发停止设备
+                stopwatch.Restart();
+                var stopResults = await _deviceManager.StopAllDevicesAsync();
+                var stopTime = stopwatch.ElapsedMilliseconds;
+
+                // 并发删除设备
+                stopwatch.Restart();
+                tasks.Clear();
+                for (int i = 0; i < deviceCount; i++)
+                {
+                    var deviceId = $"PERF_DEVICE_{i:D3}";
+                    tasks.Add(_deviceManager.RemoveDeviceAsync(deviceId));
+                }
+                await Task.WhenAll(tasks);
+                var deleteTime = stopwatch.ElapsedMilliseconds;
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceCount"] = deviceCount,
+                    ["CreateTime"] = createTime,
+                    ["StartTime"] = startTime,
+                    ["StopTime"] = stopTime,
+                    ["DeleteTime"] = deleteTime,
+                    ["CreateThroughput"] = deviceCount * 1000.0 / createTime,
+                    ["StartSuccessRate"] = startResults.Values.Count(r => r.Success) * 100.0 / deviceCount,
+                    ["StopSuccessRate"] = stopResults.Values.Count(r => r.Success) * 100.0 / deviceCount
+                };
+            });
+
+            await RunTestAsync("系统集成性能测试", async () =>
+            {
+                // 创建大规模设备系统
+                var deviceCount = 50;
+                var createdDevices = new List<string>();
+
+                for (int i = 0; i < deviceCount; i++)
+                {
+                    var deviceType = (CompositeDeviceType)(i % 6);
+                    var deviceId = $"INTEG_PERF_{i:D3}";
+                    var result = await _deviceManager.CreateDeviceAsync(deviceType, deviceId, $"集成性能测试{i}");
+                    if (result.Success)
+                        createdDevices.Add(deviceId);
+                }
+
+                // 测试系统集成性能
+                var stopwatch = Stopwatch.StartNew();
+                var integrationResult = await _systemIntegrator.PerformSystemIntegrationAsync();
+                var integrationTime = stopwatch.ElapsedMilliseconds;
+
+                // 测试优化性能
+                stopwatch.Restart();
+                var optimizationResults = await _systemIntegrator.OptimizeAllDevicesAsync();
+                var optimizationTime = stopwatch.ElapsedMilliseconds;
+
+                // 清理
+                foreach (var deviceId in createdDevices)
+                {
+                    await _deviceManager.RemoveDeviceAsync(deviceId);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["DeviceCount"] = createdDevices.Count,
+                    ["IntegrationTime"] = integrationTime,
+                    ["OptimizationTime"] = optimizationTime,
+                    ["IntegrationSuccess"] = integrationResult.Success,
+                    ["OptimizedDevices"] = optimizationResults.Values.Count(r => r.OptimizationApplied),
+                    ["SystemScore"] = _systemIntegrator.SystemPerformanceScore
+                };
+            });
+        }
+
+        #endregion
+
+        #region 故障恢复测试
+
+        /// <summary>
+        /// 运行故障恢复测试
+        /// </summary>
+        private async Task RunFailureRecoveryTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行故障恢复测试...");
+
+            await RunTestAsync("设备故障恢复测试", async () =>
+            {
+                // 创建测试设备
+                var result = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "FAILURE_TEST_PUMP", "故障测试泵");
+
+                if (!result.Success)
+                    throw new Exception($"创建测试设备失败: {result.Message}");
+
+                var pump = _deviceManager.GetDevice("FAILURE_TEST_PUMP") as PumpController;
+                if (pump == null)
+                    throw new Exception("无法获取测试设备");
+
+                // 启动设备
+                await pump.StartAsync();
+
+                // 模拟故障（通过紧急停止）
+                await pump.EmergencyStopAsync();
+
+                // 检查设备状态
+                var faultState = pump.CurrentState;
+
+                // 尝试重置
+                var resetResult = await pump.ResetAsync();
+
+                // 尝试重新启动
+                var restartResult = await pump.StartAsync();
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("FAILURE_TEST_PUMP");
+
+                return new Dictionary<string, object>
+                {
+                    ["FaultDetected"] = faultState == DeviceState.Fault,
+                    ["ResetSuccess"] = resetResult.Success,
+                    ["RestartSuccess"] = restartResult.Success,
+                    ["RecoveryComplete"] = restartResult.Success && pump.CurrentState == DeviceState.Running
+                };
+            });
+
+            await RunTestAsync("系统级故障恢复测试", async () =>
+            {
+                // 创建相互依赖的设备系统
+                await _deviceManager.CreateDeviceAsync(CompositeDeviceType.ValveController, "SYS_VALVE", "系统阀门");
+                await _deviceManager.CreateDeviceAsync(CompositeDeviceType.PumpController, "SYS_PUMP", "系统泵");
+                await _deviceManager.CreateDeviceAsync(CompositeDeviceType.ReactorController, "SYS_REACTOR", "系统反应器");
+
+                // 执行系统集成
+                await _systemIntegrator.PerformSystemIntegrationAsync();
+
+                // 启动所有设备
+                await _deviceManager.StartAllDevicesAsync();
+
+                // 模拟关键设备故障
+                var valve = _deviceManager.GetDevice("SYS_VALVE");
+                await valve!.EmergencyStopAsync();
+
+                // 等待故障传播和检测
+                await Task.Delay(1000);
+
+                // 尝试系统级恢复
+                var diagResults = await _deviceManager.DiagnoseAllDevicesAsync();
+                var resetResults = await _deviceManager.ResetAllDevicesAsync();
+                var restartResults = await _deviceManager.StartAllDevicesAsync();
+
+                // 重新集成系统
+                var reintegrationResult = await _systemIntegrator.PerformSystemIntegrationAsync();
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("SYS_VALVE");
+                await _deviceManager.RemoveDeviceAsync("SYS_PUMP");
+                await _deviceManager.RemoveDeviceAsync("SYS_REACTOR");
+
+                return new Dictionary<string, object>
+                {
+                    ["FaultPropagation"] = diagResults.Values.Any(r => !r.Success),
+                    ["SystemReset"] = resetResults.Values.Count(r => r.Success),
+                    ["SystemRestart"] = restartResults.Values.Count(r => r.Success),
+                    ["Reintegration"] = reintegrationResult.Success
+                };
+            });
+        }
+
+        #endregion
+
+        #region 代码生成测试
+
+        /// <summary>
+        /// 运行代码生成测试
+        /// </summary>
+        private async Task RunCodeGenerationTestsAsync()
+        {
+            TestProgress?.Invoke(this, "运行代码生成测试...");
+
+            await RunTestAsync("单设备代码生成测试", async () =>
+            {
+                // 创建测试设备并添加点位
+                var result = await _deviceManager.CreateDeviceAsync(
+                    CompositeDeviceType.PumpController, "CODE_GEN_PUMP", "代码生成测试泵");
+
+                if (!result.Success)
+                    throw new Exception($"创建测试设备失败: {result.Message}");
+
+                var pump = _deviceManager.GetDevice("CODE_GEN_PUMP");
+                if (pump == null)
+                    throw new Exception("无法获取测试设备");
+
+                // 添加测试点位
+                var testPoints = new[]
+                {
+                    new Point { Id = "P001", Name = "PumpStart", Type = "DO", HMITagName = "PumpStart", Description = "泵启动" },
+                    new Point { Id = "P002", Name = "PumpSpeed", Type = "AO", HMITagName = "PumpSpeed", Description = "泵转速" },
+                    new Point { Id = "P003", Name = "PumpRunning", Type = "DI", HMITagName = "PumpRunning", Description = "泵运行状态" }
+                };
+
+                foreach (var point in testPoints)
+                {
+                    pump.AddPoint(point);
+                }
+
+                // 生成ST代码
+                var stCode = await pump.GenerateSTCodeAsync();
+
+                // 验证代码内容
+                var hasVariableDeclarations = stCode.Contains("VAR") && stCode.Contains("END_VAR");
+                var hasControlLogic = stCode.Contains("IF") || stCode.Contains("CASE");
+                var hasPointReferences = testPoints.All(p => stCode.Contains(p.HMITagName));
+
+                // 清理
+                await _deviceManager.RemoveDeviceAsync("CODE_GEN_PUMP");
+
+                return new Dictionary<string, object>
+                {
+                    ["CodeGenerated"] = !string.IsNullOrEmpty(stCode),
+                    ["CodeLength"] = stCode.Length,
+                    ["HasVariables"] = hasVariableDeclarations,
+                    ["HasLogic"] = hasControlLogic,
+                    ["HasPointReferences"] = hasPointReferences
+                };
+            });
+
+            await RunTestAsync("系统级代码生成测试", async () =>
+            {
+                // 创建多个设备
+                var deviceTypes = new[]
+                {
+                    CompositeDeviceType.TankController,
+                    CompositeDeviceType.PumpController,
+                    CompositeDeviceType.ValveController
+                };
+
+                var createdDevices = new List<string>();
+
+                for (int i = 0; i < deviceTypes.Length; i++)
+                {
+                    var deviceId = $"SYS_CODE_DEV_{i}";
+                    var result = await _deviceManager.CreateDeviceAsync(deviceTypes[i], deviceId, $"系统代码设备{i}");
+                    if (result.Success)
+                        createdDevices.Add(deviceId);
+                }
+
+                // 生成系统级ST代码
+                var systemCode = await _deviceManager.GenerateIntegratedSTCodeAsync();
+
+                // 验证系统代码
+                var hasGlobalVars = systemCode.Contains("VAR_GLOBAL") && systemCode.Contains("END_VAR");
+                var hasDeviceSections = createdDevices.All(id => systemCode.Contains(id));
+                var hasComments = systemCode.Contains("(*") && systemCode.Contains("*)");
+
+                // 清理
+                foreach (var deviceId in createdDevices)
+                {
+                    await _deviceManager.RemoveDeviceAsync(deviceId);
+                }
+
+                return new Dictionary<string, object>
+                {
+                    ["SystemCodeGenerated"] = !string.IsNullOrEmpty(systemCode),
+                    ["SystemCodeLength"] = systemCode.Length,
+                    ["HasGlobalVariables"] = hasGlobalVars,
+                    ["HasDeviceSections"] = hasDeviceSections,
+                    ["HasComments"] = hasComments,
+                    ["DeviceCount"] = createdDevices.Count
+                };
+            });
+        }
+
+        #endregion
+
+        #region 辅助方法
+
+        /// <summary>
+        /// 运行单个测试
+        /// </summary>
+        private async Task RunTestAsync(string testName, Func<Task<Dictionary<string, object>>> testAction)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var result = new TestResult
+            {
+                TestName = testName
+            };
+
+            try
+            {
+                TestProgress?.Invoke(this, $"执行测试: {testName}");
+                
+                result.Data = await testAction();
+                result.Success = true;
+                result.Message = "测试通过";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = ex.Message;
+                result.Exception = ex;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                result.Duration = stopwatch.Elapsed;
+                
+                _testResults.Add(result);
+                TestCompleted?.Invoke(this, result);
+                
+                TestProgress?.Invoke(this, $"{testName} - {(result.Success ? "通过" : "失败")} ({result.Duration.TotalMilliseconds:F0}ms)");
+            }
+        }
+
+        /// <summary>
+        /// 生成测试报告
+        /// </summary>
+        public string GenerateTestReport(TestSuiteResult suiteResult)
+        {
+            var sb = new StringBuilder();
+            
+            sb.AppendLine("========================================");
+            sb.AppendLine($"测试套件报告: {suiteResult.SuiteName}");
+            sb.AppendLine("========================================");
+            sb.AppendLine($"执行时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"总测试数: {suiteResult.TotalTests}");
+            sb.AppendLine($"通过测试: {suiteResult.PassedTests}");
+            sb.AppendLine($"失败测试: {suiteResult.FailedTests}");
+            sb.AppendLine($"成功率: {suiteResult.SuccessRate:F1}%");
+            sb.AppendLine($"总耗时: {suiteResult.TotalDuration.TotalSeconds:F2}秒");
+            sb.AppendLine();
+
+            // 详细测试结果
+            sb.AppendLine("详细测试结果:");
+            sb.AppendLine("----------------------------------------");
+            
+            foreach (var result in suiteResult.Results)
+            {
+                sb.AppendLine($"[{(result.Success ? "PASS" : "FAIL")}] {result.TestName}");
+                sb.AppendLine($"       耗时: {result.Duration.TotalMilliseconds:F0}ms");
+                sb.AppendLine($"       消息: {result.Message}");
+                
+                if (result.Data.Any())
+                {
+                    sb.AppendLine("       数据:");
+                    foreach (var kvp in result.Data)
+                    {
+                        sb.AppendLine($"         {kvp.Key}: {kvp.Value}");
+                    }
+                }
+                
+                if (!result.Success && result.Exception != null)
+                {
+                    sb.AppendLine($"       异常: {result.Exception.GetType().Name}");
+                    sb.AppendLine($"             {result.Exception.Message}");
+                }
+                
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        #endregion
+
+        #region 资源释放
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        public void Dispose()
+        {
+            _systemIntegrator?.Dispose();
+            _testResults.Clear();
+            _testData.Clear();
+        }
+
+        #endregion
+    }
+}

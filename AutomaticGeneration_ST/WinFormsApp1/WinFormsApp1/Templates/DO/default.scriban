@@ -1,2 +1,5 @@
-(* DO点位: {{ 变量名称HMI }} - {{ 变量描述 }} *)
-{{ 硬点通道号 }}:={{ 变量名称HMI }};
+{{~ for point in points ~}}
+(* DO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
+{{ point.plc_absolute_address }} := {{ point.hmi_tag_name }};
+
+{{~ end ~}}

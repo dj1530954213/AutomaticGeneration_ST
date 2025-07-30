@@ -1,8 +1,12 @@
-(* AO点位: {{ 变量名称HMI }} - {{ 变量描述 }} *)
-ENGIN_HEX_{{ 变量名称HMI }}(
-AV:={{ 变量名称HMI }}, 
-MU:={{ 量程高限 }} ,
-MD:={{ 量程低限 }} ,
-WU:=65535 ,
-WD:=0 ,
-WH=>{{ 硬点通道号 }});
+{{~ for point in points ~}}
+(* AO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
+ENGIN_HEX_{{ point.hmi_tag_name }}(
+    AV:={{ point.hmi_tag_name }}, 
+    MU:={{ point.range_high ?? 100.0 }},
+    MD:={{ point.range_low ?? 0.0 }},
+    WU:=65535,
+    WD:=0,
+    WH=>{{ point.plc_absolute_address }}
+);
+
+{{~ end ~}}

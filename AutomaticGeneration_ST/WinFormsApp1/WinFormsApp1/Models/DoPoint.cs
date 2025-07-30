@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WinFormsApp1.Models
+namespace AutomaticGeneration_ST.Models
 {
     public class DoPoint : BasePoint
     {

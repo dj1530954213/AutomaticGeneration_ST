@@ -1,0 +1,261 @@
+{
+  "Version": "1.0",
+  "LastUpdated": "2025-01-29T00:00:00Z",
+  "DefaultVersion": "Default",
+  "TemplateDirectory": "Templates",
+  "Templates": {
+    "AI": {
+      "Default": {
+        "Name": "AI Default Template",
+        "FilePath": "Templates\\AI\\default.scriban",
+        "Version": "Default",
+        "PointType": "AI",
+        "Description": "AI点位的Default版本模板，用于生成标准的ST代码",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "工程单位",
+          "量程下限",
+          "量程上限"
+        ],
+        "Metadata": {
+          "Category": "Analog Input",
+          "Complexity": "Basic",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Raw value processing",
+            "Engineering unit conversion",
+            "Status word handling"
+          ]
+        },
+        "IsActive": true
+      },
+      "Advanced": {
+        "Name": "AI Advanced Template",
+        "FilePath": "Templates\\AI\\advanced.scriban",
+        "Version": "Advanced",
+        "PointType": "AI",
+        "Description": "AI点位的Advanced版本模板，包含高级功能如报警、滤波、数据质量检查",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "工程单位",
+          "量程下限",
+          "量程上限"
+        ],
+        "Metadata": {
+          "Category": "Analog Input",
+          "Complexity": "Advanced",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Raw value processing",
+            "Engineering unit conversion",
+            "Alarm processing (HH/H/L/LL)",
+            "Data quality check",
+            "First-order filtering",
+            "Status word handling",
+            "Function block implementation"
+          ]
+        },
+        "IsActive": true
+      }
+    },
+    "AO": {
+      "Default": {
+        "Name": "AO Default Template",
+        "FilePath": "Templates\\AO\\default.scriban",
+        "Version": "Default",
+        "PointType": "AO",
+        "Description": "AO点位的Default版本模板，用于生成标准的ST代码",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "工程单位",
+          "输出下限",
+          "输出上限"
+        ],
+        "Metadata": {
+          "Category": "Analog Output",
+          "Complexity": "Basic",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Setpoint processing",
+            "Engineering unit conversion",
+            "Hardware output mapping"
+          ]
+        },
+        "IsActive": true
+      },
+      "Advanced": {
+        "Name": "AO Advanced Template",
+        "FilePath": "Templates\\AO\\advanced.scriban",
+        "Version": "Advanced",
+        "PointType": "AO",
+        "Description": "AO点位的Advanced版本模板，包含手动模式、限值保护、变化率限制等高级功能",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "工程单位",
+          "输出下限",
+          "输出上限"
+        ],
+        "Metadata": {
+          "Category": "Analog Output",
+          "Complexity": "Advanced",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Setpoint processing",
+            "Manual/Auto mode",
+            "Output limiting",
+            "Rate limiting",
+            "Enable/Disable control",
+            "Function block implementation"
+          ]
+        },
+        "IsActive": true
+      }
+    },
+    "DI": {
+      "Default": {
+        "Name": "DI Default Template",
+        "FilePath": "Templates\\DI\\default.scriban",
+        "Version": "Default",
+        "PointType": "DI",
+        "Description": "DI点位的Default版本模板，用于生成标准的ST代码",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "信号类型"
+        ],
+        "Metadata": {
+          "Category": "Digital Input",
+          "Complexity": "Basic",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Raw input reading",
+            "Status word handling"
+          ]
+        },
+        "IsActive": true
+      },
+      "Advanced": {
+        "Name": "DI Advanced Template",
+        "FilePath": "Templates\\DI\\advanced.scriban",
+        "Version": "Advanced",
+        "PointType": "DI",
+        "Description": "DI点位的Advanced版本模板，包含消抖、边沿检测、信号取反等高级功能",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "信号类型"
+        ],
+        "Metadata": {
+          "Category": "Digital Input",
+          "Complexity": "Advanced",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Raw input reading",
+            "Signal debouncing",
+            "Rising/Falling edge detection",
+            "Signal inversion",
+            "Data quality check",
+            "Configurable debounce time"
+          ]
+        },
+        "IsActive": true
+      }
+    },
+    "DO": {
+      "Default": {
+        "Name": "DO Default Template",
+        "FilePath": "Templates\\DO\\default.scriban",
+        "Version": "Default",
+        "PointType": "DO",
+        "Description": "DO点位的Default版本模板，用于生成标准的ST代码",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "输出类型"
+        ],
+        "Metadata": {
+          "Category": "Digital Output",
+          "Complexity": "Basic",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Command output",
+            "Feedback reading",
+            "Status monitoring"
+          ]
+        },
+        "IsActive": true
+      },
+      "Advanced": {
+        "Name": "DO Advanced Template",
+        "FilePath": "Templates\\DO\\advanced.scriban",
+        "Version": "Advanced",
+        "PointType": "DO",
+        "Description": "DO点位的Advanced版本模板，包含脉冲模式、联锁保护、手动模式等高级功能",
+        "Author": "System",
+        "CreatedDate": "2025-01-29T00:00:00Z",
+        "ModifiedDate": "2025-01-29T00:00:00Z",
+        "RequiredFields": [
+          "变量名称",
+          "模块类型",
+          "通道",
+          "输出类型"
+        ],
+        "Metadata": {
+          "Category": "Digital Output",
+          "Complexity": "Advanced",
+          "Language": "ST",
+          "TargetPLC": "Any",
+          "Features": [
+            "Command output",
+            "Pulse mode operation",
+            "Interlock protection",
+            "Manual mode",
+            "Force off capability",
+            "Alarm handling",
+            "Enable/Disable control"
+          ]
+        },
+        "IsActive": true
+      }
+    }
+  }
+}

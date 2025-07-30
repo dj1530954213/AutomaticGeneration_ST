@@ -1,0 +1,17 @@
+{
+  "maxCacheSize": 500,
+  "maxMemoryUsage": 52428800,
+  "defaultExpirationHours": 2.0,
+  "cleanupIntervalMinutes": 10.0,
+  "enablePerformanceMonitoring": true,
+  "description": "模板缓存配置文件",
+  "version": "1.0",
+  "settings": {
+    "compiledTemplateExpiration": 4.0,
+    "renderedResultExpiration": 0.5,
+    "maxRenderResultSize": 10000,
+    "performanceHistorySize": 1000,
+    "enableLRUEviction": true,
+    "memoryThresholdForCleanup": 0.8
+  }
+}

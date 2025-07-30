@@ -1,0 +1,11 @@
+{
+  "MOV_CTRL": "StandardValve.scriban",
+  "ESDV_CTRL": "EmergencyShutdownValve.scriban",
+  "CONTROL_VALVE": "AnalogControlValve_PID.scriban",
+  
+  "_comment": "--- IO Mapping Templates (One for each type) ---",
+  "AI_MAPPING": "AI/default.scriban",
+  "AO_MAPPING": "AO/default.scriban",
+  "DI_MAPPING": "DI/default.scriban",
+  "DO_MAPPING": "DO/default.scriban"
+}
