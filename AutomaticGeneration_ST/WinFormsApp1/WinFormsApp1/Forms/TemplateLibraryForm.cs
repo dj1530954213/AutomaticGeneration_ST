@@ -132,9 +132,8 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 50,
-                Panel1MinSize = 30,
-                Panel2MinSize = 200,
+                Panel1MinSize = 50,
+                Panel2MinSize = 100,
                 IsSplitterFixed = true
             };
 
@@ -143,9 +142,8 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 250,
-                Panel1MinSize = 200,
-                Panel2MinSize = 300
+                Panel1MinSize = 150,
+                Panel2MinSize = 200
             };
         }
 
@@ -863,6 +861,28 @@ namespace WinFormsApp1.Forms
         private void OnFormLoad(object? sender, EventArgs e)
         {
             // 窗体加载完成后的初始化工作
+            try
+            {
+                // 确保窗体已完全初始化后再设置分割器距离
+                if (mainSplitContainer != null && mainSplitContainer.Height > 0)
+                {
+                    var maxDistance = mainSplitContainer.Height - mainSplitContainer.Panel2MinSize - mainSplitContainer.SplitterWidth;
+                    var targetDistance = Math.Min(maxDistance, Math.Max(mainSplitContainer.Panel1MinSize, 80));
+                    mainSplitContainer.SplitterDistance = targetDistance;
+                }
+
+                if (leftSplitContainer != null && leftSplitContainer.Width > 0)
+                {
+                    var maxDistance = leftSplitContainer.Width - leftSplitContainer.Panel2MinSize - leftSplitContainer.SplitterWidth;
+                    var targetDistance = Math.Min(maxDistance, Math.Max(leftSplitContainer.Panel1MinSize, leftSplitContainer.Width / 4));
+                    leftSplitContainer.SplitterDistance = targetDistance;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 静默处理分割器设置错误
+                System.Diagnostics.Debug.WriteLine($"设置分割器距离时出错: {ex.Message}");
+            }
         }
 
         private void OnFormClosing(object? sender, FormClosingEventArgs e)

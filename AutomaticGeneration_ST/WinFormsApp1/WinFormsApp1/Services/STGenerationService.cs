@@ -19,11 +19,36 @@ namespace AutomaticGeneration_ST.Services
         private readonly IIoMappingGenerator _ioGenerator;
         private readonly IExportService _exportService;
         private readonly ICommunicationGenerator _communicationGenerator;
+        private readonly ServiceContainer _serviceContainer;
 
         public STGenerationService()
         {
-            // 实例化所有服务 (在大型应用中，这一步会由依赖注入容器自动完成)
-            _dataService = new ExcelDataService();
+            // 使用新的服务容器架构
+            var templateDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
+            var configPath = Path.Combine(templateDirectory, "template-mapping.json");
+            
+            _serviceContainer = ServiceContainer.CreateDefault(templateDirectory, configPath);
+            
+            // 从服务容器获取服务实例
+            _dataService = _serviceContainer.GetService<IDataService>();
+            _configService = new JsonConfigurationService();
+            _deviceGenerator = new ScribanDeviceGenerator();
+            _ioGenerator = new ScribanIoMappingGenerator();
+            _exportService = new FileSystemExportService();
+            _communicationGenerator = new PlaceholderCommunicationGenerator();
+        }
+
+        /// <summary>
+        /// 使用指定配置的构造函数
+        /// </summary>
+        /// <param name="templateDirectory">模板目录</param>
+        /// <param name="configPath">配置文件路径</param>
+        public STGenerationService(string templateDirectory, string configPath)
+        {
+            _serviceContainer = ServiceContainer.CreateDefault(templateDirectory, configPath);
+            
+            // 从服务容器获取服务实例
+            _dataService = _serviceContainer.GetService<IDataService>();
             _configService = new JsonConfigurationService();
             _deviceGenerator = new ScribanDeviceGenerator();
             _ioGenerator = new ScribanIoMappingGenerator();

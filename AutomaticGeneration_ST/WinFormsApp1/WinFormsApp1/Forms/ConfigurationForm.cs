@@ -97,7 +97,8 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 400
+                Panel1MinSize = 100,
+                Panel2MinSize = 100
             };
 
             // 上方：主要内容分割器
@@ -105,7 +106,8 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 200
+                Panel1MinSize = 100,
+                Panel2MinSize = 100
             };
 
             // 左侧：类别树

@@ -5,11 +5,14 @@ using System.Linq;
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using OfficeOpenXml; // 引入EPPlus的命名空间
+using WinFormsApp1;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
     public class ExcelDataService : IDataService
     {
+        private readonly LogService _logger = LogService.Instance;
+        
         // 在类级别设置EPPlus的许可证上下文。这是EPPlus 5.x及以上版本所必需的。
         static ExcelDataService()
         {
@@ -24,7 +27,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
             if (!File.Exists(excelFilePath))
                 throw new FileNotFoundException($"Excel文件不存在: {excelFilePath}");
 
-            LogInfo($"正在加载Excel文件: {Path.GetFileName(excelFilePath)}");
+            _logger.LogInfo($"📂 开始加载Excel文件: {Path.GetFileName(excelFilePath)}");
 
             try
             {
@@ -37,10 +40,10 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     if (package.Workbook?.Worksheets == null || package.Workbook.Worksheets.Count == 0)
                         throw new InvalidDataException("Excel文件无效或没有工作表");
 
-                    LogInfo($"Excel文件包含 {package.Workbook.Worksheets.Count} 个工作表");
+                    _logger.LogInfo($"📊 Excel文件包含 {package.Workbook.Worksheets.Count} 个工作表: {string.Join(", ", package.Workbook.Worksheets.Select(ws => ws.Name))}");
 
                     // --- 步骤 1: 解析 "IO点表"，构建点位数据的基础和权威 ---
-                    LogInfo("开始解析IO点表...");
+                    _logger.LogInfo("🔍 步骤1: 开始解析IO点表...");
                     var ioSheet = package.Workbook.Worksheets["IO点表"];
                     if (ioSheet == null) 
                     {
@@ -49,43 +52,84 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     }
 
                     var parsedPointsCount = ParseIoSheet(ioSheet, context.AllPointsMasterList);
-                    LogInfo($"IO点表解析完成，共解析 {parsedPointsCount} 个点位");
+                    _logger.LogSuccess($"✅ IO点表解析完成，共解析 {parsedPointsCount} 个点位");
 
                 // --- 步骤 2: 解析 "设备分类表"，构建设备实例并关联点位 ---
+                _logger.LogInfo("🏭 步骤2: 开始处理设备分类表...");
                 var deviceSheet = package.Workbook.Worksheets["设备分类表"];
                 if (deviceSheet != null)
                 {
                     var deviceMap = new Dictionary<string, Device>(); // 临时字典用于高效构建设备
                     ParseDeviceSheet(deviceSheet, deviceMap, context.AllPointsMasterList, pointsAssignedToDevices);
                     context.Devices = deviceMap.Values.ToList();
+                    _logger.LogSuccess($"✅ 设备分类表解析完成，共构建 {context.Devices.Count} 个设备，关联 {pointsAssignedToDevices.Count} 个点位");
+                    
+                    // 输出设备统计信息
+                    if (context.Devices.Any())
+                    {
+                        var deviceStats = context.Devices.GroupBy(d => d.TemplateName ?? "未指定模板")
+                                                        .ToDictionary(g => g.Key, g => g.Count());
+                        foreach (var stat in deviceStats.OrderByDescending(x => x.Value))
+                        {
+                            _logger.LogInfo($"   📋 模板 [{stat.Key}]: {stat.Value} 个设备");
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ 未找到设备分类表，将跳过设备构建步骤");
+                    context.Devices = new List<Device>();
                 }
 
                 // --- 步骤 3: （可选但强烈建议）解析其他点表，以捕获可能遗漏的点位 ---
+                _logger.LogInfo("📋 步骤3: 处理其他设备专用表...");
                 var otherSheetNames = new List<string> { "阀门", "调节阀", "可燃气体探测器", "低压开关柜", "撬装机柜" };
+                int processedSheetCount = 0;
                 foreach (var sheetName in otherSheetNames)
                 {
                     var otherSheet = package.Workbook.Worksheets[sheetName];
                     if (otherSheet != null)
                     {
                         ParseOtherSheet(otherSheet, context.AllPointsMasterList);
+                        processedSheetCount++;
+                        _logger.LogInfo($"   ✓ 处理表格: {sheetName}");
                     }
                 }
+                _logger.LogInfo($"📊 其他设备表处理完成，共处理 {processedSheetCount} 个表格");
 
                     // --- 步骤 4: 最终识别并分离独立点位 ---
+                    _logger.LogInfo("🔍 步骤4: 识别独立点位...");
                     // 此步骤必须在所有点位和设备都处理完毕后执行。
                     context.StandalonePoints = context.AllPointsMasterList.Values
                         .Where(p => !pointsAssignedToDevices.Contains(p.HmiTagName))
                         .ToList();
                     
-                    LogInfo($"识别出 {context.StandalonePoints.Count} 个独立点位");
+                    _logger.LogSuccess($"✅ 识别出 {context.StandalonePoints.Count} 个独立点位");
+                    
+                    // 输出点位类型统计
+                    if (context.StandalonePoints.Any())
+                    {
+                        var pointTypeStats = context.StandalonePoints.GroupBy(p => p.GetType().Name)
+                                                                   .ToDictionary(g => g.Key, g => g.Count());
+                        foreach (var stat in pointTypeStats.OrderByDescending(x => x.Value))
+                        {
+                            _logger.LogInfo($"   📊 独立点位 [{stat.Key}]: {stat.Value} 个");
+                        }
+                    }
                 }
 
-                LogInfo($"Excel数据加载完成 - 设备: {context.Devices.Count}, 总点位: {context.AllPointsMasterList.Count}, 独立点位: {context.StandalonePoints.Count}");
+                _logger.LogSuccess($"🎉 Excel数据加载完成！");
+                _logger.LogInfo($"📈 数据统计汇总:");
+                _logger.LogInfo($"   • 设备总数: {context.Devices.Count}");
+                _logger.LogInfo($"   • 点位总数: {context.AllPointsMasterList.Count}");
+                _logger.LogInfo($"   • 设备关联点位: {pointsAssignedToDevices.Count}");
+                _logger.LogInfo($"   • 独立点位: {context.StandalonePoints.Count}");
+                
                 return context;
             }
             catch (Exception ex) when (!(ex is ArgumentException || ex is FileNotFoundException || ex is InvalidDataException))
             {
-                LogError($"Excel数据加载时发生未预期错误: {ex.Message}");
+                _logger.LogError($"❌ Excel数据加载时发生未预期错误: {ex.Message}");
                 throw new Exception($"Excel文件解析失败: {ex.Message}", ex);
             }
         }
@@ -94,12 +138,12 @@ namespace AutomaticGeneration_ST.Services.Implementations
         {
             if (sheet.Dimension == null) 
             {
-                LogWarning("IO点表工作簿为空或没有数据");
+                _logger.LogWarning("⚠️ IO点表工作簿为空或没有数据");
                 return 0;
             }
 
             var totalRows = sheet.Dimension.End.Row - sheet.Dimension.Start.Row;
-            LogInfo($"IO点表包含 {totalRows} 行数据（包含表头）");
+            _logger.LogInfo($"📊 IO点表包含 {totalRows} 行数据（包含表头）");
 
             // 获取列索引
             var headerIndexes = GetColumnIndexes(sheet);

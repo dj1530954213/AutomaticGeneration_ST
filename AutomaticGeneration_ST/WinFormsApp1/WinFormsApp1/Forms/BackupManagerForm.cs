@@ -108,7 +108,6 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 600,
                 Panel1MinSize = 400,
                 Panel2MinSize = 250
             };

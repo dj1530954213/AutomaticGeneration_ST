@@ -129,7 +129,8 @@ namespace WinFormsApp1.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 250
+                Panel1MinSize = 100,
+                Panel2MinSize = 100
             };
 
             // 上方: 测试树视图

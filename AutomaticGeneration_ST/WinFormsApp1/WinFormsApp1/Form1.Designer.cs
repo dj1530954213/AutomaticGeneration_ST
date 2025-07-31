@@ -365,8 +365,9 @@
             mainSplitContainer.Name = "mainSplitContainer";
             mainSplitContainer.Panel1.Controls.Add(leftPanel);
             mainSplitContainer.Panel2.Controls.Add(rightSplitContainer);
+            mainSplitContainer.Panel1MinSize = 100;
+            mainSplitContainer.Panel2MinSize = 100;
             mainSplitContainer.Size = new Size(1200, 525);
-            mainSplitContainer.SplitterDistance = 250;
             mainSplitContainer.TabIndex = 7;
             // 
             // rightSplitContainer
@@ -378,8 +379,9 @@
             rightSplitContainer.Panel1.Controls.Add(previewTabControl);
             rightSplitContainer.Panel2.Controls.Add(richTextBox1);
             rightSplitContainer.Panel2.Controls.Add(logFilterPanel);
+            rightSplitContainer.Panel1MinSize = 100;
+            rightSplitContainer.Panel2MinSize = 100;
             rightSplitContainer.Size = new Size(950, 500);
-            rightSplitContainer.SplitterDistance = 300;
             rightSplitContainer.TabIndex = 8;
             // 
             // mainStatusStrip

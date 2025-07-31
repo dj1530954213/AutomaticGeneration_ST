@@ -1065,8 +1065,8 @@ namespace WinFormsApp1
                 
                 logger.LogInfo($"成功读取{pointData.Count}行点位数据");
                 
-                // 验证Excel数据
-                var dataValidation = BasicValidator.ValidateExcelData(pointData);
+                // 验证设备分类表数据
+                var dataValidation = BasicValidator.ValidateDeviceClassificationData(pointData);
                 if (!dataValidation.IsValid)
                 {
                     logger.LogWarning($"数据验证发现问题:\n错误: {string.Join(", ", dataValidation.Errors)}\n警告: {string.Join(", ", dataValidation.Warnings)}");
@@ -2065,24 +2065,45 @@ namespace WinFormsApp1
 
         private void AdjustSplitterPositions()
         {
-            if (mainSplitContainer != null)
+            try
             {
-                // 根据窗体宽度调整左侧面板比例
-                var targetWidth = Math.Max(200, Math.Min(350, this.Width / 4));
-                if (Math.Abs(mainSplitContainer.SplitterDistance - targetWidth) > 50)
+                if (mainSplitContainer != null)
                 {
-                    mainSplitContainer.SplitterDistance = (int)targetWidth;
+                    // 根据窗体宽度调整左侧面板比例
+                    var targetWidth = Math.Max(200, Math.Min(350, this.Width / 4));
+                    var minDistance = mainSplitContainer.Panel1MinSize;
+                    var maxDistance = mainSplitContainer.Width - mainSplitContainer.Panel2MinSize;
+                    
+                    if (maxDistance > minDistance)
+                    {
+                        targetWidth = Math.Max(minDistance, Math.Min(maxDistance, targetWidth));
+                        if (Math.Abs(mainSplitContainer.SplitterDistance - targetWidth) > 50)
+                        {
+                            mainSplitContainer.SplitterDistance = (int)targetWidth;
+                        }
+                    }
+                }
+                
+                if (rightSplitContainer != null)
+                {
+                    // 根据窗体高度调整预览区域比例
+                    var targetHeight = Math.Max(300, this.Height * 2 / 3);
+                    var minDistance = rightSplitContainer.Panel1MinSize;
+                    var maxDistance = rightSplitContainer.Height - rightSplitContainer.Panel2MinSize;
+                    
+                    if (maxDistance > minDistance)
+                    {
+                        targetHeight = Math.Max(minDistance, Math.Min(maxDistance, targetHeight));
+                        if (Math.Abs(rightSplitContainer.SplitterDistance - targetHeight) > 50)
+                        {
+                            rightSplitContainer.SplitterDistance = (int)targetHeight;
+                        }
+                    }
                 }
             }
-            
-            if (rightSplitContainer != null)
+            catch (Exception ex)
             {
-                // 根据窗体高度调整预览区域比例
-                var targetHeight = Math.Max(300, this.Height * 2 / 3);
-                if (Math.Abs(rightSplitContainer.SplitterDistance - targetHeight) > 50)
-                {
-                    rightSplitContainer.SplitterDistance = (int)targetHeight;
-                }
+                logger.LogError($"调整分割器位置时出错: {ex.Message}");
             }
         }
 

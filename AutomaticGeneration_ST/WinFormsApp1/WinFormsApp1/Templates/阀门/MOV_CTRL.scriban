@@ -1,0 +1,31 @@
+{{~ for point in points ~}}
+(*电动阀门:{{device_tag}}控制块调用*)
+MOV{{device_tag}}_CTRL(
+CS:=CS01,
+ZIX:={{XS}},
+ZIA:={{UA}},
+ZIO:={{ZSH}},
+ZIC:={{ZSL}},
+ZIS:={{UIA}},
+DA_TIME:=T#90S,
+DA_RST:=RESET,
+ESD_ACT:=ESD_ACTION,
+ESD_RST:=ESD_RESET,
+C_AM:={{C_AM}},
+S_AM:={{S_AM}},
+C_OPEN:={{C_OPEN}},
+C_CLOSE:={{C_CLOSE}},
+S_OPEN:={{S_OPEN}},
+S_CLOSE:={{S_CLOSE}},
+AM=>{{AM}},
+XO=>{{X0}},
+XC=>{{XC}},
+DA=>{{DA}},
+C_AM=>{{C_AM}},
+S_AM=>{{S_AM}},
+C_OPEN=>{{C_OPEN}},
+C_CLOSE=>{{C_CLOSE}},
+S_OPEN=>{{S_OPEN}},
+S_CLOSE=>{{S_CLOSE}},
+);
+{{~ end ~}}
