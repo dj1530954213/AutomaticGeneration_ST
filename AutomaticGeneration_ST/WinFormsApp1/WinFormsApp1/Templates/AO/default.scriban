@@ -6,7 +6,7 @@ ENGIN_HEX_{{ point.hmi_tag_name }}(
     MD:={{ point.range_low ?? 0.0 }},
     WU:=65535,
     WD:=0,
-    WH=>{{ point.plc_absolute_address }}
+    WH=>{{ get_address point }}
 );
 
 {{~ end ~}}

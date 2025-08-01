@@ -27,6 +27,10 @@ namespace AutomaticGeneration_ST.Services
         private readonly ServiceContainer _serviceContainer;
         private readonly DeviceTemplateDataBinder _deviceTemplateBinder;
         private readonly LogService _logger = LogService.Instance;
+        
+        // 添加生成过程的缓存和频率控制
+        private readonly Dictionary<string, List<string>> _deviceCodeCache = new();
+        private readonly Dictionary<string, DateTime> _lastGenerationTime = new();
 
         public STGenerationService()
         {
@@ -94,17 +98,18 @@ namespace AutomaticGeneration_ST.Services
                 LogInfo($"[{operationId}] 创建生成编排服务...");
                 var orchestrator = new GenerationOrchestratorService(templateDirectory, configFilePath, _configService, _deviceGenerator);
 
-                // 生成设备代码
-                LogInfo($"[{operationId}] 开始生成设备代码...");
+                // 第一步：生成IO映射代码 - 使用所有硬点数据
+                LogInfo($"[{operationId}] 第一步：开始生成IO映射代码...");
+                LogInfo($"[{operationId}] 独立点位数: {dataContext.StandalonePoints.Count}, 总点位数: {dataContext.AllPointsMasterList.Count}");
+                var ioMappingResults = GenerateWithErrorHandling(() => orchestrator.GenerateForIoMappings(dataContext.AllPointsMasterList.Values, _ioGenerator), 
+                                                                "IO映射代码生成", operationId);
+                LogInfo($"[{operationId}] IO映射代码生成完成 - 文件数: {ioMappingResults.Count}");
+
+                // 第二步：生成设备代码
+                LogInfo($"[{operationId}] 第二步：开始生成设备代码...");
                 var deviceResults = GenerateWithErrorHandling(() => orchestrator.GenerateForDevices(dataContext.Devices), 
                                                              "设备代码生成", operationId);
                 LogInfo($"[{operationId}] 设备代码生成完成 - 文件数: {deviceResults.Count}");
-
-                // 生成IO映射代码 - 只使用独立点位，不包含设备关联点位
-                LogInfo($"[{operationId}] 开始生成IO映射代码...");
-                var ioMappingResults = GenerateWithErrorHandling(() => orchestrator.GenerateForIoMappings(dataContext.StandalonePoints, _ioGenerator), 
-                                                                "IO映射代码生成", operationId);
-                LogInfo($"[{operationId}] IO映射代码生成完成 - 文件数: {ioMappingResults.Count}");
 
                 // (可选) 生成通讯代码（目前返回空列表）
                 LogInfo($"[{operationId}] 开始生成通讯代码...");
@@ -188,17 +193,18 @@ namespace AutomaticGeneration_ST.Services
                 LogInfo($"[{operationId}] 创建生成编排服务...");
                 var orchestrator = new GenerationOrchestratorService(templateDirectory, configFilePath, _configService, _deviceGenerator);
 
-                // 生成设备代码
-                LogInfo($"[{operationId}] 开始生成设备代码...");
+                // 第一步：生成IO映射代码 - 使用所有硬点数据
+                LogInfo($"[{operationId}] 第一步：开始生成IO映射代码...");
+                LogInfo($"[{operationId}] 独立点位数: {dataContext.StandalonePoints.Count}, 总点位数: {dataContext.AllPointsMasterList.Count}");
+                var ioMappingResults = GenerateWithErrorHandling(() => orchestrator.GenerateForIoMappings(dataContext.AllPointsMasterList.Values, _ioGenerator), 
+                                                                "IO映射代码生成", operationId);
+                LogInfo($"[{operationId}] IO映射代码生成完成 - 文件数: {ioMappingResults.Count}");
+
+                // 第二步：生成设备代码
+                LogInfo($"[{operationId}] 第二步：开始生成设备代码...");
                 var deviceResults = GenerateWithErrorHandling(() => orchestrator.GenerateForDevices(dataContext.Devices), 
                                                              "设备代码生成", operationId);
                 LogInfo($"[{operationId}] 设备代码生成完成 - 文件数: {deviceResults.Count}");
-
-                // 生成IO映射代码 - 只使用独立点位，不包含设备关联点位
-                LogInfo($"[{operationId}] 开始生成IO映射代码...");
-                var ioMappingResults = GenerateWithErrorHandling(() => orchestrator.GenerateForIoMappings(dataContext.StandalonePoints, _ioGenerator), 
-                                                                "IO映射代码生成", operationId);
-                LogInfo($"[{operationId}] IO映射代码生成完成 - 文件数: {ioMappingResults.Count}");
 
                 // (可选) 生成通讯代码（目前返回空列表）
                 LogInfo($"[{operationId}] 开始生成通讯代码...");
@@ -512,6 +518,18 @@ namespace AutomaticGeneration_ST.Services
         {
             try
             {
+                // 生成缓存键
+                var cacheKey = $"{templateName}_{string.Join("_", devices.Select(d => d.DeviceTag).OrderBy(x => x))}";
+                
+                // 检查缓存（5分钟内的缓存有效）
+                if (_deviceCodeCache.ContainsKey(cacheKey) && 
+                    _lastGenerationTime.ContainsKey(cacheKey) &&
+                    DateTime.Now - _lastGenerationTime[cacheKey] < TimeSpan.FromMinutes(5))
+                {
+                    LogInfo($"[{operationId}] 📦 从缓存获取模板 {templateName} 的代码，设备数: {devices.Count}");
+                    return string.Join("\n", _deviceCodeCache[cacheKey]);
+                }
+
                 // 查找模板文件
                 var templateFilePath = FindDeviceTemplateFile(templateName);
                 if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
@@ -522,7 +540,7 @@ namespace AutomaticGeneration_ST.Services
 
                 LogInfo($"[{operationId}] 找到模板文件: {templateFilePath}");
 
-                // 读取模板内容
+                // 读取模板内容（只读取一次）
                 var templateContent = File.ReadAllText(templateFilePath);
                 var template = Template.Parse(templateContent);
 
@@ -535,14 +553,15 @@ namespace AutomaticGeneration_ST.Services
 
                 var generatedCode = new List<string>();
                 
+                // 批量处理设备，减少重复调用
+                LogInfo($"[{operationId}] 开始批量处理 {devices.Count} 个设备...");
+                
                 // 为每个设备生成代码
                 foreach (var device in devices)
                 {
                     try
                     {
-                        LogInfo($"[{operationId}] 为设备 [{device.DeviceTag}] 生成代码...");
-
-                        // 使用设备模板数据绑定器生成数据上下文
+                        // 使用设备模板数据绑定器生成数据上下文（现在有缓存机制）
                         var dataContext = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
 
                         // 渲染模板
@@ -552,7 +571,6 @@ namespace AutomaticGeneration_ST.Services
                         {
                             generatedCode.Add($"\n(* 设备: {device.DeviceTag} - 模板: {templateName} *)");
                             generatedCode.Add(deviceCode);
-                            LogInfo($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成完成");
                         }
                     }
                     catch (Exception ex)
@@ -563,7 +581,18 @@ namespace AutomaticGeneration_ST.Services
                     }
                 }
 
-                return string.Join("\n", generatedCode);
+                var result = string.Join("\n", generatedCode);
+                
+                // 保存到缓存
+                _deviceCodeCache[cacheKey] = generatedCode;
+                _lastGenerationTime[cacheKey] = DateTime.Now;
+                
+                LogInfo($"[{operationId}] 模板 {templateName} 批量处理完成，生成代码行数: {generatedCode.Count}");
+                
+                // 定期清理缓存
+                CleanExpiredCache();
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -689,6 +718,40 @@ namespace AutomaticGeneration_ST.Services
             
             // 默认类型
             return "BOOL";
+        }
+
+        /// <summary>
+        /// 清理过期的生成缓存
+        /// </summary>
+        private void CleanExpiredCache()
+        {
+            var now = DateTime.Now;
+            var expiredKeys = _lastGenerationTime
+                .Where(kvp => now - kvp.Value > TimeSpan.FromMinutes(5))
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in expiredKeys)
+            {
+                _deviceCodeCache.Remove(key);
+                _lastGenerationTime.Remove(key);
+            }
+
+            if (expiredKeys.Count > 0)
+            {
+                LogInfo($"🧹 清理了 {expiredKeys.Count} 个过期的生成缓存项");
+            }
+        }
+
+        /// <summary>
+        /// 清理所有缓存
+        /// </summary>
+        public void ClearAllCache()
+        {
+            _deviceCodeCache.Clear();
+            _lastGenerationTime.Clear();
+            _deviceTemplateBinder.ClearExpiredCache();
+            LogInfo("🧹 已清理所有缓存");
         }
     }
 

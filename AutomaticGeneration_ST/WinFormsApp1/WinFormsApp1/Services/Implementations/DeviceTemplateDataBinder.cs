@@ -14,6 +14,16 @@ namespace AutomaticGeneration_ST.Services.Implementations
     public class DeviceTemplateDataBinder
     {
         private readonly LogService _logger = LogService.Instance;
+        
+        // 缓存机制防止重复调用
+        private readonly Dictionary<string, Dictionary<string, object>> _bindingCache = new();
+        private readonly Dictionary<string, DateTime> _lastProcessTime = new();
+        private readonly TimeSpan _cacheTimeout = TimeSpan.FromMinutes(5); // 5分钟缓存超时
+        
+        // 调用频率限制器
+        private readonly Dictionary<string, int> _callCounter = new();
+        private readonly Dictionary<string, DateTime> _callResetTime = new();
+        private const int MAX_CALLS_PER_MINUTE = 10; // 每分钟最多10次调用
 
         /// <summary>
         /// 为设备模板绑定数据
@@ -28,6 +38,24 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
             if (string.IsNullOrWhiteSpace(templateContent))
                 throw new ArgumentException("模板内容不能为空", nameof(templateContent));
+
+            var cacheKey = $"{device.DeviceTag}_{templateContent.GetHashCode()}";
+            
+            // 检查调用频率限制
+            if (!CheckCallFrequencyLimit(cacheKey))
+            {
+                _logger.LogWarning($"⚡ 设备 [{device.DeviceTag}] 调用频率过高，已被限制");
+                return GetCachedOrEmpty(cacheKey, device);
+            }
+
+            // 检查缓存
+            if (_bindingCache.ContainsKey(cacheKey) && 
+                _lastProcessTime.ContainsKey(cacheKey) &&
+                DateTime.Now - _lastProcessTime[cacheKey] < _cacheTimeout)
+            {
+                _logger.LogInfo($"💾 从缓存获取设备 [{device.DeviceTag}] 的绑定数据");
+                return _bindingCache[cacheKey];
+            }
 
             var dataBinding = new Dictionary<string, object>();
 
@@ -67,6 +95,10 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 }
 
                 _logger.LogSuccess($"🎯 设备 [{device.DeviceTag}] 数据绑定完成，成功绑定 {pointBindings.Count} 个点位");
+
+                // 保存到缓存
+                _bindingCache[cacheKey] = dataBinding;
+                _lastProcessTime[cacheKey] = DateTime.Now;
 
                 return dataBinding;
             }
@@ -314,6 +346,87 @@ namespace AutomaticGeneration_ST.Services.Implementations
             context["device_points"] = device.DevicePoints ?? new Dictionary<string, Dictionary<string, object>>();
             
             return context;
+        }
+
+        /// <summary>
+        /// 检查调用频率限制
+        /// </summary>
+        /// <param name="cacheKey">缓存键</param>
+        /// <returns>是否允许调用</returns>
+        private bool CheckCallFrequencyLimit(string cacheKey)
+        {
+            var now = DateTime.Now;
+            
+            // 重置计数器（每分钟重置一次）
+            if (_callResetTime.ContainsKey(cacheKey))
+            {
+                if (now - _callResetTime[cacheKey] >= TimeSpan.FromMinutes(1))
+                {
+                    _callCounter[cacheKey] = 0;
+                    _callResetTime[cacheKey] = now;
+                }
+            }
+            else
+            {
+                _callCounter[cacheKey] = 0;
+                _callResetTime[cacheKey] = now;
+            }
+
+            // 检查调用次数
+            if (_callCounter.ContainsKey(cacheKey))
+            {
+                _callCounter[cacheKey]++;
+                return _callCounter[cacheKey] <= MAX_CALLS_PER_MINUTE;
+            }
+
+            _callCounter[cacheKey] = 1;
+            return true;
+        }
+
+        /// <summary>
+        /// 获取缓存数据或返回空数据
+        /// </summary>
+        /// <param name="cacheKey">缓存键</param>
+        /// <param name="device">设备对象</param>
+        /// <returns>数据字典</returns>
+        private Dictionary<string, object> GetCachedOrEmpty(string cacheKey, Device device)
+        {
+            // 如果有缓存，返回缓存
+            if (_bindingCache.ContainsKey(cacheKey))
+            {
+                return _bindingCache[cacheKey];
+            }
+
+            // 返回最基本的数据
+            return new Dictionary<string, object>
+            {
+                ["device_tag"] = device.DeviceTag
+            };
+        }
+
+        /// <summary>
+        /// 清理过期缓存
+        /// </summary>
+        public void ClearExpiredCache()
+        {
+            var now = DateTime.Now;
+            var expiredKeys = _lastProcessTime
+                .Where(kvp => now - kvp.Value > _cacheTimeout)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in expiredKeys)
+            {
+                _bindingCache.Remove(key);
+                _lastProcessTime.Remove(key);
+                _callCounter.Remove(key);
+                _callResetTime.Remove(key);
+            }
+
+            if (expiredKeys.Count > 0)
+            {
+                _logger.LogInfo($"🧹 清理了 {expiredKeys.Count} 个过期缓存项");
+            }
         }
     }
 }

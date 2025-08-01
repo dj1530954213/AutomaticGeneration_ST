@@ -416,11 +416,11 @@ namespace WinFormsApp1
         private void InitializePreviewTabs()
         {
             // 添加代码预览选项卡
-            var previewTab = new TabPage("📋 代码预览");
+            var previewTab = new TabPage("📋 IO点位映射ST预览");
             var previewTextBox = new RichTextBox
             {
                 Dock = DockStyle.Fill,
-                Font = new Font("Consolas", 10F),
+                Font = new Font("Consolas", 20F),
                 ReadOnly = true,
                 BackColor = Color.WhiteSmoke,
                 Name = "previewTextBox"
@@ -1274,24 +1274,18 @@ namespace WinFormsApp1
                     logger.LogInfo("生成预览:");
                     logger.LogInfo("=" + new string('=', 50));
                     
-                    // 显示前几个脚本作为预览
-                    int previewCount = Math.Min(3, generatedScripts.Count);
-                    for (int i = 0; i < previewCount; i++)
+                    // 显示所有脚本的完整内容
+                    for (int i = 0; i < generatedScripts.Count; i++)
                     {
                         var script = generatedScripts[i];
                         var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var line in lines.Take(3)) // 每个脚本只显示前3行
+                        foreach (var line in lines) // 显示完整内容
                         {
                             if (!string.IsNullOrWhiteSpace(line))
                                 logger.LogInfo(line.Trim());
                         }
-                        if (lines.Length > 3)
-                            logger.LogInfo("...");
                         logger.LogInfo("");
                     }
-                    
-                    if (generatedScripts.Count > previewCount)
-                        logger.LogInfo($"... 还有{generatedScripts.Count - previewCount}个脚本");
                     
                     logger.LogInfo("=" + new string('=', 50));
                 }
@@ -1575,35 +1569,21 @@ namespace WinFormsApp1
                                 
                                 if (deviceSTPrograms.Any())
                                 {
-                                    foreach (var templateGroup in deviceSTPrograms.Take(3)) // 只显示前3个模板的预览
+                                    foreach (var templateGroup in deviceSTPrograms) // 显示所有模板
                                     {
                                         sb.AppendLine($"🎨 模板: {templateGroup.Key}");
                                         sb.AppendLine(new string('-', 30));
                                         
-                                        foreach (var code in templateGroup.Value.Take(2)) // 每个模板最多显示2个设备
+                                        foreach (var code in templateGroup.Value) // 显示所有设备
                                         {
                                             var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                                            foreach (var line in lines.Take(15)) // 每个设备最多显示15行
+                                            foreach (var line in lines) // 显示完整代码
                                             {
                                                 sb.AppendLine(line);
                                             }
-                                            if (lines.Length > 15)
-                                            {
-                                                sb.AppendLine("... (代码已截断)");
-                                            }
                                             sb.AppendLine();
                                         }
-                                        
-                                        if (templateGroup.Value.Count > 2)
-                                        {
-                                            sb.AppendLine($"... 还有 {templateGroup.Value.Count - 2} 个设备未显示");
-                                        }
                                         sb.AppendLine();
-                                    }
-                                    
-                                    if (deviceSTPrograms.Count > 3)
-                                    {
-                                        sb.AppendLine($"... 还有 {deviceSTPrograms.Count - 3} 个模板未显示");
                                     }
                                 }
                                 else
@@ -3244,16 +3224,16 @@ namespace WinFormsApp1
 
                 if (generatedScripts != null && generatedScripts.Any())
                 {
-                    // 过滤出IO映射相关的脚本（不包含设备ST程序）
+                    // 过滤出IO映射相关的脚本（根据实际生成的内容）
                     var ioMappingScripts = generatedScripts.Where(script => 
-                        script.Contains("AI_MAPPING") || 
-                        script.Contains("AO_MAPPING") || 
-                        script.Contains("DI_MAPPING") || 
-                        script.Contains("DO_MAPPING") ||
-                        script.Contains("// AI点位映射") ||
-                        script.Contains("// AO点位映射") ||
-                        script.Contains("// DI点位映射") ||
-                        script.Contains("// DO点位映射")
+                        script.Contains("(* AI点位:") || 
+                        script.Contains("(* AO点位:") || 
+                        script.Contains("(* DI点位:") || 
+                        script.Contains("(* DO点位:") ||
+                        script.Contains("AI_ALARM_") ||
+                        script.Contains("AO_CTRL_") ||
+                        script.Contains("DI_") ||
+                        script.Contains("DO_")
                     ).ToList();
 
                     if (ioMappingScripts.Any())
@@ -3261,16 +3241,12 @@ namespace WinFormsApp1
                         sb.AppendLine($"🎯 共生成 {ioMappingScripts.Count} 个IO映射文件");
                         sb.AppendLine();
 
-                        foreach (var script in ioMappingScripts.Take(5)) // 显示前5个
+                        foreach (var script in ioMappingScripts) // 显示所有IO映射文件
                         {
                             var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach (var line in lines.Take(20)) // 每个脚本显示前20行
+                            foreach (var line in lines) // 显示完整内容
                             {
                                 sb.AppendLine(line);
-                            }
-                            if (lines.Length > 20)
-                            {
-                                sb.AppendLine("... (更多内容已省略)");
                             }
                             sb.AppendLine();
                             sb.AppendLine(new string('-', 50));
@@ -3437,7 +3413,7 @@ namespace WinFormsApp1
                             
                             if (deviceSTPrograms.Any())
                             {
-                                // 如果选择了特定设备，只显示该设备的ST程序
+                                // 如果选择了特定设备，显示该设备的所有ST程序
                                 if (!string.IsNullOrEmpty(selectedDeviceTag))
                                 {
                                     var targetDevice = fullDataContext.Devices.FirstOrDefault(d => 
@@ -3445,29 +3421,31 @@ namespace WinFormsApp1
                                     
                                     if (targetDevice != null)
                                     {
-                                        var templateGroup = deviceSTPrograms.FirstOrDefault(kvp => 
-                                            kvp.Value.Any(code => code.Contains(targetDevice.DeviceTag)));
+                                        bool foundDevice = false;
                                         
-                                        if (!templateGroup.Equals(default(KeyValuePair<string, List<string>>)))
+                                        // 遍历所有模板，查找包含目标设备的ST程序
+                                        foreach (var templateGroup in deviceSTPrograms)
                                         {
-                                            sb.AppendLine($"🎨 模板: {templateGroup.Key}");
-                                            sb.AppendLine(new string('-', 30));
+                                            var deviceCodes = templateGroup.Value.Where(code => 
+                                                code.Contains(targetDevice.DeviceTag)).ToList();
                                             
-                                            var deviceCode = templateGroup.Value.FirstOrDefault(code => 
-                                                code.Contains(targetDevice.DeviceTag));
-                                            
-                                            if (!string.IsNullOrEmpty(deviceCode))
+                                            if (deviceCodes.Any())
                                             {
-                                                sb.AppendLine(deviceCode);
-                                            }
-                                            else
-                                            {
-                                                sb.AppendLine("❌ 未找到该设备的ST程序代码");
+                                                sb.AppendLine($"🎨 模板: {templateGroup.Key}");
+                                                sb.AppendLine(new string('-', 30));
+                                                
+                                                foreach (var deviceCode in deviceCodes)
+                                                {
+                                                    sb.AppendLine(deviceCode);
+                                                    sb.AppendLine();
+                                                }
+                                                foundDevice = true;
                                             }
                                         }
-                                        else
+                                        
+                                        if (!foundDevice)
                                         {
-                                            sb.AppendLine("❌ 未找到该设备的模板或ST程序");
+                                            sb.AppendLine("❌ 未找到该设备的ST程序");
                                         }
                                     }
                                     else
@@ -3483,23 +3461,14 @@ namespace WinFormsApp1
                                         sb.AppendLine($"🎨 模板: {templateGroup.Key} ({templateGroup.Value.Count} 个设备)");
                                         sb.AppendLine(new string('-', 30));
                                         
-                                        foreach (var code in templateGroup.Value.Take(2)) // 每个模板显示前2个设备
+                                        foreach (var code in templateGroup.Value) // 显示所有设备
                                         {
                                             var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                                            foreach (var line in lines.Take(15)) // 每个设备显示前15行
+                                            foreach (var line in lines) // 显示完整代码
                                             {
                                                 sb.AppendLine(line);
                                             }
-                                            if (lines.Length > 15)
-                                            {
-                                                sb.AppendLine("... (代码已截断)");
-                                            }
                                             sb.AppendLine();
-                                        }
-                                        
-                                        if (templateGroup.Value.Count > 2)
-                                        {
-                                            sb.AppendLine($"... 还有 {templateGroup.Value.Count - 2} 个设备未显示");
                                         }
                                         sb.AppendLine();
                                     }

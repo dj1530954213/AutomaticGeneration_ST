@@ -1,7 +1,7 @@
 {{~ for point in points ~}}
 (* AI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
 AI_ALARM_{{ point.hmi_tag_name }}(
-    IN:={{ point.plc_absolute_address }},
+    IN:={{ get_address point }},
     ENG_MAX:={{ point.range_high ?? 100.0 }},
     ENG_MIN:={{ point.range_low ?? 0.0 }},
     MAIN_EN:={{ point.hmi_tag_name }}_WHZZT,

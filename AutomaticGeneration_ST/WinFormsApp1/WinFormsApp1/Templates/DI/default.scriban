@@ -1,5 +1,5 @@
 {{~ for point in points ~}}
 (* DI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
-{{ point.hmi_tag_name }} := {{ point.plc_absolute_address }};
+{{ point.hmi_tag_name }} := {{ get_address point }};
 
 {{~ end ~}}

@@ -4,6 +4,7 @@ using Scriban;
 using Scriban.Runtime;
 using System.Collections.Generic;
 using System.Linq;
+using WinFormsApp1.Utils;
 
 namespace AutomaticGeneration_ST.Services.Generation.Implementations
 {
@@ -26,34 +27,39 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
 
             // *** 增强的IO映射上下文 ***
 
-            // 获取点位地址的智能函数
-            Func<Models.Point, string> getAddressFunc = (p) => 
+            // 使用ScriptObject.Import来正确注册函数
+            scriptObject.Import("get_address", new Func<Models.Point, string>((p) => 
             {
                 if (p == null) return "(* 点位未找到 *)";
-                return p.PointType == "硬点" ? (p.PlcAbsoluteAddress ?? p.HmiTagName) : p.HmiTagName;
-            };
-            scriptObject.Add("get_address", getAddressFunc);
+                
+                // 对于IO映射，优先使用PlcAbsoluteAddress并进行转换
+                if (!string.IsNullOrWhiteSpace(p.PlcAbsoluteAddress))
+                {
+                    // 使用ChannelConverter将通道位号转换为硬点通道号
+                    // 例如: 1_1_AI_0 -> DPIO_2_1_2_1
+                    return ChannelConverter.ConvertToHardChannel(p.PlcAbsoluteAddress);
+                }
+                
+                return p.HmiTagName ?? "(* 地址未找到 *)";
+            }));
 
             // 获取安全的默认值
-            Func<object, object, object> safeValueFunc = (value, defaultValue) =>
+            scriptObject.Import("safe_value", new Func<object, object, object>((value, defaultValue) =>
             {
                 return value ?? defaultValue;
-            };
-            scriptObject.Add("safe_value", safeValueFunc);
+            }));
 
             // 格式化数值的函数
-            Func<double?, string> formatNumberFunc = (value) =>
+            scriptObject.Import("format_number", new Func<double?, string>((value) =>
             {
                 return value?.ToString("F2") ?? "0.0";
-            };
-            scriptObject.Add("format_number", formatNumberFunc);
+            }));
 
             // 生成标准报警点名的函数
-            Func<string, string, string> alarmPointFunc = (tagName, alarmType) =>
+            scriptObject.Import("alarm_point", new Func<string, string, string>((tagName, alarmType) =>
             {
                 return $"{tagName}_{alarmType?.ToUpper()}";
-            };
-            scriptObject.Add("alarm_point", alarmPointFunc);
+            }));
 
             // IO映射统计信息
             var ioStats = new ScriptObject();
@@ -76,15 +82,14 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             if (moduleType.ToUpper() == "AI")
             {
                 // 检查点位是否有报警配置
-                Func<Models.Point, bool> hasAlarmConfigFunc = (p) =>
+                scriptObject.Import("has_alarm_config", new Func<Models.Point, bool>((p) =>
                 {
                     return p != null && (p.SHH_Value.HasValue || p.SH_Value.HasValue || 
                                        p.SL_Value.HasValue || p.SLL_Value.HasValue);
-                };
-                scriptObject.Add("has_alarm_config", hasAlarmConfigFunc);
+                }));
 
                 // 获取报警限值
-                Func<Models.Point, string> getAlarmLimitsFunc = (p) =>
+                scriptObject.Import("get_alarm_limits", new Func<Models.Point, string>((p) =>
                 {
                     if (p == null) return "";
                     var limits = new List<string>();
@@ -93,8 +98,7 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
                     if (p.SL_Value.HasValue) limits.Add($"L:{p.SL_Value.Value:F2}");
                     if (p.SLL_Value.HasValue) limits.Add($"LL:{p.SLL_Value.Value:F2}");
                     return string.Join(", ", limits);
-                };
-                scriptObject.Add("get_alarm_limits", getAlarmLimitsFunc);
+                }));
             }
 
             context.PushGlobal(scriptObject);
