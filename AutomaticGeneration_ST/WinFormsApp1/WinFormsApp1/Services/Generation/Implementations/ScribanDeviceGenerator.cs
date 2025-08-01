@@ -62,40 +62,35 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             // *** 增强的辅助函数集合 ***
             
             // 获取点位地址的智能函数
-            Func<Models.Point, string> getAddressFunc = (p) => 
+            scriptObject.Import("get_address", new Func<Models.Point, string>((p) => 
             {
                 if (p == null) return "(* 点位未找到 *)";
                 return p.PointType == "硬点" ? (p.PlcAbsoluteAddress ?? p.HmiTagName) : p.HmiTagName;
-            };
-            scriptObject.Add("get_address", getAddressFunc);
+            }));
 
             // 获取安全的默认值
-            Func<object, object, object> safeValueFunc = (value, defaultValue) =>
+            scriptObject.Import("safe_value", new Func<object, object, object>((value, defaultValue) =>
             {
                 return value ?? defaultValue;
-            };
-            scriptObject.Add("safe_value", safeValueFunc);
+            }));
 
             // 格式化数值的函数
-            Func<double?, string> formatNumberFunc = (value) =>
+            scriptObject.Import("format_number", new Func<double?, string>((value) =>
             {
                 return value?.ToString("F2") ?? "0.0";
-            };
-            scriptObject.Add("format_number", formatNumberFunc);
+            }));
 
             // 生成标准报警点名的函数
-            Func<string, string, string> alarmPointFunc = (tagName, alarmType) =>
+            scriptObject.Import("alarm_point", new Func<string, string, string>((tagName, alarmType) =>
             {
                 return $"{tagName}_{alarmType?.ToUpper()}";
-            };
-            scriptObject.Add("alarm_point", alarmPointFunc);
+            }));
 
             // 检查点位是否存在的函数
-            Func<string, bool> hasPointFunc = (tagName) =>
+            scriptObject.Import("has_point", new Func<string, bool>((tagName) =>
             {
                 return device.Points.ContainsKey(tagName);
-            };
-            scriptObject.Add("has_point", hasPointFunc);
+            }));
 
             // 获取设备点位数量统计
             var deviceStats = new ScriptObject();

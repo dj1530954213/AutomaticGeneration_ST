@@ -1,4 +1,5 @@
 using System.Text;
+using System.IO;
 using WinFormsApp1.Excel;
 using WinFormsApp1.Generators;
 using WinFormsApp1.Output;
@@ -19,6 +20,10 @@ namespace WinFormsApp1
         private List<string> recentFiles = new List<string>();
         private const int MaxRecentFiles = 10;
         private System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer();
+
+        // 设备 ST 代码缓存，Key = 文件路径 + 最后修改时间
+        private Dictionary<string, Dictionary<string, List<string>>> deviceStCache = new();
+        private bool isUpdatingPreview = false;
         private STGenerationService stGenerationService = new STGenerationService();
         
         // 数据缓存机制 - 避免重复解析Excel文件
@@ -26,6 +31,7 @@ namespace WinFormsApp1
         private string cachedFilePath = "";
         private DateTime cachedFileTime = DateTime.MinValue;
         private bool deviceListNeedsRefresh = true;
+        private readonly object dataContextLock = new object(); // 线程同步锁
 
         public Form1()
         {
@@ -1481,6 +1487,8 @@ namespace WinFormsApp1
 
         private void UpdatePreviewArea()
         {
+            if (isUpdatingPreview) return; // 防抖，避免递归或短时间多次刷新
+            isUpdatingPreview = true;
             try
             {
                 // 更新IO映射ST程序预览标签页
@@ -1531,6 +1539,10 @@ namespace WinFormsApp1
             {
                 logger.LogError($"更新预览区域失败: {ex.Message}");
             }
+            finally
+            {
+                isUpdatingPreview = false;
+            }
         }
 
         private string GenerateDeviceSTPreview()
@@ -1551,21 +1563,19 @@ namespace WinFormsApp1
 
                 try
                 {
-                    // 使用ExcelDataService加载设备数据
+                    // 使用缓存机制获取数据上下文，避免重复解析Excel/重复分类
                     if (!string.IsNullOrEmpty(uploadedFilePath))
                     {
-                        var dataContext = stGenerationService.GetStatistics(uploadedFilePath);
-                        if (dataContext.DeviceCount > 0)
+                        var fullDataContext = GetCachedDataContext(uploadedFilePath);
+                        var deviceCount = fullDataContext?.Devices?.Count ?? 0;
+                        if (deviceCount > 0)
                         {
-                            sb.AppendLine($"📋 发现 {dataContext.DeviceCount} 个设备");
+                            sb.AppendLine($"📋 发现 {deviceCount} 个设备");
                             sb.AppendLine();
 
-                            // 使用缓存机制获取数据上下文，避免重复解析Excel
-                            var fullDataContext = GetCachedDataContext(uploadedFilePath);
-                            
                             if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
                             {
-                                var deviceSTPrograms = stGenerationService.GenerateDeviceSTPrograms(fullDataContext.Devices);
+                                var deviceSTPrograms = GetCachedDeviceSTPrograms(fullDataContext);
                                 
                                 if (deviceSTPrograms.Any())
                                 {
@@ -1597,8 +1607,6 @@ namespace WinFormsApp1
                             else
                             {
                                 sb.AppendLine("📝 设备信息统计:");
-                                sb.AppendLine($"• 总点位数: {dataContext.TotalPoints}");
-                                sb.AppendLine($"• 独立点位: {dataContext.StandalonePointsCount}");
                                 sb.AppendLine();
                                 sb.AppendLine("ℹ️ 未找到设备分类信息，请检查Excel文件中是否包含'设备分类表'工作表。");
                             }
@@ -2871,47 +2879,51 @@ namespace WinFormsApp1
         /// <returns>数据上下文，如果解析失败则返回null</returns>
         private AutomaticGeneration_ST.Services.Interfaces.DataContext? GetCachedDataContext(string filePath)
         {
-            try
+            // 使用线程同步锁避免并发访问问题
+            lock (dataContextLock)
             {
-                // 检查文件是否存在
-                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                try
                 {
-                    logger?.LogWarning("文件路径无效或文件不存在");
+                    // 检查文件是否存在
+                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                    {
+                        logger?.LogWarning("文件路径无效或文件不存在");
+                        return null;
+                    }
+
+                    var fileInfo = new FileInfo(filePath);
+                    
+                    // 检查是否需要重新解析数据
+                    bool needsReload = cachedDataContext == null || 
+                                     cachedFilePath != filePath || 
+                                     cachedFileTime != fileInfo.LastWriteTime;
+
+                    if (needsReload)
+                    {
+                        logger?.LogInfo($"🔄 加载Excel数据: {Path.GetFileName(filePath)}");
+                        
+                        var excelDataService = new AutomaticGeneration_ST.Services.Implementations.ExcelDataService();
+                        cachedDataContext = excelDataService.LoadData(filePath);
+                        cachedFilePath = filePath;
+                        cachedFileTime = fileInfo.LastWriteTime;
+                        
+                        // 标记设备列表需要刷新
+                        deviceListNeedsRefresh = true;
+                        
+                        logger?.LogSuccess($"✅ Excel数据加载完成 - 设备数: {cachedDataContext.Devices.Count}, 点位数: {cachedDataContext.AllPointsMasterList.Count}");
+                    }
+                    else
+                    {
+                        logger?.LogInfo($"📋 使用缓存的Excel数据: {Path.GetFileName(filePath)}");
+                    }
+
+                    return cachedDataContext;
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError($"❌ 获取数据上下文时出错: {ex.Message}");
                     return null;
                 }
-
-                var fileInfo = new FileInfo(filePath);
-                
-                // 检查是否需要重新解析数据
-                bool needsReload = cachedDataContext == null || 
-                                 cachedFilePath != filePath || 
-                                 cachedFileTime != fileInfo.LastWriteTime;
-
-                if (needsReload)
-                {
-                    logger?.LogInfo($"🔄 加载Excel数据: {Path.GetFileName(filePath)}");
-                    
-                    var excelDataService = new AutomaticGeneration_ST.Services.Implementations.ExcelDataService();
-                    cachedDataContext = excelDataService.LoadData(filePath);
-                    cachedFilePath = filePath;
-                    cachedFileTime = fileInfo.LastWriteTime;
-                    
-                    // 标记设备列表需要刷新
-                    deviceListNeedsRefresh = true;
-                    
-                    logger?.LogSuccess($"✅ Excel数据加载完成 - 设备数: {cachedDataContext.Devices.Count}, 点位数: {cachedDataContext.AllPointsMasterList.Count}");
-                }
-                else
-                {
-                    logger?.LogInfo($"📋 使用缓存的Excel数据: {Path.GetFileName(filePath)}");
-                }
-
-                return cachedDataContext;
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"❌ 获取数据上下文时出错: {ex.Message}");
-                return null;
             }
         }
 
@@ -2920,10 +2932,13 @@ namespace WinFormsApp1
         /// </summary>
         private void ClearDataCache()
         {
-            cachedDataContext = null;
-            cachedFilePath = "";
-            cachedFileTime = DateTime.MinValue;
-            logger?.LogInfo("🗑️ 已清除数据缓存");
+            lock (dataContextLock)
+            {
+                cachedDataContext = null;
+                cachedFilePath = "";
+                cachedFileTime = DateTime.MinValue;
+                logger?.LogInfo("🗑️ 已清除数据缓存");
+            }
         }
 
         /// <summary>
@@ -3381,6 +3396,20 @@ namespace WinFormsApp1
         /// <summary>
         /// 生成设备ST程序预览内容（支持单个设备选择）
         /// </summary>
+        // 获取（并缓存）设备 ST 程序集合，避免重复生成
+        private Dictionary<string, List<string>> GetCachedDeviceSTPrograms(AutomaticGeneration_ST.Services.Interfaces.DataContext dataContext)
+        {
+            var key = $"{uploadedFilePath}_{System.IO.File.GetLastWriteTime(uploadedFilePath).Ticks}";
+            if (deviceStCache.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
+            var result = stGenerationService.GenerateDeviceSTPrograms(dataContext.Devices);
+            deviceStCache[key] = result;
+            return result;
+        }
+
         private string GenerateDeviceSTPreview(string selectedDeviceTag = null)
         {
             try
@@ -3409,7 +3438,7 @@ namespace WinFormsApp1
                         var fullDataContext = GetCachedDataContext(uploadedFilePath);
                         if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
                         {
-                            var deviceSTPrograms = stGenerationService.GenerateDeviceSTPrograms(fullDataContext.Devices);
+                            var deviceSTPrograms = GetCachedDeviceSTPrograms(fullDataContext);
                             
                             if (deviceSTPrograms.Any())
                             {

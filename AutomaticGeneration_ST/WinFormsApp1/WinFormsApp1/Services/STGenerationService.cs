@@ -437,16 +437,40 @@ namespace AutomaticGeneration_ST.Services
             return breakdown;
         }
 
+        // 设备ST程序生成结果缓存
+        private static readonly Dictionary<string, Dictionary<string, List<string>>> _deviceSTCache = new();
+        private static readonly Dictionary<string, DateTime> _deviceSTCacheTime = new();
+        private static readonly TimeSpan _deviceSTCacheTimeout = TimeSpan.FromMinutes(10);
+
         /// <summary>
-        /// 生成设备ST程序代码
+        /// 生成设备ST程序代码（带缓存机制）
         /// </summary>
         /// <param name="devices">设备列表</param>
         /// <returns>设备ST程序生成结果</returns>
         public Dictionary<string, List<string>> GenerateDeviceSTPrograms(List<Device> devices)
         {
+            // 先根据 DeviceTag 去重，避免重复生成相同设备的代码
+            devices = devices
+                .Where(d => d != null && !string.IsNullOrWhiteSpace(d.DeviceTag))
+                .GroupBy(d => d.DeviceTag)
+                .Select(g => g.First())
+                .ToList();
             var operationId = Guid.NewGuid().ToString("N")[..8];
-            LogInfo($"[{operationId}] 开始生成设备ST程序，设备数量: {devices.Count}");
+            
+            // 生成缓存键（基于设备列表的哈希）
+            var deviceHash = string.Join("|", devices.Select(d => $"{d.DeviceTag}:{d.TemplateName}").OrderBy(x => x));
+            var cacheKey = $"DeviceSTPrograms_{deviceHash.GetHashCode():X}";
 
+            // 检查缓存
+            if (_deviceSTCache.ContainsKey(cacheKey) && 
+                _deviceSTCacheTime.ContainsKey(cacheKey) &&
+                DateTime.Now - _deviceSTCacheTime[cacheKey] < _deviceSTCacheTimeout)
+            {
+                LogInfo($"[{operationId}] 📦 从缓存获取设备ST程序，设备数量: {devices.Count}");
+                return _deviceSTCache[cacheKey];
+            }
+
+            LogInfo($"[{operationId}] 开始生成设备ST程序（去重后），设备数量: {devices.Count}");
             var result = new Dictionary<string, List<string>>();
 
             try
@@ -501,6 +525,13 @@ namespace AutomaticGeneration_ST.Services
                     }
                 }
 
+                // 保存结果到缓存
+                _deviceSTCache[cacheKey] = result;
+                _deviceSTCacheTime[cacheKey] = DateTime.Now;
+                
+                // 定期清理过期缓存
+                CleanExpiredDeviceSTCache();
+                
                 LogInfo($"[{operationId}] 设备ST程序生成完成，共生成 {result.Count} 个模板的代码");
                 return result;
             }
@@ -746,10 +777,35 @@ namespace AutomaticGeneration_ST.Services
         /// <summary>
         /// 清理所有缓存
         /// </summary>
+        /// <summary>
+        /// 清理过期的设备ST程序缓存
+        /// </summary>
+        private static void CleanExpiredDeviceSTCache()
+        {
+            var now = DateTime.Now;
+            var expiredKeys = _deviceSTCacheTime
+                .Where(kvp => now - kvp.Value > _deviceSTCacheTimeout)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in expiredKeys)
+            {
+                _deviceSTCache.Remove(key);
+                _deviceSTCacheTime.Remove(key);
+            }
+
+            if (expiredKeys.Count > 0)
+            {
+                Console.WriteLine($"🧹 清理了 {expiredKeys.Count} 个过期的设备ST缓存项");
+            }
+        }
+
         public void ClearAllCache()
         {
             _deviceCodeCache.Clear();
             _lastGenerationTime.Clear();
+            _deviceSTCache.Clear();
+            _deviceSTCacheTime.Clear();
             _deviceTemplateBinder.ClearExpiredCache();
             LogInfo("🧹 已清理所有缓存");
         }
