@@ -5,6 +5,7 @@ using Scriban;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using WinFormsApp1;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
@@ -14,6 +15,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
         private readonly IDeviceStGenerator _deviceGenerator;
         private readonly string _templateDirectory;
         private readonly TemplateMapping _mappings;
+        private readonly LogService _logger = LogService.Instance;
 
         // 使用构造函数注入依赖，这是现代软件设计的最佳实践
         public GenerationOrchestratorService(
@@ -33,32 +35,66 @@ namespace AutomaticGeneration_ST.Services.Implementations
         public List<GenerationResult> GenerateForDevices(IEnumerable<Device> devices)
         {
             var allResults = new List<GenerationResult>();
+            var deviceList = devices.ToList();
+            
+            _logger.LogInfo($"🏭 开始处理 {deviceList.Count} 个设备的ST代码生成");
 
-            foreach (var device in devices)
+            foreach (var device in deviceList)
             {
+                _logger.LogInfo($"   🔧 处理设备: [{device.DeviceTag}] 模板: {device.TemplateName}");
+                
                 // 步骤1: 从配置中查找Scriban文件名
                 if (!_mappings.Mappings.TryGetValue(device.TemplateName, out var scribanFileName))
                 {
                     // 关键的错误处理：如果设备分类表中的模板名在配置中找不到，则跳过并警告
-                    System.Diagnostics.Debug.WriteLine($"错误: 设备'{device.DeviceTag}'的模板名'{device.TemplateName}'在配置文件中没有找到对应的映射。");
+                    _logger.LogError($"❌ 设备'{device.DeviceTag}'的模板名'{device.TemplateName}'在配置文件中没有找到对应的映射");
+                    _logger.LogWarning($"   💡 可用的模板映射: {string.Join(", ", _mappings.Mappings.Keys)}");
                     continue;
                 }
+                
+                _logger.LogInfo($"   ✓ 找到模板映射: {device.TemplateName} -> {scribanFileName}");
 
                 // 步骤2: 定位并加载模板文件
                 var templatePath = Path.Combine(_templateDirectory, scribanFileName);
                 if (!File.Exists(templatePath))
                 {
-                    System.Diagnostics.Debug.WriteLine($"错误: 映射成功，但模板文件'{templatePath}'不存在。");
+                    _logger.LogError($"❌ 映射成功，但模板文件'{templatePath}'不存在");
+                    _logger.LogInfo($"   🔍 模板目录: {_templateDirectory}");
                     continue;
                 }
 
                 var templateContent = File.ReadAllText(templatePath);
                 var template = Template.Parse(templateContent);
+                
+                if (template.HasErrors)
+                {
+                    _logger.LogError($"❌ 模板解析错误: {string.Join(", ", template.Messages.Select(m => m.Message))}");
+                    continue;
+                }
+                
+                _logger.LogInfo($"   ✓ 模板文件加载成功: {templatePath}");
 
                 // 步骤3: 调用已注入的生成器服务执行渲染
-                var result = _deviceGenerator.Generate(device, template);
-                allResults.Add(result);
+                try
+                {
+                    var result = _deviceGenerator.Generate(device, template);
+                    if (result != null)
+                    {
+                        allResults.Add(result);
+                        _logger.LogInfo($"   ✅ 设备 [{device.DeviceTag}] ST代码生成成功");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"   ⚠️ 设备 [{device.DeviceTag}] 生成结果为空");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError($"❌ 设备 [{device.DeviceTag}] ST代码生成失败: {ex.Message}");
+                }
             }
+            
+            _logger.LogSuccess($"🎯 设备ST代码生成完成，共生成 {allResults.Count} 个文件");
             return allResults;
         }
 

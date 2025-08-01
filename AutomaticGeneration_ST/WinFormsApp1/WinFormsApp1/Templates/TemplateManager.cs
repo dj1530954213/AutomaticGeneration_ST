@@ -185,6 +185,138 @@ namespace WinFormsApp1.Templates
                     }
                 }
             }
+            
+            // 扫描自定义命名的模板文件（如阀门模板）
+            ScanCustomNamedTemplates();
+        }
+
+        /// <summary>
+        /// 扫描自定义命名的模板文件
+        /// </summary>
+        private static void ScanCustomNamedTemplates()
+        {
+            var templatesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
+            
+            // 扫描所有子文件夹
+            var subDirectories = Directory.GetDirectories(templatesDir);
+            
+            foreach (var subDir in subDirectories)
+            {
+                var folderName = Path.GetFileName(subDir);
+                
+                // 跳过已知的点位类型文件夹，这些已经在上面处理过
+                if (Enum.TryParse<PointType>(folderName, true, out var _))
+                    continue;
+                
+                // 处理自定义文件夹（如"阀门"）
+                var templateFiles = Directory.GetFiles(subDir, "*.scriban");
+                
+                foreach (var filePath in templateFiles)
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(filePath);
+                    
+                    // 创建自定义模板信息
+                    var templateInfo = new TemplateInfo
+                    {
+                        Name = fileName.Replace("_", " "), // ESDV_CTRL -> ESDV CTRL
+                        FilePath = filePath,
+                        Version = TemplateVersion.Custom,
+                        PointType = InferPointTypeFromTemplate(filePath, folderName), // 推断点位类型
+                        Description = $"{folderName}模板 - {fileName}",
+                        Author = "System",
+                        RequiredFields = ExtractRequiredFields(File.ReadAllText(filePath)),
+                        ModifiedDate = File.GetLastWriteTime(filePath),
+                        Metadata = new Dictionary<string, object>
+                        {
+                            ["Category"] = folderName,
+                            ["CustomTemplate"] = true,
+                            ["DeviceTemplate"] = true // 标记为设备模板
+                        }
+                    };
+                    
+                    // 确保该点位类型的字典存在
+                    if (!Config.Templates.ContainsKey(templateInfo.PointType))
+                    {
+                        Config.Templates[templateInfo.PointType] = new Dictionary<TemplateVersion, TemplateInfo>();
+                    }
+                    
+                    // 添加到模板配置中，使用文件名作为唯一标识
+                    var customKey = $"Custom_{folderName}_{fileName}";
+                    
+                    // 由于字典只能用TemplateVersion作为key，我们需要扩展存储机制
+                    // 暂时将其添加到Custom版本下，但在Metadata中保存详细信息
+                    if (!Config.Templates[templateInfo.PointType].ContainsKey(TemplateVersion.Custom))
+                    {
+                        Config.Templates[templateInfo.PointType][TemplateVersion.Custom] = templateInfo;
+                    }
+                    
+                    // 将自定义模板自动添加到模板库收藏夹
+                    AutoAddToTemplateLibrary(templateInfo, folderName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 从模板内容推断点位类型
+        /// </summary>
+        private static PointType InferPointTypeFromTemplate(string filePath, string folderName)
+        {
+            try
+            {
+                var content = File.ReadAllText(filePath).ToLower();
+                
+                // 根据文件夹名称和模板内容推断类型
+                if (folderName.Contains("阀门") || folderName.Contains("valve"))
+                {
+                    // 阀门通常是数字输出类型
+                    return PointType.DO;
+                }
+                
+                // 根据模板内容关键词推断
+                if (content.Contains("ai_") || content.Contains("模拟量输入"))
+                    return PointType.AI;
+                if (content.Contains("ao_") || content.Contains("模拟量输出"))
+                    return PointType.AO;
+                if (content.Contains("di_") || content.Contains("数字量输入"))
+                    return PointType.DI;
+                if (content.Contains("do_") || content.Contains("数字量输出") || content.Contains("mov") || content.Contains("valve"))
+                    return PointType.DO;
+                
+                // 默认返回DO（因为大多数设备模板是控制类的）
+                return PointType.DO;
+            }
+            catch
+            {
+                return PointType.DO;
+            }
+        }
+
+        /// <summary>
+        /// 自动将模板添加到模板库收藏夹
+        /// </summary>
+        private static void AutoAddToTemplateLibrary(TemplateInfo templateInfo, string category)
+        {
+            try
+            {
+                // 检查模板库是否已初始化
+                if (!WinFormsApp1.Templates.TemplateLibraryManager.LibraryConfig.Favorites.Any(f => 
+                    f.Template.FilePath == templateInfo.FilePath))
+                {
+                    // 自动添加到收藏夹
+                    var tags = new List<string> { category, "设备模板", "自动发现" };
+                    
+                    WinFormsApp1.Templates.TemplateLibraryManager.AddToFavorites(
+                        templateInfo, 
+                        tags: tags, 
+                        notes: $"从{category}文件夹自动发现的模板"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                // 添加到模板库失败不应该影响模板扫描
+                System.Diagnostics.Debug.WriteLine($"自动添加模板到收藏夹失败: {ex.Message}");
+            }
         }
 
         public static async Task<Scriban.Template> GetTemplateAsync(PointType pointType, TemplateVersion version = TemplateVersion.Default)

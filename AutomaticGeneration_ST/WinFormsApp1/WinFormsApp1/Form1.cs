@@ -20,6 +20,12 @@ namespace WinFormsApp1
         private const int MaxRecentFiles = 10;
         private System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer();
         private STGenerationService stGenerationService = new STGenerationService();
+        
+        // 数据缓存机制 - 避免重复解析Excel文件
+        private AutomaticGeneration_ST.Services.Interfaces.DataContext? cachedDataContext = null;
+        private string cachedFilePath = "";
+        private DateTime cachedFileTime = DateTime.MinValue;
+        private bool deviceListNeedsRefresh = true;
 
         public Form1()
         {
@@ -421,6 +427,62 @@ namespace WinFormsApp1
             };
             previewTab.Controls.Add(previewTextBox);
             previewTabControl.TabPages.Add(previewTab);
+            
+            // 添加设备ST程序选项卡
+            var deviceSTTab = new TabPage("🏭 设备ST程序");
+            
+            // 创建设备选择面板
+            var deviceSelectionPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 35,
+                BackColor = Color.LightBlue
+            };
+            
+            var deviceLabel = new Label
+            {
+                Text = "选择设备:",
+                Location = new Point(10, 8),
+                Size = new Size(80, 20),
+                BackColor = Color.Transparent
+            };
+            
+            var deviceComboBox = new ComboBox
+            {
+                Location = new Point(90, 5),
+                Size = new Size(200, 25),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Name = "deviceComboBox"
+            };
+            deviceComboBox.Items.Add("全部设备");
+            deviceComboBox.SelectedIndex = 0;
+            deviceComboBox.SelectedIndexChanged += DeviceComboBox_SelectedIndexChanged;
+            
+            var refreshButton = new Button
+            {
+                Text = "🔄",
+                Location = new Point(300, 5),
+                Size = new Size(30, 25),
+                FlatStyle = FlatStyle.Flat
+            };
+            refreshButton.Click += (s, e) => RefreshDeviceList();
+            
+            deviceSelectionPanel.Controls.Add(deviceLabel);
+            deviceSelectionPanel.Controls.Add(deviceComboBox);
+            deviceSelectionPanel.Controls.Add(refreshButton);
+            
+            var deviceSTTextBox = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 10F),
+                ReadOnly = true,
+                BackColor = Color.LightCyan,
+                Name = "deviceSTTextBox"
+            };
+            
+            deviceSTTab.Controls.Add(deviceSelectionPanel);
+            deviceSTTab.Controls.Add(deviceSTTextBox);
+            previewTabControl.TabPages.Add(deviceSTTab);
             
             // 添加统计信息选项卡
             var statisticsTab = new TabPage("📊 统计信息");
@@ -1266,11 +1328,19 @@ namespace WinFormsApp1
                 
                 UpdateProgressBar("正在使用新架构生成ST脚本...", 0, true);
                 
-                // 使用新的STGenerationService
+                // 使用新的STGenerationService和缓存机制
                 var fileCount = await Task.Run(() => 
                 {
+                    // 使用缓存机制获取数据上下文，避免重复解析Excel
+                    var dataContext = GetCachedDataContext(uploadedFilePath);
+                    if (dataContext == null)
+                    {
+                        throw new Exception("无法加载Excel数据");
+                    }
+                    
+                    // 使用新的重载方法，接受DataContext参数
                     return stGenerationService.GenerateSTCode(
-                        uploadedFilePath,
+                        dataContext,
                         templateDirectory,
                         configFilePath,
                         tempExportPath
@@ -1419,30 +1489,28 @@ namespace WinFormsApp1
         {
             try
             {
-                // 更新代码预览标签页
+                // 更新IO映射ST程序预览标签页
                 var previewTextBox = previewTabControl.TabPages[0].Controls["previewTextBox"] as RichTextBox;
                 if (previewTextBox != null)
                 {
-                    if (generatedScripts.Any())
-                    {
-                        var previewContent = string.Join("\n\n" + new string('-', 50) + "\n\n", 
-                            generatedScripts.Take(10)); // 只显示前10个脚本
-                        
-                        if (generatedScripts.Count > 10)
-                        {
-                            previewContent += $"\n\n... 还有 {generatedScripts.Count - 10} 个脚本未显示";
-                        }
-                        
-                        previewTextBox.Text = previewContent;
-                    }
-                    else
-                    {
-                        previewTextBox.Text = "暂无生成的代码，请先上传并处理点表文件。";
-                    }
+                    var ioMappingContent = GenerateIOMappingPreview();
+                    previewTextBox.Text = ioMappingContent;
                 }
                 
+                // 更新设备ST程序标签页
+                var deviceSTTextBox = previewTabControl.TabPages[1].Controls["deviceSTTextBox"] as RichTextBox;
+                if (deviceSTTextBox != null)
+                {
+                    var selectedDevice = GetSelectedDevice();
+                    var deviceSTContent = GenerateDeviceSTPreview(selectedDevice);
+                    deviceSTTextBox.Text = deviceSTContent;
+                }
+                
+                // 刷新设备列表（仅在数据变化时）
+                RefreshDeviceListIfNeeded();
+                
                 // 更新统计信息标签页
-                var statsTextBox = previewTabControl.TabPages[1].Controls["statsTextBox"] as RichTextBox;
+                var statsTextBox = previewTabControl.TabPages[2].Controls["statsTextBox"] as RichTextBox;
                 if (statsTextBox != null)
                 {
                     var stats = GenerateStatistics();
@@ -1450,7 +1518,7 @@ namespace WinFormsApp1
                 }
                 
                 // 更新文件信息标签页
-                var fileInfoTextBox = previewTabControl.TabPages[2].Controls["fileInfoTextBox"] as RichTextBox;
+                var fileInfoTextBox = previewTabControl.TabPages[3].Controls["fileInfoTextBox"] as RichTextBox;
                 if (fileInfoTextBox != null)
                 {
                     var fileInfo = GenerateFileInfo();
@@ -1458,7 +1526,7 @@ namespace WinFormsApp1
                 }
                 
                 // 更新模板信息标签页
-                var templateTextBox = previewTabControl.TabPages[3].Controls["templateTextBox"] as RichTextBox;
+                var templateTextBox = previewTabControl.TabPages[4].Controls["templateTextBox"] as RichTextBox;
                 if (templateTextBox != null)
                 {
                     var templateInfo = GenerateTemplateInfo();
@@ -1468,6 +1536,117 @@ namespace WinFormsApp1
             catch (Exception ex)
             {
                 logger.LogError($"更新预览区域失败: {ex.Message}");
+            }
+        }
+
+        private string GenerateDeviceSTPreview()
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("🏭 设备ST程序预览");
+                sb.AppendLine("=" + new string('=', 40));
+                sb.AppendLine();
+
+                // 从当前的点位数据中提取设备信息
+                if (pointData == null || !pointData.Any())
+                {
+                    sb.AppendLine("暂无设备数据，请先上传并处理点表文件。");
+                    return sb.ToString();
+                }
+
+                try
+                {
+                    // 使用ExcelDataService加载设备数据
+                    if (!string.IsNullOrEmpty(uploadedFilePath))
+                    {
+                        var dataContext = stGenerationService.GetStatistics(uploadedFilePath);
+                        if (dataContext.DeviceCount > 0)
+                        {
+                            sb.AppendLine($"📋 发现 {dataContext.DeviceCount} 个设备");
+                            sb.AppendLine();
+
+                            // 使用缓存机制获取数据上下文，避免重复解析Excel
+                            var fullDataContext = GetCachedDataContext(uploadedFilePath);
+                            
+                            if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
+                            {
+                                var deviceSTPrograms = stGenerationService.GenerateDeviceSTPrograms(fullDataContext.Devices);
+                                
+                                if (deviceSTPrograms.Any())
+                                {
+                                    foreach (var templateGroup in deviceSTPrograms.Take(3)) // 只显示前3个模板的预览
+                                    {
+                                        sb.AppendLine($"🎨 模板: {templateGroup.Key}");
+                                        sb.AppendLine(new string('-', 30));
+                                        
+                                        foreach (var code in templateGroup.Value.Take(2)) // 每个模板最多显示2个设备
+                                        {
+                                            var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                            foreach (var line in lines.Take(15)) // 每个设备最多显示15行
+                                            {
+                                                sb.AppendLine(line);
+                                            }
+                                            if (lines.Length > 15)
+                                            {
+                                                sb.AppendLine("... (代码已截断)");
+                                            }
+                                            sb.AppendLine();
+                                        }
+                                        
+                                        if (templateGroup.Value.Count > 2)
+                                        {
+                                            sb.AppendLine($"... 还有 {templateGroup.Value.Count - 2} 个设备未显示");
+                                        }
+                                        sb.AppendLine();
+                                    }
+                                    
+                                    if (deviceSTPrograms.Count > 3)
+                                    {
+                                        sb.AppendLine($"... 还有 {deviceSTPrograms.Count - 3} 个模板未显示");
+                                    }
+                                }
+                                else
+                                {
+                                    sb.AppendLine("⚠️ 未生成设备ST程序，可能原因：");
+                                    sb.AppendLine("• 设备没有指定模板名称");
+                                    sb.AppendLine("• 模板文件不存在或格式错误");
+                                    sb.AppendLine("• 设备点位数据不完整");
+                                }
+                            }
+                            else
+                            {
+                                sb.AppendLine("📝 设备信息统计:");
+                                sb.AppendLine($"• 总点位数: {dataContext.TotalPoints}");
+                                sb.AppendLine($"• 独立点位: {dataContext.StandalonePointsCount}");
+                                sb.AppendLine();
+                                sb.AppendLine("ℹ️ 未找到设备分类信息，请检查Excel文件中是否包含'设备分类表'工作表。");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine("ℹ️ 当前数据中未发现设备信息。");
+                            sb.AppendLine("设备ST程序需要在Excel文件中包含'设备分类表'工作表，");
+                            sb.AppendLine("并在其中指定设备位号和模板名称。");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("请先上传Excel文件以查看设备ST程序预览。");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    sb.AppendLine($"❌ 生成设备ST程序预览时出错: {ex.Message}");
+                    logger?.LogError($"生成设备ST程序预览失败: {ex.Message}");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"GenerateDeviceSTPreview失败: {ex.Message}");
+                return $"❌ 生成设备ST程序预览时出错: {ex.Message}";
             }
         }
 
@@ -2703,6 +2882,83 @@ namespace WinFormsApp1
             }
         }
 
+        #region 数据缓存管理
+
+        /// <summary>
+        /// 安全地获取数据上下文，只在文件变化时重新解析Excel
+        /// </summary>
+        /// <param name="filePath">Excel文件路径</param>
+        /// <returns>数据上下文，如果解析失败则返回null</returns>
+        private AutomaticGeneration_ST.Services.Interfaces.DataContext? GetCachedDataContext(string filePath)
+        {
+            try
+            {
+                // 检查文件是否存在
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                {
+                    logger?.LogWarning("文件路径无效或文件不存在");
+                    return null;
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                
+                // 检查是否需要重新解析数据
+                bool needsReload = cachedDataContext == null || 
+                                 cachedFilePath != filePath || 
+                                 cachedFileTime != fileInfo.LastWriteTime;
+
+                if (needsReload)
+                {
+                    logger?.LogInfo($"🔄 加载Excel数据: {Path.GetFileName(filePath)}");
+                    
+                    var excelDataService = new AutomaticGeneration_ST.Services.Implementations.ExcelDataService();
+                    cachedDataContext = excelDataService.LoadData(filePath);
+                    cachedFilePath = filePath;
+                    cachedFileTime = fileInfo.LastWriteTime;
+                    
+                    // 标记设备列表需要刷新
+                    deviceListNeedsRefresh = true;
+                    
+                    logger?.LogSuccess($"✅ Excel数据加载完成 - 设备数: {cachedDataContext.Devices.Count}, 点位数: {cachedDataContext.AllPointsMasterList.Count}");
+                }
+                else
+                {
+                    logger?.LogInfo($"📋 使用缓存的Excel数据: {Path.GetFileName(filePath)}");
+                }
+
+                return cachedDataContext;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"❌ 获取数据上下文时出错: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 清除数据缓存（当用户选择新文件或重置应用时调用）
+        /// </summary>
+        private void ClearDataCache()
+        {
+            cachedDataContext = null;
+            cachedFilePath = "";
+            cachedFileTime = DateTime.MinValue;
+            logger?.LogInfo("🗑️ 已清除数据缓存");
+        }
+
+        /// <summary>
+        /// 检查当前是否有有效的缓存数据
+        /// </summary>
+        /// <returns>如果有有效缓存数据返回true</returns>
+        private bool HasValidCachedData()
+        {
+            return cachedDataContext != null && 
+                   !string.IsNullOrWhiteSpace(cachedFilePath) && 
+                   File.Exists(cachedFilePath);
+        }
+
+        #endregion
+
         protected override async void OnFormClosing(FormClosingEventArgs e)
         {
             try
@@ -2822,13 +3078,20 @@ namespace WinFormsApp1
                 // 显示进度
                 UpdateProgressBar("正在使用新架构生成ST代码...", 0, true);
 
-                // 先获取统计信息
-                var statistics = stGenerationService.GetStatistics(uploadedFilePath);
-                logger.LogInfo($"数据统计: 总点位 {statistics.TotalPoints}个, 设备 {statistics.DeviceCount}个, 独立点位 {statistics.StandalonePointsCount}个");
+                // 使用缓存机制获取数据上下文，避免重复解析Excel
+                var dataContext = GetCachedDataContext(uploadedFilePath);
+                if (dataContext == null)
+                {
+                    throw new Exception("无法加载Excel数据");
+                }
 
-                // 生成ST代码
+                // 从已有数据上下文获取统计信息，避免重复加载
+                var statistics = stGenerationService.GetStatistics(dataContext);
+                logger.LogInfo($"数据统计: 总点位 {statistics.TotalPoints}个, 设备 {statistics.DeviceCount}个, 独立点位 {statistics.StandalonePointsCount}个");
+                
+                // 生成ST代码（使用新的重载方法）
                 var generatedFileCount = stGenerationService.GenerateSTCode(
-                    uploadedFilePath, 
+                    dataContext, 
                     templateDir, 
                     configFile, 
                     exportPath);
@@ -2962,6 +3225,317 @@ namespace WinFormsApp1
                               "错误", 
                               MessageBoxButtons.OK, 
                               MessageBoxIcon.Error);
+            }
+        }
+
+        #region 新增UI功能方法
+
+        /// <summary>
+        /// 生成IO映射ST程序预览内容
+        /// </summary>
+        private string GenerateIOMappingPreview()
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("📋 IO映射ST程序");
+                sb.AppendLine("=" + new string('=', 40));
+                sb.AppendLine();
+
+                if (generatedScripts != null && generatedScripts.Any())
+                {
+                    // 过滤出IO映射相关的脚本（不包含设备ST程序）
+                    var ioMappingScripts = generatedScripts.Where(script => 
+                        script.Contains("AI_MAPPING") || 
+                        script.Contains("AO_MAPPING") || 
+                        script.Contains("DI_MAPPING") || 
+                        script.Contains("DO_MAPPING") ||
+                        script.Contains("// AI点位映射") ||
+                        script.Contains("// AO点位映射") ||
+                        script.Contains("// DI点位映射") ||
+                        script.Contains("// DO点位映射")
+                    ).ToList();
+
+                    if (ioMappingScripts.Any())
+                    {
+                        sb.AppendLine($"🎯 共生成 {ioMappingScripts.Count} 个IO映射文件");
+                        sb.AppendLine();
+
+                        foreach (var script in ioMappingScripts.Take(5)) // 显示前5个
+                        {
+                            var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var line in lines.Take(20)) // 每个脚本显示前20行
+                            {
+                                sb.AppendLine(line);
+                            }
+                            if (lines.Length > 20)
+                            {
+                                sb.AppendLine("... (更多内容已省略)");
+                            }
+                            sb.AppendLine();
+                            sb.AppendLine(new string('-', 50));
+                            sb.AppendLine();
+                        }
+
+                        if (ioMappingScripts.Count > 5)
+                        {
+                            sb.AppendLine($"... 还有 {ioMappingScripts.Count - 5} 个IO映射文件未显示");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("⚠️ 未找到IO映射相关的ST程序");
+                        sb.AppendLine("请检查模板配置和生成逻辑");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine("暂无生成的IO映射ST程序，请先上传并处理点表文件。");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"生成IO映射预览失败: {ex.Message}");
+                return $"❌ 生成IO映射预览时出错: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// 获取当前选中的设备
+        /// </summary>
+        private string GetSelectedDevice()
+        {
+            try
+            {
+                var deviceComboBox = previewTabControl.TabPages[1].Controls.Find("deviceComboBox", true).FirstOrDefault() as ComboBox;
+                if (deviceComboBox != null && deviceComboBox.SelectedItem != null)
+                {
+                    var selectedText = deviceComboBox.SelectedItem.ToString();
+                    return selectedText == "全部设备" ? null : selectedText;
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 刷新设备列表
+        /// </summary>
+        private void RefreshDeviceList()
+        {
+            try
+            {
+                var deviceComboBox = previewTabControl.TabPages[1].Controls.Find("deviceComboBox", true).FirstOrDefault() as ComboBox;
+                if (deviceComboBox == null) return;
+
+                var currentSelection = deviceComboBox.SelectedItem?.ToString();
+                deviceComboBox.Items.Clear();
+                deviceComboBox.Items.Add("全部设备");
+
+                // 从缓存的数据上下文中获取设备列表
+                if (!string.IsNullOrEmpty(uploadedFilePath))
+                {
+                    var dataContext = GetCachedDataContext(uploadedFilePath);
+                    if (dataContext?.Devices != null)
+                    {
+                        foreach (var device in dataContext.Devices.OrderBy(d => d.DeviceTag))
+                        {
+                            deviceComboBox.Items.Add($"{device.DeviceTag} ({device.TemplateName})");
+                        }
+                    }
+                }
+
+                // 恢复之前的选择或默认选择第一项
+                if (!string.IsNullOrEmpty(currentSelection) && deviceComboBox.Items.Contains(currentSelection))
+                {
+                    deviceComboBox.SelectedItem = currentSelection;
+                }
+                else
+                {
+                    deviceComboBox.SelectedIndex = 0;
+                }
+                
+                deviceListNeedsRefresh = false; // 标记已刷新
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"刷新设备列表失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 仅在需要时刷新设备列表（性能优化）
+        /// </summary>
+        private void RefreshDeviceListIfNeeded()
+        {
+            if (deviceListNeedsRefresh)
+            {
+                RefreshDeviceList();
+            }
+        }
+
+        /// <summary>
+        /// 设备选择框变化事件
+        /// </summary>
+        private void DeviceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                var deviceSTTextBox = previewTabControl.TabPages[1].Controls["deviceSTTextBox"] as RichTextBox;
+                if (deviceSTTextBox != null)
+                {
+                    var selectedDevice = GetSelectedDevice();
+                    var deviceSTContent = GenerateDeviceSTPreview(selectedDevice);
+                    deviceSTTextBox.Text = deviceSTContent;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"更新设备ST程序预览失败: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 生成设备ST程序预览内容（支持单个设备选择）
+        /// </summary>
+        private string GenerateDeviceSTPreview(string selectedDeviceTag = null)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("🏭 设备ST程序");
+                sb.AppendLine("=" + new string('=', 40));
+                sb.AppendLine();
+
+                if (!string.IsNullOrEmpty(uploadedFilePath))
+                {
+                    var dataContext = stGenerationService.GetStatistics(uploadedFilePath);
+                    if (dataContext.DeviceCount > 0)
+                    {
+                        sb.AppendLine($"📋 发现 {dataContext.DeviceCount} 个设备");
+                        if (!string.IsNullOrEmpty(selectedDeviceTag))
+                        {
+                            sb.AppendLine($"🎯 当前显示: {selectedDeviceTag}");
+                        }
+                        else
+                        {
+                            sb.AppendLine("🎯 当前显示: 全部设备");
+                        }
+                        sb.AppendLine();
+
+                        var fullDataContext = GetCachedDataContext(uploadedFilePath);
+                        if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
+                        {
+                            var deviceSTPrograms = stGenerationService.GenerateDeviceSTPrograms(fullDataContext.Devices);
+                            
+                            if (deviceSTPrograms.Any())
+                            {
+                                // 如果选择了特定设备，只显示该设备的ST程序
+                                if (!string.IsNullOrEmpty(selectedDeviceTag))
+                                {
+                                    var targetDevice = fullDataContext.Devices.FirstOrDefault(d => 
+                                        selectedDeviceTag.StartsWith(d.DeviceTag));
+                                    
+                                    if (targetDevice != null)
+                                    {
+                                        var templateGroup = deviceSTPrograms.FirstOrDefault(kvp => 
+                                            kvp.Value.Any(code => code.Contains(targetDevice.DeviceTag)));
+                                        
+                                        if (!templateGroup.Equals(default(KeyValuePair<string, List<string>>)))
+                                        {
+                                            sb.AppendLine($"🎨 模板: {templateGroup.Key}");
+                                            sb.AppendLine(new string('-', 30));
+                                            
+                                            var deviceCode = templateGroup.Value.FirstOrDefault(code => 
+                                                code.Contains(targetDevice.DeviceTag));
+                                            
+                                            if (!string.IsNullOrEmpty(deviceCode))
+                                            {
+                                                sb.AppendLine(deviceCode);
+                                            }
+                                            else
+                                            {
+                                                sb.AppendLine("❌ 未找到该设备的ST程序代码");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            sb.AppendLine("❌ 未找到该设备的模板或ST程序");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        sb.AppendLine("❌ 未找到指定的设备");
+                                    }
+                                }
+                                else
+                                {
+                                    // 显示所有设备的ST程序预览
+                                    foreach (var templateGroup in deviceSTPrograms)
+                                    {
+                                        sb.AppendLine($"🎨 模板: {templateGroup.Key} ({templateGroup.Value.Count} 个设备)");
+                                        sb.AppendLine(new string('-', 30));
+                                        
+                                        foreach (var code in templateGroup.Value.Take(2)) // 每个模板显示前2个设备
+                                        {
+                                            var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                            foreach (var line in lines.Take(15)) // 每个设备显示前15行
+                                            {
+                                                sb.AppendLine(line);
+                                            }
+                                            if (lines.Length > 15)
+                                            {
+                                                sb.AppendLine("... (代码已截断)");
+                                            }
+                                            sb.AppendLine();
+                                        }
+                                        
+                                        if (templateGroup.Value.Count > 2)
+                                        {
+                                            sb.AppendLine($"... 还有 {templateGroup.Value.Count - 2} 个设备未显示");
+                                        }
+                                        sb.AppendLine();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                sb.AppendLine("⚠️ 未生成设备ST程序，可能原因：");
+                                sb.AppendLine("• 设备没有指定模板名称");
+                                sb.AppendLine("• 模板文件不存在或格式错误");
+                                sb.AppendLine("• 设备点位数据不完整");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine("ℹ️ 未找到设备分类信息，请检查Excel文件中是否包含'设备分类表'工作表。");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("ℹ️ 当前数据中未发现设备信息。");
+                        sb.AppendLine("设备ST程序需要在Excel文件中包含'设备分类表'工作表，");
+                        sb.AppendLine("并在其中指定设备位号和模板名称。");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine("请先上传Excel文件以查看设备ST程序。");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"GenerateDeviceSTPreview失败: {ex.Message}");
+                return $"❌ 生成设备ST程序预览时出错: {ex.Message}";
             }
         }
 

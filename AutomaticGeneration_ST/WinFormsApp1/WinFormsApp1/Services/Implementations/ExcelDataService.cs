@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using OfficeOpenXml; // 引入EPPlus的命名空间
@@ -54,48 +55,48 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     var parsedPointsCount = ParseIoSheet(ioSheet, context.AllPointsMasterList);
                     _logger.LogSuccess($"✅ IO点表解析完成，共解析 {parsedPointsCount} 个点位");
 
-                // --- 步骤 2: 解析 "设备分类表"，构建设备实例并关联点位 ---
+                // --- 步骤 2: 解析 "设备分类表"，构建设备实例和点位字典 ---
                 _logger.LogInfo("🏭 步骤2: 开始处理设备分类表...");
                 var deviceSheet = package.Workbook.Worksheets["设备分类表"];
+                var deviceMap = new Dictionary<string, Device>(); // 临时字典用于高效构建设备
+                
                 if (deviceSheet != null)
                 {
-                    var deviceMap = new Dictionary<string, Device>(); // 临时字典用于高效构建设备
-                    ParseDeviceSheet(deviceSheet, deviceMap, context.AllPointsMasterList, pointsAssignedToDevices);
-                    context.Devices = deviceMap.Values.ToList();
-                    _logger.LogSuccess($"✅ 设备分类表解析完成，共构建 {context.Devices.Count} 个设备，关联 {pointsAssignedToDevices.Count} 个点位");
-                    
-                    // 输出设备统计信息
-                    if (context.Devices.Any())
-                    {
-                        var deviceStats = context.Devices.GroupBy(d => d.TemplateName ?? "未指定模板")
-                                                        .ToDictionary(g => g.Key, g => g.Count());
-                        foreach (var stat in deviceStats.OrderByDescending(x => x.Value))
-                        {
-                            _logger.LogInfo($"   📋 模板 [{stat.Key}]: {stat.Value} 个设备");
-                        }
-                    }
+                    ParseDeviceClassificationSheet(deviceSheet, deviceMap, context.AllPointsMasterList, pointsAssignedToDevices);
+                    _logger.LogSuccess($"✅ 设备分类表解析完成，创建了 {deviceMap.Count} 个设备");
                 }
                 else
                 {
                     _logger.LogWarning("⚠️ 未找到设备分类表，将跳过设备构建步骤");
-                    context.Devices = new List<Device>();
                 }
 
-                // --- 步骤 3: （可选但强烈建议）解析其他点表，以捕获可能遗漏的点位 ---
-                _logger.LogInfo("📋 步骤3: 处理其他设备专用表...");
-                var otherSheetNames = new List<string> { "阀门", "调节阀", "可燃气体探测器", "低压开关柜", "撬装机柜" };
+                // --- 步骤 3: 解析设备专用表，填充软点位的详细信息 ---
+                _logger.LogInfo("📋 步骤3: 处理设备专用表，填充软点位详细信息...");
+                var deviceSheetNames = new List<string> { "阀门", "调节阀", "可燃气体探测器", "低压开关柜", "撬装机柜" };
                 int processedSheetCount = 0;
-                foreach (var sheetName in otherSheetNames)
+                
+                foreach (var sheetName in deviceSheetNames)
                 {
-                    var otherSheet = package.Workbook.Worksheets[sheetName];
-                    if (otherSheet != null)
+                    var devicePointSheet = package.Workbook.Worksheets[sheetName];
+                    if (devicePointSheet != null)
                     {
-                        ParseOtherSheet(otherSheet, context.AllPointsMasterList);
+                        FillDevicePointDetails(devicePointSheet, deviceMap, sheetName);
                         processedSheetCount++;
-                        _logger.LogInfo($"   ✓ 处理表格: {sheetName}");
+                        _logger.LogInfo($"   ✓ 处理设备表: {sheetName}");
                     }
                 }
-                _logger.LogInfo($"📊 其他设备表处理完成，共处理 {processedSheetCount} 个表格");
+                
+                context.Devices = deviceMap.Values.ToList();
+                _logger.LogInfo($"📊 设备点位加载完成，共处理 {processedSheetCount} 个设备表");
+                
+                // 输出设备统计信息
+                if (context.Devices.Any())
+                {
+                    foreach (var device in context.Devices)
+                    {
+                        _logger.LogInfo($"   📋 设备 [{device.DeviceTag}] ({device.TemplateName}): IO点位={device.IoPoints.Count}, 设备点位={device.DevicePoints.Count}");
+                    }
+                }
 
                     // --- 步骤 4: 最终识别并分离独立点位 ---
                     _logger.LogInfo("🔍 步骤4: 识别独立点位...");
@@ -161,7 +162,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
             // 遍历数据行（从第2行开始，跳过表头）
             for (int row = sheet.Dimension.Start.Row + 1; row <= sheet.Dimension.End.Row; row++)
             {
-                var hmiTagName = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("变量名称（HMI）", 0)]);
+                var hmiTagName = GetSafeFieldValue<string>(sheet, row, headerIndexes, "变量名称（HMI）");
                 if (string.IsNullOrWhiteSpace(hmiTagName)) 
                 {
                     skippedCount++;
@@ -172,29 +173,29 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 {
                     var point = new Models.Point(hmiTagName)
                     {
-                        ModuleName = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("模块名称", 0)]),
-                        ModuleType = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("模块类型", 0)]),
-                        PowerSupplyType = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("供电类型", 0)]),
-                        WireSystem = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("线制", 0)]),
-                        ChannelNumber = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("通道位号", 0)]),
-                        StationName = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("场站名", 0)]),
-                        StationId = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("场站编号", 0)]),
-                        Description = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("变量描述", 0)]),
-                        DataType = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("数据类型", 0)]),
-                        PlcAbsoluteAddress = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("PLC绝对地址", 0)]),
-                        ScadaCommAddress = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("上位机通讯地址", 0)]),
-                        StoreHistory = GetCellValue<bool?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("是否历史存储", 0)]),
-                        PowerDownProtection = GetCellValue<bool?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("是否掉电保护", 0)]),
-                        RangeLow = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("量程低", 0)]),
-                        RangeHigh = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("量程高", 0)]),
-                        Unit = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("单位", 0)]),
-                        InstrumentType = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("仪表类型", 0)]),
-                        PointType = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("点位类型", 0)]),
+                        ModuleName = GetSafeFieldValue<string>(sheet, row, headerIndexes, "模块名称"),
+                        ModuleType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "模块类型"),
+                        PowerSupplyType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "供电类型（有源/无源）"),
+                        WireSystem = GetSafeFieldValue<string>(sheet, row, headerIndexes, "线制"),
+                        ChannelNumber = GetSafeFieldValue<string>(sheet, row, headerIndexes, "通道位号"),
+                        StationName = GetSafeFieldValue<string>(sheet, row, headerIndexes, "场站名"),
+                        StationId = GetSafeFieldValue<string>(sheet, row, headerIndexes, "场站编号"),
+                        Description = GetSafeFieldValue<string>(sheet, row, headerIndexes, "变量描述"),
+                        DataType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "数据类型"),
+                        PlcAbsoluteAddress = GetSafeFieldValue<string>(sheet, row, headerIndexes, "PLC绝对地址"),
+                        ScadaCommAddress = GetSafeFieldValue<string>(sheet, row, headerIndexes, "上位机通讯地址"),
+                        StoreHistory = GetSafeFieldValue<bool?>(sheet, row, headerIndexes, "是否历史存储"),
+                        PowerDownProtection = GetSafeFieldValue<bool?>(sheet, row, headerIndexes, "是否掉电保护"),
+                        RangeLow = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程低"),
+                        RangeHigh = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程高"),
+                        Unit = GetSafeFieldValue<string>(sheet, row, headerIndexes, "单位"),
+                        InstrumentType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "仪表类型"),
+                        PointType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "点位类型"),
                         // 添加报警相关字段
-                        SHH_Value = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("SHH值", 0)]),
-                        SH_Value = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("SH值", 0)]),
-                        SL_Value = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("SL值", 0)]),
-                        SLL_Value = GetCellValue<double?>(sheet.Cells[row, headerIndexes.GetValueOrDefault("SLL值", 0)])
+                        SHH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SHH值"),
+                        SH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SH值"),
+                        SL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SL值"),
+                        SLL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SLL值")
                     };
 
                     if (!masterList.ContainsKey(hmiTagName))
@@ -231,74 +232,221 @@ namespace AutomaticGeneration_ST.Services.Implementations
             return parsedCount;
         }
 
-        private void ParseDeviceSheet(ExcelWorksheet sheet, Dictionary<string, Device> deviceMap,
+        /// <summary>
+        /// 解析设备分类表，创建设备实例和点位字典
+        /// </summary>
+        private void ParseDeviceClassificationSheet(ExcelWorksheet sheet, Dictionary<string, Device> deviceMap,
             Dictionary<string, Models.Point> masterList, HashSet<string> pointsAssignedToDevices)
         {
-            if (sheet.Dimension == null) return;
+            if (sheet.Dimension == null) 
+            {
+                _logger.LogWarning("⚠️ 设备分类表为空或没有数据");
+                return;
+            }
+
+            var totalRows = sheet.Dimension.End.Row - sheet.Dimension.Start.Row;
+            _logger.LogInfo($"📊 设备分类表包含 {totalRows} 行数据（包含表头）");
 
             // 获取列索引
             var headerIndexes = GetColumnIndexes(sheet);
+            
+            if (headerIndexes.Count == 0)
+            {
+                _logger.LogError("❌ 设备分类表未找到有效的列标题");
+                return;
+            }
 
-            // 遍历数据行
+            // 输出找到的列标题，帮助调试
+            _logger.LogInfo($"📋 设备分类表包含字段: {string.Join(", ", headerIndexes.Keys)}");
+
+            // 检查关键字段是否存在，支持多种可能的字段名
+            var deviceTagFields = new[] { "设备位号", "设备号", "设备标签", "Device Tag", "DeviceTag" };
+            var templateFields = new[] { "模板名称", "模板", "Template", "TemplateName" };
+            var hmiTagFields = new[] { "变量名称（HMI）", "变量名称", "HMI名", "HMI Tag", "TagName" };
+            var categoryFields = new[] { "设备类别(硬点、软点、通讯点)", "设备类别", "类别", "Category", "Type" };
+
+            var deviceTagField = deviceTagFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
+            var templateField = templateFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
+            var hmiTagField = hmiTagFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
+            var categoryField = categoryFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
+
+            if (string.IsNullOrEmpty(deviceTagField))
+            {
+                _logger.LogError($"❌ 未找到设备位号字段，尝试过的字段名: {string.Join(", ", deviceTagFields)}");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(hmiTagField))
+            {
+                _logger.LogError($"❌ 未找到HMI变量名字段，尝试过的字段名: {string.Join(", ", hmiTagFields)}");
+                return;
+            }
+
+            _logger.LogInfo($"✓ 使用字段映射: 设备位号='{deviceTagField}', 模板='{templateField}', HMI变量='{hmiTagField}', 类别='{categoryField}'");
+
+            int processedRows = 0;
+            int createdDevices = 0;
+            int skippedRows = 0;
+
+            // 遍历数据行，为每个设备创建点位字典
             for (int row = sheet.Dimension.Start.Row + 1; row <= sheet.Dimension.End.Row; row++)
             {
-                var deviceTag = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("设备位号", 0)]);
-                var templateName = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("模板名称", 0)]);
-                var hmiTagName = GetCellValue<string>(sheet.Cells[row, headerIndexes.GetValueOrDefault("变量名称（HMI）", 0)]);
-
-                if (string.IsNullOrWhiteSpace(deviceTag) || string.IsNullOrWhiteSpace(hmiTagName)) continue;
-
-                // 检查设备是否已存在
-                if (!deviceMap.ContainsKey(deviceTag))
+                try
                 {
-                    deviceMap[deviceTag] = new Device(deviceTag, templateName ?? "");
+                    var deviceTag = GetSafeFieldValue<string>(sheet, row, headerIndexes, deviceTagField);
+                    var templateName = GetSafeFieldValue<string>(sheet, row, headerIndexes, templateField ?? "");
+                    var hmiTagName = GetSafeFieldValue<string>(sheet, row, headerIndexes, hmiTagField);
+
+                    processedRows++;
+
+                    if (string.IsNullOrWhiteSpace(deviceTag) || string.IsNullOrWhiteSpace(hmiTagName)) 
+                    {
+                        skippedRows++;
+                        continue;
+                    }
+
+                    // 检查设备是否已存在，如果不存在则创建
+                    if (!deviceMap.ContainsKey(deviceTag))
+                    {
+                        deviceMap[deviceTag] = new Device(deviceTag, templateName ?? "");
+                        createdDevices++;
+                        _logger.LogInfo($"   ✓ 创建新设备: [{deviceTag}] 模板='{templateName}'");
+                    }
+
+                    // 先检查是否在IO表中存在（硬点）
+                    if (masterList.TryGetValue(hmiTagName, out var ioPoint))
+                    {
+                        // 硬点：从IO表获取详细信息
+                        var ioPointData = new Dictionary<string, object>
+                        {
+                            ["变量名称（HMI名）"] = ioPoint.HmiTagName ?? "",
+                            ["模块名称"] = ioPoint.ModuleName ?? "",
+                            ["模块类型"] = ioPoint.ModuleType ?? "",
+                            ["供电类型（有源/无源）"] = ioPoint.PowerSupplyType ?? "",
+                            ["线制"] = ioPoint.WireSystem ?? "",
+                            ["通道位号"] = ioPoint.ChannelNumber ?? "",
+                            ["场站名"] = ioPoint.StationName ?? "",
+                            ["场站编号"] = ioPoint.StationId ?? "",
+                            ["变量描述"] = ioPoint.Description ?? "",
+                            ["数据类型"] = ioPoint.DataType ?? "",
+                            ["PLC绝对地址"] = ioPoint.PlcAbsoluteAddress ?? "",
+                            ["上位机通讯地址"] = ioPoint.ScadaCommAddress ?? "",
+                            ["是否历史存储"] = ioPoint.StoreHistory,
+                            ["是否掉电保护"] = ioPoint.PowerDownProtection,
+                            ["量程低"] = ioPoint.RangeLow,
+                            ["量程高"] = ioPoint.RangeHigh,
+                            ["单位"] = ioPoint.Unit ?? "",
+                            ["仪表类型"] = ioPoint.InstrumentType ?? "",
+                            ["点位类型"] = ioPoint.PointType ?? "",
+                            ["SHH值"] = ioPoint.SHH_Value,
+                            ["SH值"] = ioPoint.SH_Value,
+                            ["SL值"] = ioPoint.SL_Value,
+                            ["SLL值"] = ioPoint.SLL_Value
+                        };
+                        
+                        deviceMap[deviceTag].AddIoPoint(hmiTagName, ioPointData);
+                        pointsAssignedToDevices.Add(hmiTagName);
+                    }
+                    else
+                    {
+                        // 软点：先创建基础信息，详细信息稍后从设备专用表获取
+                        var softPointData = new Dictionary<string, object>
+                        {
+                            ["变量名称"] = hmiTagName,
+                            ["变量描述"] = "", // 从设备专用表获取
+                            ["数据类型"] = "", // 从设备专用表获取
+                            ["PLC地址"] = "", // 从设备专用表获取
+                            ["MODBUS地址"] = "" // 从设备专用表获取
+                        };
+                        
+                        deviceMap[deviceTag].AddDevicePoint(hmiTagName, softPointData);
+                    }
                 }
-
-                // 查找并添加点位
-                if (masterList.TryGetValue(hmiTagName, out var point))
+                catch (Exception ex)
                 {
-                    deviceMap[deviceTag].AddPoint(point);
-                    pointsAssignedToDevices.Add(hmiTagName);
+                    _logger.LogError($"   ❌ 解析设备分类表第{row}行时出错: {ex.Message}");
                 }
             }
+
+            _logger.LogInfo($"📊 设备分类表解析统计:");
+            _logger.LogInfo($"   • 处理行数: {processedRows}");
+            _logger.LogInfo($"   • 创建设备: {createdDevices}");
+            _logger.LogInfo($"   • 硬点位: {pointsAssignedToDevices.Count}");
+            _logger.LogInfo($"   • 跳过行数: {skippedRows}");
         }
 
-        private void ParseOtherSheet(ExcelWorksheet sheet, Dictionary<string, Models.Point> masterList)
+        /// <summary>
+        /// 填充设备专用表的软点位详细信息
+        /// </summary>
+        private void FillDevicePointDetails(ExcelWorksheet sheet, Dictionary<string, Device> deviceMap, string sheetName)
         {
             if (sheet.Dimension == null) return;
 
             // 获取列索引
             var headerIndexes = GetColumnIndexes(sheet);
-            var hmiTagColumnIndex = headerIndexes.GetValueOrDefault("变量名称（HMI）", 0);
-            
-            if (hmiTagColumnIndex == 0) return; // 如果没有找到HMI变量名称列，跳过
+            int updatedPoints = 0;
 
             // 遍历数据行
             for (int row = sheet.Dimension.Start.Row + 1; row <= sheet.Dimension.End.Row; row++)
             {
-                var hmiTagName = GetCellValue<string>(sheet.Cells[row, hmiTagColumnIndex]);
-                if (string.IsNullOrWhiteSpace(hmiTagName)) continue;
-
-                // 如果这个点位不在主列表中，创建一个基本的点位对象
-                if (!masterList.ContainsKey(hmiTagName))
+                try
                 {
-                    try
+                    var variableName = GetSafeFieldValue<string>(sheet, row, headerIndexes, "变量名称");
+                    if (string.IsNullOrWhiteSpace(variableName)) continue;
+
+                    // 查找包含此软点位的设备
+                    Device targetDevice = null;
+                    foreach (var device in deviceMap.Values)
                     {
-                        var point = new Models.Point(hmiTagName);
-                        // 尝试填充一些基本信息
-                        if (headerIndexes.ContainsKey("变量描述"))
+                        if (device.DevicePoints.ContainsKey(variableName))
                         {
-                            point.Description = GetCellValue<string>(sheet.Cells[row, headerIndexes["变量描述"]]);
+                            targetDevice = device;
+                            break;
                         }
-                        masterList.Add(hmiTagName, point);
                     }
-                    catch (System.Exception ex)
+
+                    if (targetDevice != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"解析其他工作表行 {row} 时出错: {ex.Message}");
+                        // 更新软点位的详细信息
+                        var updatedPointData = new Dictionary<string, object>();
+                        
+                        // 遍历所有列，将数据存入字典
+                        foreach (var header in headerIndexes)
+                        {
+                            try
+                            {
+                                var cellValue = GetSafeFieldValue<object>(sheet, row, headerIndexes, header.Key);
+                                updatedPointData[header.Key] = cellValue ?? "";
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning($"   ⚠️ 获取{sheetName}表第{row}行'{header.Key}'字段时出错: {ex.Message}");
+                                updatedPointData[header.Key] = "";
+                            }
+                        }
+
+                        // 更新设备中的软点位数据
+                        targetDevice.DevicePoints[variableName] = updatedPointData;
+                        updatedPoints++;
+                        _logger.LogInfo($"   ✓ 更新设备 [{targetDevice.DeviceTag}] 软点位: {variableName}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"   ⚠️ 软点位 {variableName} 在设备分类表中未找到对应设备");
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"   ❌ 处理{sheetName}表第{row}行时出错: {ex.Message}");
+                }
             }
+
+            _logger.LogInfo($"   📊 {sheetName}表处理完成，更新了 {updatedPoints} 个软点位");
         }
+
+
+        // 旧的ParseOtherSheet方法已被ParseDevicePointSheet替代，该方法支持字典结构存储
+        // [已废弃] 原方法只处理Point对象，现在需要分别处理IO点位和设备点位
 
         private Dictionary<string, int> GetColumnIndexes(ExcelWorksheet sheet)
         {
@@ -317,6 +465,37 @@ namespace AutomaticGeneration_ST.Services.Implementations
             }
 
             return indexes;
+        }
+
+        /// <summary>
+        /// 安全地获取字段值，处理字段不存在或为空的情况
+        /// </summary>
+        private T GetSafeFieldValue<T>(ExcelWorksheet sheet, int row, Dictionary<string, int> headerIndexes, string fieldName)
+        {
+            try
+            {
+                // 检查字段是否存在于表头中
+                if (!headerIndexes.ContainsKey(fieldName))
+                {
+                    return default(T);
+                }
+
+                int columnIndex = headerIndexes[fieldName];
+                
+                // 检查列索引是否有效
+                if (columnIndex <= 0 || columnIndex > sheet.Dimension.End.Column)
+                {
+                    return default(T);
+                }
+
+                return GetCellValue<T>(sheet.Cells[row, columnIndex]);
+            }
+            catch (Exception ex)
+            {
+                // 记录警告但不抛出异常，返回默认值
+                System.Diagnostics.Debug.WriteLine($"获取字段 '{fieldName}' 第{row}行时出错: {ex.Message}");
+                return default(T);
+            }
         }
 
         private T GetCellValue<T>(ExcelRange cell)
