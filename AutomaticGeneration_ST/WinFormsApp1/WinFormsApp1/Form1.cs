@@ -8,6 +8,7 @@ using WinFormsApp1.ProjectManagement;
 using WinFormsApp1.Tests;
 using System.Windows.Forms;
 using AutomaticGeneration_ST.Services;
+using AutomaticGeneration_ST.Models;
 
 namespace WinFormsApp1
 {
@@ -26,12 +27,11 @@ namespace WinFormsApp1
         private bool isUpdatingPreview = false;
         private STGenerationService stGenerationService = new STGenerationService();
         
-        // 数据缓存机制 - 避免重复解析Excel文件
-        private AutomaticGeneration_ST.Services.Interfaces.DataContext? cachedDataContext = null;
-        private string cachedFilePath = "";
-        private DateTime cachedFileTime = DateTime.MinValue;
+        // 新架构：ProjectCache机制 - 上传一次，处理一次，后续只从缓存读取
+        private ProjectCache? currentProjectCache = null;
+        private readonly ImportPipeline importPipeline = new ImportPipeline();
         private bool deviceListNeedsRefresh = true;
-        private readonly object dataContextLock = new object(); // 线程同步锁
+        private readonly object projectCacheLock = new object(); // 线程同步锁
 
         public Form1()
         {
@@ -85,7 +85,7 @@ namespace WinFormsApp1
             {
                 Text = "📁 文件列表",
                 Font = ControlStyleManager.HeaderFont,
-                Location = new Point(ControlStyleManager.MEDIUM_PADDING, 65),
+                Location = new System.Drawing.Point(ControlStyleManager.MEDIUM_PADDING, 65),
                 Size = new Size(100, 25),
                 ForeColor = ThemeManager.GetTextColor()
             };
@@ -448,14 +448,14 @@ namespace WinFormsApp1
             var deviceLabel = new Label
             {
                 Text = "选择设备:",
-                Location = new Point(10, 8),
+                Location = new System.Drawing.Point(10, 8),
                 Size = new Size(80, 20),
                 BackColor = Color.Transparent
             };
             
             var deviceComboBox = new ComboBox
             {
-                Location = new Point(90, 5),
+                Location = new System.Drawing.Point(90, 5),
                 Size = new Size(200, 25),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Name = "deviceComboBox"
@@ -467,7 +467,7 @@ namespace WinFormsApp1
             var refreshButton = new Button
             {
                 Text = "🔄",
-                Location = new Point(300, 5),
+                Location = new System.Drawing.Point(300, 5),
                 Size = new Size(30, 25),
                 FlatStyle = FlatStyle.Flat
             };
@@ -999,6 +999,9 @@ namespace WinFormsApp1
                 // 清空文件列表
                 fileListBox.Items.Clear();
                 
+                // 清空项目缓存
+                ClearProjectCache();
+                
                 // 清空预览区域
                 UpdatePreviewArea();
                 
@@ -1112,11 +1115,16 @@ namespace WinFormsApp1
             return $"{bytes / (1024 * 1024):F1} MB";
         }
 
+        /// <summary>
+        /// 新架构：Excel文件处理的单一入口点
+        /// 使用ImportPipeline执行完整的"Excel解析 → 设备分类 → 代码生成"管道
+        /// 实现"上传一次，处理一次，后续只读取缓存"的核心原则
+        /// </summary>
         private async void ProcessExcelFile(string filePath)
         {
             try
             {
-                logger.LogInfo("正在读取Excel点表文件...");
+                logger.LogInfo("🚀 启动新架构Excel处理管道...");
                 
                 // 首先验证文件路径
                 var pathValidation = BasicValidator.ValidateFilePath(filePath, true);
@@ -1128,48 +1136,96 @@ namespace WinFormsApp1
                     return;
                 }
                 
-                var excelReader = new ExcelReader();
-                pointData = excelReader.ReadPoints(filePath);
+                // ============ 关键架构改进：使用ImportPipeline作为单一处理入口 ============
+                // 清除旧缓存以确保全新处理
+                ClearProjectCache();
                 
-                logger.LogInfo($"成功读取{pointData.Count}行点位数据");
-                
-                // 验证设备分类表数据
-                var dataValidation = BasicValidator.ValidateDeviceClassificationData(pointData);
-                if (!dataValidation.IsValid)
+                // 通过ImportPipeline执行完整的数据处理管道
+                var projectCache = await importPipeline.ImportAsync(filePath);
+                if (projectCache == null)
                 {
-                    logger.LogWarning($"数据验证发现问题:\n错误: {string.Join(", ", dataValidation.Errors)}\n警告: {string.Join(", ", dataValidation.Warnings)}");
-                    
-                    var result = MessageBox.Show(
-                        $"数据验证发现以下问题:\n\n错误: {dataValidation.Errors.Count}个\n警告: {dataValidation.Warnings.Count}个\n\n是否继续生成ST代码？\n\n详细信息:\n{string.Join("\n", dataValidation.Errors.Take(5))}",
-                        "数据验证", 
-                        MessageBoxButtons.YesNo, 
-                        MessageBoxIcon.Warning);
-                    
-                    if (result == DialogResult.No)
+                    logger.LogError("ImportPipeline处理失败");
+                    MessageBox.Show("Excel文件处理失败，请检查文件格式", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                
+                // 更新当前项目缓存
+                lock (projectCacheLock)
+                {
+                    currentProjectCache = projectCache;
+                }
+                
+                // 更新UI显示数据（从缓存读取，不再触发处理）
+                UpdateUIFromProjectCache(projectCache);
+                
+                // 更新项目管理数据
+                UpdateProjectData();
+                
+                logger.LogSuccess($"✅ Excel文件处理完成 - 设备数:{projectCache.Statistics.TotalDevices}, 点位数:{projectCache.Statistics.TotalPoints}, ST文件数:{projectCache.Statistics.GeneratedSTFiles}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"❌ 处理Excel文件时出错: {ex.Message}");
+                MessageBox.Show($"处理Excel文件失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                // 处理失败时清除缓存
+                ClearProjectCache();
+            }
+        }
+        
+        /// <summary>
+        /// 从ProjectCache更新UI显示（只读模式）
+        /// </summary>
+        private void UpdateUIFromProjectCache(ProjectCache projectCache)
+        {
+            try
+            {
+                // 更新旧版pointData结构以保持向后兼容性
+                pointData.Clear();
+                
+                // 从设备分类数据重建pointData格式
+                if (projectCache.DataContext.Devices?.Any() == true)
+                {
+                    foreach (var device in projectCache.DataContext.Devices)
                     {
-                        return;
+                        // 添加IO点位数据
+                        foreach (var ioPoint in device.IoPoints)
+                        {
+                            pointData.Add(ioPoint.Value);
+                        }
+                        
+                        // 添加设备点位数据
+                        foreach (var devicePoint in device.DevicePoints)
+                        {
+                            pointData.Add(devicePoint.Value);
+                        }
                     }
                 }
-                else if (dataValidation.Warnings.Any())
+                
+                // 更新生成的代码列表
+                generatedScripts.Clear();
+                generatedScripts.AddRange(projectCache.IOMappingScripts);
+                
+                // 添加设备ST代码
+                foreach (var devicePrograms in projectCache.DeviceSTPrograms.Values)
                 {
-                    logger.LogWarning($"数据验证警告: {string.Join(", ", dataValidation.Warnings)}");
+                    generatedScripts.AddRange(devicePrograms);
                 }
                 
-                // 生成ST脚本 - 使用新的标准化服务架构
-                await GenerateSTScriptsWithNewServiceAsync();
+                // 刷新预览区域（从缓存读取）
+                UpdatePreviewArea();
+                
+                // 更新状态栏统计
+                UpdateStatusBarStats();
                 
                 // 更新提示上下文
                 UpdateTooltipContext();
                 
-                // 标记项目有变更
-                UpdateProjectData();
-                
-                logger.LogSuccess("点表文件处理完成，可以进行导出");
+                logger.LogInfo($"📊 UI更新完成 - 显示数据来自ProjectCache");
             }
             catch (Exception ex)
             {
-                logger.LogError($"处理Excel文件时出错: {ex.Message}");
-                MessageBox.Show($"处理Excel文件失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                logger.LogError($"❌ 从ProjectCache更新UI时出错: {ex.Message}");
             }
         }
 
@@ -2064,7 +2120,7 @@ namespace WinFormsApp1
             if (previewTabControl != null)
             {
                 previewTabControl.Font = ControlStyleManager.DefaultFont;
-                previewTabControl.Padding = new Point(ControlStyleManager.MEDIUM_PADDING, ControlStyleManager.SMALL_PADDING);
+                previewTabControl.Padding = new System.Drawing.Point(ControlStyleManager.MEDIUM_PADDING, ControlStyleManager.SMALL_PADDING);
                 
                 // 为每个标签页设置样式
                 foreach (TabPage tabPage in previewTabControl.TabPages)
@@ -2146,14 +2202,14 @@ namespace WinFormsApp1
             if (button_upload != null)
             {
                 button_upload.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-                button_upload.Location = new Point(ControlStyleManager.MEDIUM_PADDING, ControlStyleManager.MEDIUM_PADDING);
+                button_upload.Location = new System.Drawing.Point(ControlStyleManager.MEDIUM_PADDING, ControlStyleManager.MEDIUM_PADDING);
             }
             
             // 导出按钮响应式设置
             if (button_export != null)
             {
                 button_export.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-                button_export.Location = new Point(
+                button_export.Location = new System.Drawing.Point(
                     button_upload.Right + ControlStyleManager.MEDIUM_PADDING, 
                     ControlStyleManager.MEDIUM_PADDING
                 );
@@ -2285,7 +2341,7 @@ namespace WinFormsApp1
                     button_upload.Size = ControlStyleManager.SmallButtonSize;
                     button_export.Size = ControlStyleManager.SmallButtonSize;
                     
-                    button_export.Location = new Point(
+                    button_export.Location = new System.Drawing.Point(
                         button_upload.Right + ControlStyleManager.SMALL_PADDING,
                         button_upload.Top
                     );
@@ -2299,7 +2355,7 @@ namespace WinFormsApp1
                     button_upload.Size = ControlStyleManager.StandardButtonSize;
                     button_export.Size = ControlStyleManager.StandardButtonSize;
                     
-                    button_export.Location = new Point(
+                    button_export.Location = new System.Drawing.Point(
                         button_upload.Right + ControlStyleManager.MEDIUM_PADDING,
                         button_upload.Top
                     );
@@ -2786,7 +2842,7 @@ namespace WinFormsApp1
             {
                 Text = "确定",
                 Size = new Size(80, 30),
-                Location = new Point(500, 10),
+                Location = new System.Drawing.Point(500, 10),
                 DialogResult = DialogResult.OK
             };
 
@@ -2794,7 +2850,7 @@ namespace WinFormsApp1
             {
                 Text = "保存报告",
                 Size = new Size(80, 30),
-                Location = new Point(410, 10)
+                Location = new System.Drawing.Point(410, 10)
             };
 
             saveButton.Click += (s, e) => SaveTestReport(report);
@@ -2870,86 +2926,112 @@ namespace WinFormsApp1
             }
         }
 
-        #region 数据缓存管理
+        #region ProjectCache管理
 
         /// <summary>
-        /// 安全地获取数据上下文，只在文件变化时重新解析Excel
+        /// 安全地获取项目缓存，实现"上传一次，处理一次，后续只读取缓存"机制
         /// </summary>
         /// <param name="filePath">Excel文件路径</param>
-        /// <returns>数据上下文，如果解析失败则返回null</returns>
-        private AutomaticGeneration_ST.Services.Interfaces.DataContext? GetCachedDataContext(string filePath)
+        /// <returns>项目缓存，如果处理失败则返回null</returns>
+        private async Task<ProjectCache?> GetProjectCacheAsync(string filePath)
         {
-            // 使用线程同步锁避免并发访问问题
-            lock (dataContextLock)
+            try
             {
-                try
+                // 检查文件是否存在
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
                 {
-                    // 检查文件是否存在
-                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                    {
-                        logger?.LogWarning("文件路径无效或文件不存在");
-                        return null;
-                    }
-
-                    var fileInfo = new FileInfo(filePath);
-                    
-                    // 检查是否需要重新解析数据
-                    bool needsReload = cachedDataContext == null || 
-                                     cachedFilePath != filePath || 
-                                     cachedFileTime != fileInfo.LastWriteTime;
-
-                    if (needsReload)
-                    {
-                        logger?.LogInfo($"🔄 加载Excel数据: {Path.GetFileName(filePath)}");
-                        
-                        var excelDataService = new AutomaticGeneration_ST.Services.Implementations.ExcelDataService();
-                        cachedDataContext = excelDataService.LoadData(filePath);
-                        cachedFilePath = filePath;
-                        cachedFileTime = fileInfo.LastWriteTime;
-                        
-                        // 标记设备列表需要刷新
-                        deviceListNeedsRefresh = true;
-                        
-                        logger?.LogSuccess($"✅ Excel数据加载完成 - 设备数: {cachedDataContext.Devices.Count}, 点位数: {cachedDataContext.AllPointsMasterList.Count}");
-                    }
-                    else
-                    {
-                        logger?.LogInfo($"📋 使用缓存的Excel数据: {Path.GetFileName(filePath)}");
-                    }
-
-                    return cachedDataContext;
-                }
-                catch (Exception ex)
-                {
-                    logger?.LogError($"❌ 获取数据上下文时出错: {ex.Message}");
+                    logger?.LogWarning("文件路径无效或文件不存在");
                     return null;
                 }
-            }
-        }
 
-        /// <summary>
-        /// 清除数据缓存（当用户选择新文件或重置应用时调用）
-        /// </summary>
-        private void ClearDataCache()
-        {
-            lock (dataContextLock)
+                var fileInfo = new FileInfo(filePath);
+                
+                // 使用锁检查缓存状态
+                bool needsReprocess;
+                lock (projectCacheLock)
+                {
+                    needsReprocess = currentProjectCache == null || 
+                                   currentProjectCache.SourceFilePath != filePath || 
+                                   currentProjectCache.IsSourceFileUpdated();
+                }
+
+                if (needsReprocess)
+                {
+                    logger?.LogInfo($"🚀 启动导入管道处理: {Path.GetFileName(filePath)}");
+                    
+                    // 异步处理数据（不在锁内）
+                    var newCache = await importPipeline.ImportAsync(filePath);
+                    
+                    // 更新缓存（在锁内）
+                    lock (projectCacheLock)
+                    {
+                        currentProjectCache = newCache;
+                        deviceListNeedsRefresh = true;
+                    }
+                    
+                    logger?.LogSuccess($"✅ 项目缓存创建完成 - 设备数: {newCache?.Statistics.TotalDevices}, 点位数: {newCache?.Statistics.TotalPoints}");
+                    return newCache;
+                }
+                else
+                {
+                    logger?.LogInfo($"📋 使用现有项目缓存: {Path.GetFileName(filePath)}");
+                    lock (projectCacheLock)
+                    {
+                        return currentProjectCache;
+                    }
+                }
+            }
+            catch (Exception ex)
             {
-                cachedDataContext = null;
-                cachedFilePath = "";
-                cachedFileTime = DateTime.MinValue;
-                logger?.LogInfo("🗑️ 已清除数据缓存");
+                logger?.LogError($"❌ 获取项目缓存时出错: {ex.Message}");
+                return null;
             }
         }
 
         /// <summary>
-        /// 检查当前是否有有效的缓存数据
+        /// 同步版本的获取项目缓存方法（兼容现有调用）
         /// </summary>
-        /// <returns>如果有有效缓存数据返回true</returns>
-        private bool HasValidCachedData()
+        private ProjectCache? GetProjectCache(string filePath)
         {
-            return cachedDataContext != null && 
-                   !string.IsNullOrWhiteSpace(cachedFilePath) && 
-                   File.Exists(cachedFilePath);
+            try
+            {
+                return GetProjectCacheAsync(filePath).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"❌ 同步获取项目缓存失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取数据上下文（从ProjectCache中提取，保持向后兼容）
+        /// </summary>
+        private AutomaticGeneration_ST.Services.Interfaces.DataContext? GetCachedDataContext(string filePath)
+        {
+            var projectCache = GetProjectCache(filePath);
+            return projectCache?.DataContext;
+        }
+
+        /// <summary>
+        /// 清除项目缓存（当用户选择新文件或重置应用时调用）
+        /// </summary>
+        private void ClearProjectCache()
+        {
+            lock (projectCacheLock)
+            {
+                currentProjectCache = null;
+                logger?.LogInfo("🗑️ 已清除项目缓存");
+            }
+        }
+
+        /// <summary>
+        /// 检查当前是否有有效的项目缓存
+        /// </summary>
+        /// <returns>如果有有效项目缓存返回true</returns>
+        private bool HasValidProjectCache()
+        {
+            return currentProjectCache != null && currentProjectCache.IsValid();
         }
 
         #endregion
@@ -3228,6 +3310,9 @@ namespace WinFormsApp1
         /// <summary>
         /// 生成IO映射ST程序预览内容
         /// </summary>
+        /// <summary>
+        /// 新架构：从ProjectCache生成IO映射预览（只读模式）
+        /// </summary>
         private string GenerateIOMappingPreview()
         {
             try
@@ -3237,51 +3322,68 @@ namespace WinFormsApp1
                 sb.AppendLine("=" + new string('=', 40));
                 sb.AppendLine();
 
-                if (generatedScripts != null && generatedScripts.Any())
+                // 从ProjectCache获取IO映射数据（只读模式）
+                if (currentProjectCache?.IOMappingScripts?.Any() == true)
                 {
-                    // 过滤出IO映射相关的脚本（根据实际生成的内容）
-                    var ioMappingScripts = generatedScripts.Where(script => 
-                        script.Contains("(* AI点位:") || 
-                        script.Contains("(* AO点位:") || 
-                        script.Contains("(* DI点位:") || 
-                        script.Contains("(* DO点位:") ||
-                        script.Contains("AI_ALARM_") ||
-                        script.Contains("AO_CTRL_") ||
-                        script.Contains("DI_") ||
-                        script.Contains("DO_")
-                    ).ToList();
+                    sb.AppendLine($"🎯 共生成 {currentProjectCache.IOMappingScripts.Count} 个IO映射文件");
+                    sb.AppendLine();
 
-                    if (ioMappingScripts.Any())
+                    foreach (var script in currentProjectCache.IOMappingScripts) // 显示所有IO映射文件
                     {
-                        sb.AppendLine($"🎯 共生成 {ioMappingScripts.Count} 个IO映射文件");
+                        var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var line in lines) // 显示完整内容
+                        {
+                            sb.AppendLine(line);
+                        }
                         sb.AppendLine();
-
-                        foreach (var script in ioMappingScripts) // 显示所有IO映射文件
-                        {
-                            var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach (var line in lines) // 显示完整内容
-                            {
-                                sb.AppendLine(line);
-                            }
-                            sb.AppendLine();
-                            sb.AppendLine(new string('-', 50));
-                            sb.AppendLine();
-                        }
-
-                        if (ioMappingScripts.Count > 5)
-                        {
-                            sb.AppendLine($"... 还有 {ioMappingScripts.Count - 5} 个IO映射文件未显示");
-                        }
-                    }
-                    else
-                    {
-                        sb.AppendLine("⚠️ 未找到IO映射相关的ST程序");
-                        sb.AppendLine("请检查模板配置和生成逻辑");
+                        sb.AppendLine(new string('-', 50));
+                        sb.AppendLine();
                     }
                 }
                 else
                 {
-                    sb.AppendLine("暂无生成的IO映射ST程序，请先上传并处理点表文件。");
+                    // 回退到兼容模式：从generatedScripts获取
+                    if (generatedScripts != null && generatedScripts.Any())
+                    {
+                        // 过滤出IO映射相关的脚本（根据实际生成的内容）
+                        var ioMappingScripts = generatedScripts.Where(script => 
+                            script.Contains("(* AI点位:") || 
+                            script.Contains("(* AO点位:") || 
+                            script.Contains("(* DI点位:") || 
+                            script.Contains("(* DO点位:") ||
+                            script.Contains("AI_ALARM_") ||
+                            script.Contains("AO_CTRL_") ||
+                            script.Contains("DI_") ||
+                            script.Contains("DO_")
+                        ).ToList();
+
+                        if (ioMappingScripts.Any())
+                        {
+                            sb.AppendLine($"🎯 共生成 {ioMappingScripts.Count} 个IO映射文件（兼容模式）");
+                            sb.AppendLine();
+
+                            foreach (var script in ioMappingScripts) // 显示所有IO映射文件
+                            {
+                                var lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var line in lines) // 显示完整内容
+                                {
+                                    sb.AppendLine(line);
+                                }
+                                sb.AppendLine();
+                                sb.AppendLine(new string('-', 50));
+                                sb.AppendLine();
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine("⚠️ 未找到IO映射相关的ST程序");
+                            sb.AppendLine("请检查模板配置和生成逻辑");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("暂无生成的IO映射ST程序，请先上传并处理点表文件。");
+                    }
                 }
 
                 return sb.ToString();
@@ -3410,7 +3512,10 @@ namespace WinFormsApp1
             return result;
         }
 
-        private string GenerateDeviceSTPreview(string selectedDeviceTag = null)
+        /// <summary>
+        /// 新架构：从ProjectCache生成设备ST程序预览（只读模式）
+        /// </summary>
+        private string GenerateDeviceSTPreview(string? selectedDeviceTag = null)
         {
             try
             {
@@ -3419,113 +3524,95 @@ namespace WinFormsApp1
                 sb.AppendLine("=" + new string('=', 40));
                 sb.AppendLine();
 
-                if (!string.IsNullOrEmpty(uploadedFilePath))
+                // 从ProjectCache获取设备ST程序数据（只读模式）
+                if (currentProjectCache?.DeviceSTPrograms?.Any() == true)
                 {
-                    var dataContext = stGenerationService.GetStatistics(uploadedFilePath);
-                    if (dataContext.DeviceCount > 0)
+                    var totalDevices = currentProjectCache.Statistics.TotalDevices;
+                    sb.AppendLine($"📋 发现 {totalDevices} 个设备");
+                    
+                    if (!string.IsNullOrEmpty(selectedDeviceTag))
                     {
-                        sb.AppendLine($"📋 发现 {dataContext.DeviceCount} 个设备");
-                        if (!string.IsNullOrEmpty(selectedDeviceTag))
-                        {
-                            sb.AppendLine($"🎯 当前显示: {selectedDeviceTag}");
-                        }
-                        else
-                        {
-                            sb.AppendLine("🎯 当前显示: 全部设备");
-                        }
-                        sb.AppendLine();
+                        sb.AppendLine($"🎯 当前显示: {selectedDeviceTag}");
+                    }
+                    else
+                    {
+                        sb.AppendLine("🎯 当前显示: 全部设备");
+                    }
+                    sb.AppendLine();
 
-                        var fullDataContext = GetCachedDataContext(uploadedFilePath);
-                        if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
+                    // 如果选择了特定设备，显示该设备的所有ST程序
+                    if (!string.IsNullOrEmpty(selectedDeviceTag))
+                    {
+                        var targetDevice = currentProjectCache.DataContext.Devices?.FirstOrDefault(d => 
+                            selectedDeviceTag.StartsWith(d.DeviceTag));
+                        
+                        if (targetDevice != null)
                         {
-                            var deviceSTPrograms = GetCachedDeviceSTPrograms(fullDataContext);
+                            bool foundDevice = false;
                             
-                            if (deviceSTPrograms.Any())
+                            // 遍历所有模板，查找包含目标设备的ST程序
+                            foreach (var templateGroup in currentProjectCache.DeviceSTPrograms)
                             {
-                                // 如果选择了特定设备，显示该设备的所有ST程序
-                                if (!string.IsNullOrEmpty(selectedDeviceTag))
+                                var deviceCodes = templateGroup.Value.Where(code => 
+                                    code.Contains(targetDevice.DeviceTag)).ToList();
+                                
+                                if (deviceCodes.Any())
                                 {
-                                    var targetDevice = fullDataContext.Devices.FirstOrDefault(d => 
-                                        selectedDeviceTag.StartsWith(d.DeviceTag));
+                                    sb.AppendLine($"🎨 模板: {templateGroup.Key}");
+                                    sb.AppendLine(new string('-', 30));
                                     
-                                    if (targetDevice != null)
+                                    foreach (var deviceCode in deviceCodes)
                                     {
-                                        bool foundDevice = false;
-                                        
-                                        // 遍历所有模板，查找包含目标设备的ST程序
-                                        foreach (var templateGroup in deviceSTPrograms)
-                                        {
-                                            var deviceCodes = templateGroup.Value.Where(code => 
-                                                code.Contains(targetDevice.DeviceTag)).ToList();
-                                            
-                                            if (deviceCodes.Any())
-                                            {
-                                                sb.AppendLine($"🎨 模板: {templateGroup.Key}");
-                                                sb.AppendLine(new string('-', 30));
-                                                
-                                                foreach (var deviceCode in deviceCodes)
-                                                {
-                                                    sb.AppendLine(deviceCode);
-                                                    sb.AppendLine();
-                                                }
-                                                foundDevice = true;
-                                            }
-                                        }
-                                        
-                                        if (!foundDevice)
-                                        {
-                                            sb.AppendLine("❌ 未找到该设备的ST程序");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        sb.AppendLine("❌ 未找到指定的设备");
-                                    }
-                                }
-                                else
-                                {
-                                    // 显示所有设备的ST程序预览
-                                    foreach (var templateGroup in deviceSTPrograms)
-                                    {
-                                        sb.AppendLine($"🎨 模板: {templateGroup.Key} ({templateGroup.Value.Count} 个设备)");
-                                        sb.AppendLine(new string('-', 30));
-                                        
-                                        foreach (var code in templateGroup.Value) // 显示所有设备
-                                        {
-                                            var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                                            foreach (var line in lines) // 显示完整代码
-                                            {
-                                                sb.AppendLine(line);
-                                            }
-                                            sb.AppendLine();
-                                        }
+                                        sb.AppendLine(deviceCode);
                                         sb.AppendLine();
                                     }
+                                    foundDevice = true;
                                 }
                             }
-                            else
+                            
+                            if (!foundDevice)
                             {
-                                sb.AppendLine("⚠️ 未生成设备ST程序，可能原因：");
-                                sb.AppendLine("• 设备没有指定模板名称");
-                                sb.AppendLine("• 模板文件不存在或格式错误");
-                                sb.AppendLine("• 设备点位数据不完整");
+                                sb.AppendLine("❌ 未找到该设备的ST程序");
                             }
                         }
                         else
                         {
-                            sb.AppendLine("ℹ️ 未找到设备分类信息，请检查Excel文件中是否包含'设备分类表'工作表。");
+                            sb.AppendLine("❌ 未找到指定的设备");
                         }
                     }
                     else
                     {
-                        sb.AppendLine("ℹ️ 当前数据中未发现设备信息。");
-                        sb.AppendLine("设备ST程序需要在Excel文件中包含'设备分类表'工作表，");
-                        sb.AppendLine("并在其中指定设备位号和模板名称。");
+                        // 显示所有设备的ST程序预览
+                        foreach (var templateGroup in currentProjectCache.DeviceSTPrograms)
+                        {
+                            sb.AppendLine($"🎨 模板: {templateGroup.Key} ({templateGroup.Value.Count} 个设备)");
+                            sb.AppendLine(new string('-', 30));
+                            
+                            foreach (var code in templateGroup.Value) // 显示所有设备
+                            {
+                                var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var line in lines) // 显示完整代码
+                                {
+                                    sb.AppendLine(line);
+                                }
+                                sb.AppendLine();
+                            }
+                            sb.AppendLine();
+                        }
                     }
                 }
                 else
                 {
-                    sb.AppendLine("请先上传Excel文件以查看设备ST程序。");
+                    // 回退到兼容模式或显示提示信息
+                    if (!string.IsNullOrEmpty(uploadedFilePath))
+                    {
+                        sb.AppendLine("⚠️ ProjectCache数据不可用，尝试使用兼容模式...");
+                        // 这里可以添加兼容模式的逻辑
+                    }
+                    else
+                    {
+                        sb.AppendLine("请先上传Excel文件以查看设备ST程序。");
+                    }
                 }
 
                 return sb.ToString();
