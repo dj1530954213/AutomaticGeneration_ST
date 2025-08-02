@@ -1,4 +1,3 @@
-{{~ for point in points ~}}
 (*ESD阀门:{{device_tag}}控制块调用*)
 ESDV{{device_tag}}_CTRL(
 CS:=CS01,
@@ -27,4 +26,3 @@ C_CLOSE=>{{C_CLOSE}},
 S_OPEN=>{{S_OPEN}},
 S_CLOSE=>{{S_CLOSE}},
 );
-{{~ end ~}}

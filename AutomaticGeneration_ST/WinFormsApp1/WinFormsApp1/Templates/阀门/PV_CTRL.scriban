@@ -1,4 +1,3 @@
-{{~ for point in points ~}}
 (*调节阀:{{device_tag}}控制块调用*)
 PV_{{device_tag}}(
 CS:=CS01,
@@ -41,4 +40,3 @@ S_SP_P=>{{S_SP_P}},
 S_SP_F=>{{S_SP_F}},
 S_M_OUT=>{{S_M_OUT}}
 );
-{{~ end ~}}

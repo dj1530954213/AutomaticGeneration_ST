@@ -23,7 +23,6 @@ namespace WinFormsApp1
         private System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer();
 
         // 设备 ST 代码缓存，Key = 文件路径 + 最后修改时间
-        private Dictionary<string, Dictionary<string, List<string>>> deviceStCache = new();
         private bool isUpdatingPreview = false;
         private STGenerationService stGenerationService = new STGenerationService();
         
@@ -1601,98 +1600,6 @@ namespace WinFormsApp1
             }
         }
 
-        private string GenerateDeviceSTPreview()
-        {
-            try
-            {
-                var sb = new StringBuilder();
-                sb.AppendLine("🏭 设备ST程序预览");
-                sb.AppendLine("=" + new string('=', 40));
-                sb.AppendLine();
-
-                // 从当前的点位数据中提取设备信息
-                if (pointData == null || !pointData.Any())
-                {
-                    sb.AppendLine("暂无设备数据，请先上传并处理点表文件。");
-                    return sb.ToString();
-                }
-
-                try
-                {
-                    // 使用缓存机制获取数据上下文，避免重复解析Excel/重复分类
-                    if (!string.IsNullOrEmpty(uploadedFilePath))
-                    {
-                        var fullDataContext = GetCachedDataContext(uploadedFilePath);
-                        var deviceCount = fullDataContext?.Devices?.Count ?? 0;
-                        if (deviceCount > 0)
-                        {
-                            sb.AppendLine($"📋 发现 {deviceCount} 个设备");
-                            sb.AppendLine();
-
-                            if (fullDataContext.Devices != null && fullDataContext.Devices.Any())
-                            {
-                                var deviceSTPrograms = GetCachedDeviceSTPrograms(fullDataContext);
-                                
-                                if (deviceSTPrograms.Any())
-                                {
-                                    foreach (var templateGroup in deviceSTPrograms) // 显示所有模板
-                                    {
-                                        sb.AppendLine($"🎨 模板: {templateGroup.Key}");
-                                        sb.AppendLine(new string('-', 30));
-                                        
-                                        foreach (var code in templateGroup.Value) // 显示所有设备
-                                        {
-                                            var lines = code.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                                            foreach (var line in lines) // 显示完整代码
-                                            {
-                                                sb.AppendLine(line);
-                                            }
-                                            sb.AppendLine();
-                                        }
-                                        sb.AppendLine();
-                                    }
-                                }
-                                else
-                                {
-                                    sb.AppendLine("⚠️ 未生成设备ST程序，可能原因：");
-                                    sb.AppendLine("• 设备没有指定模板名称");
-                                    sb.AppendLine("• 模板文件不存在或格式错误");
-                                    sb.AppendLine("• 设备点位数据不完整");
-                                }
-                            }
-                            else
-                            {
-                                sb.AppendLine("📝 设备信息统计:");
-                                sb.AppendLine();
-                                sb.AppendLine("ℹ️ 未找到设备分类信息，请检查Excel文件中是否包含'设备分类表'工作表。");
-                            }
-                        }
-                        else
-                        {
-                            sb.AppendLine("ℹ️ 当前数据中未发现设备信息。");
-                            sb.AppendLine("设备ST程序需要在Excel文件中包含'设备分类表'工作表，");
-                            sb.AppendLine("并在其中指定设备位号和模板名称。");
-                        }
-                    }
-                    else
-                    {
-                        sb.AppendLine("请先上传Excel文件以查看设备ST程序预览。");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    sb.AppendLine($"❌ 生成设备ST程序预览时出错: {ex.Message}");
-                    logger?.LogError($"生成设备ST程序预览失败: {ex.Message}");
-                }
-
-                return sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"GenerateDeviceSTPreview失败: {ex.Message}");
-                return $"❌ 生成设备ST程序预览时出错: {ex.Message}";
-            }
-        }
 
         private string GenerateStatistics()
         {
@@ -3499,18 +3406,6 @@ namespace WinFormsApp1
         /// 生成设备ST程序预览内容（支持单个设备选择）
         /// </summary>
         // 获取（并缓存）设备 ST 程序集合，避免重复生成
-        private Dictionary<string, List<string>> GetCachedDeviceSTPrograms(AutomaticGeneration_ST.Services.Interfaces.DataContext dataContext)
-        {
-            var key = $"{uploadedFilePath}_{System.IO.File.GetLastWriteTime(uploadedFilePath).Ticks}";
-            if (deviceStCache.TryGetValue(key, out var cached))
-            {
-                return cached;
-            }
-
-            var result = stGenerationService.GenerateDeviceSTPrograms(dataContext.Devices);
-            deviceStCache[key] = result;
-            return result;
-        }
 
         /// <summary>
         /// 新架构：从ProjectCache生成设备ST程序预览（只读模式）

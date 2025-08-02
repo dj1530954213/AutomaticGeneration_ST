@@ -495,15 +495,15 @@ namespace AutomaticGeneration_ST.Services
 
                     try
                     {
-                        var templateCode = GenerateDeviceTemplateCode(templateName, templateDevices, operationId);
-                        if (!string.IsNullOrWhiteSpace(templateCode))
+                        var templateCodes = GenerateDeviceTemplateCodesList(templateName, templateDevices, operationId);
+                        if (templateCodes.Any())
                         {
                             if (!result.ContainsKey(templateName))
                             {
                                 result[templateName] = new List<string>();
                             }
-                            result[templateName].Add(templateCode);
-                            LogInfo($"[{operationId}] 模板 {templateName} 代码生成完成");
+                            result[templateName].AddRange(templateCodes);
+                            LogInfo($"[{operationId}] 模板 {templateName} 代码生成完成，设备数: {templateCodes.Count}");
                         }
                     }
                     catch (Exception ex)
@@ -517,11 +517,11 @@ namespace AutomaticGeneration_ST.Services
                 var devicesWithoutTemplate = devices.Where(d => string.IsNullOrWhiteSpace(d.TemplateName)).ToList();
                 if (devicesWithoutTemplate.Any())
                 {
-                    LogInfo($"[{operationId}] 发现 {devicesWithoutTemplate.Count} 个没有指定模板的设备，将生成通用代码");
-                    var genericCode = GenerateGenericDeviceCode(devicesWithoutTemplate, operationId);
-                    if (!string.IsNullOrWhiteSpace(genericCode))
+                    LogInfo($"[{operationId}] 发现 {devicesWithoutTemplate.Count} 个没有指定模板的设备，将生成独立通用代码");
+                    var genericCodes = GenerateGenericDeviceCodesList(devicesWithoutTemplate, operationId);
+                    if (genericCodes.Any())
                     {
-                        result["通用设备"] = new List<string> { genericCode };
+                        result["通用设备"] = genericCodes;
                     }
                 }
 
@@ -545,7 +545,10 @@ namespace AutomaticGeneration_ST.Services
         /// <summary>
         /// 为指定模板生成设备代码
         /// </summary>
-        private string GenerateDeviceTemplateCode(string templateName, List<Device> devices, string operationId)
+        /// <summary>
+        /// 为每个设备生成独立的ST代码（新架构：避免拼接重复）
+        /// </summary>
+        private List<string> GenerateDeviceTemplateCodesList(string templateName, List<Device> devices, string operationId)
         {
             try
             {
@@ -558,7 +561,7 @@ namespace AutomaticGeneration_ST.Services
                     DateTime.Now - _lastGenerationTime[cacheKey] < TimeSpan.FromMinutes(5))
                 {
                     LogInfo($"[{operationId}] 📦 从缓存获取模板 {templateName} 的代码，设备数: {devices.Count}");
-                    return string.Join("\n", _deviceCodeCache[cacheKey]);
+                    return _deviceCodeCache[cacheKey];
                 }
 
                 // 查找模板文件
@@ -566,7 +569,7 @@ namespace AutomaticGeneration_ST.Services
                 if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
                 {
                     LogWarning($"[{operationId}] 未找到模板文件: {templateName}");
-                    return GenerateGenericDeviceCode(devices, operationId);
+                    return GenerateGenericDeviceCodesList(devices, operationId);
                 }
 
                 LogInfo($"[{operationId}] 找到模板文件: {templateFilePath}");
@@ -579,15 +582,14 @@ namespace AutomaticGeneration_ST.Services
                 {
                     var errors = string.Join(", ", template.Messages.Select(m => m.Message));
                     LogError($"[{operationId}] 模板解析错误: {errors}");
-                    return GenerateGenericDeviceCode(devices, operationId);
+                    return GenerateGenericDeviceCodesList(devices, operationId);
                 }
 
-                var generatedCode = new List<string>();
+                var generatedCodes = new List<string>();
                 
-                // 批量处理设备，减少重复调用
-                LogInfo($"[{operationId}] 开始批量处理 {devices.Count} 个设备...");
+                // 为每个设备独立生成代码
+                LogInfo($"[{operationId}] 开始为 {devices.Count} 个设备独立生成代码...");
                 
-                // 为每个设备生成代码
                 foreach (var device in devices)
                 {
                     try
@@ -600,35 +602,53 @@ namespace AutomaticGeneration_ST.Services
                         
                         if (!string.IsNullOrWhiteSpace(deviceCode))
                         {
-                            generatedCode.Add($"\n(* 设备: {device.DeviceTag} - 模板: {templateName} *)");
-                            generatedCode.Add(deviceCode);
+                            var finalCode = $"(* 设备: {device.DeviceTag} - 模板: {templateName} *)\n{deviceCode}";
+                            generatedCodes.Add(finalCode);
                         }
                     }
                     catch (Exception ex)
                     {
                         LogError($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成失败: {ex.Message}");
                         // 添加错误注释
-                        generatedCode.Add($"\n(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
+                        generatedCodes.Add($"(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
                     }
                 }
-
-                var result = string.Join("\n", generatedCode);
                 
                 // 保存到缓存
-                _deviceCodeCache[cacheKey] = generatedCode;
+                _deviceCodeCache[cacheKey] = generatedCodes;
                 _lastGenerationTime[cacheKey] = DateTime.Now;
                 
-                LogInfo($"[{operationId}] 模板 {templateName} 批量处理完成，生成代码行数: {generatedCode.Count}");
+                LogInfo($"[{operationId}] 模板 {templateName} 独立处理完成，生成设备代码: {generatedCodes.Count} 个");
                 
                 // 定期清理缓存
                 CleanExpiredCache();
 
-                return result;
+                return generatedCodes;
             }
             catch (Exception ex)
             {
-                LogError($"[{operationId}] 模板 {templateName} 处理失败: {ex.Message}");
-                throw;
+                LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 旧方法：为兼容性保留，但现在调用新的独立生成方法
+        /// </summary>
+        private string GenerateDeviceTemplateCode(string templateName, List<Device> devices, string operationId)
+        {
+            try
+            {
+                // 调用新的独立生成方法
+                var deviceCodes = GenerateDeviceTemplateCodesList(templateName, devices, operationId);
+                
+                // 为兼容性拼接结果
+                return string.Join("\n\n", deviceCodes);
+            }
+            catch (Exception ex)
+            {
+                LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
+                return string.Join("\n\n", GenerateGenericDeviceCodesList(devices, operationId));
             }
         }
 
@@ -686,6 +706,53 @@ namespace AutomaticGeneration_ST.Services
 
         /// <summary>
         /// 生成通用设备代码
+        /// </summary>
+        /// <summary>
+        /// 为每个设备生成独立的通用代码（新架构）
+        /// </summary>
+        private List<string> GenerateGenericDeviceCodesList(List<Device> devices, string operationId)
+        {
+            try
+            {
+                LogInfo($"[{operationId}] 为 {devices.Count} 个设备生成独立通用代码");
+
+                var deviceCodes = new List<string>();
+
+                foreach (var device in devices)
+                {
+                    var genericCode = new List<string>();
+                    genericCode.Add($"(* 设备: {device.DeviceTag} - 通用代码 *)");
+                    genericCode.Add("VAR");
+                    
+                    if (device.Points != null && device.Points.Any())
+                    {
+                        foreach (var point in device.Points.Values)
+                        {
+                            var pointTypeName = GetSTDataType(point);
+                            genericCode.Add($"    {point.HmiTagName} : {pointTypeName};  (* {point.Description ?? "设备点位"} *)");
+                        }
+                    }
+                    else
+                    {
+                        genericCode.Add("    (* 未找到设备点位数据 *)");
+                    }
+                    
+                    genericCode.Add("END_VAR");
+                    
+                    deviceCodes.Add(string.Join("\n", genericCode));
+                }
+
+                return deviceCodes;
+            }
+            catch (Exception ex)
+            {
+                LogError($"[{operationId}] 生成通用设备代码时出错: {ex.Message}");
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 旧方法：为兼容性保留
         /// </summary>
         private string GenerateGenericDeviceCode(List<Device> devices, string operationId)
         {
