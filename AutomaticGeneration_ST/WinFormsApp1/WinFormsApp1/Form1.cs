@@ -1706,7 +1706,9 @@ namespace WinFormsApp1
             {
                 logger.LogInfo("开始导出ST脚本...");
                 
-                if (!generatedScripts.Any())
+                // 检查新架构的ProjectCache数据
+                if (currentProjectCache == null || 
+                    (!currentProjectCache.IOMappingScripts.Any() && !currentProjectCache.DeviceSTPrograms.Any()))
                 {
                     logger.LogWarning("没有可导出的ST脚本，请先上传并处理点表文件");
                     MessageBox.Show("没有可导出的ST脚本，请先上传并处理点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1715,8 +1717,19 @@ namespace WinFormsApp1
 
                 // 执行完整验证
                 logger.LogInfo("正在执行导出前验证...");
-                var combinedCode = string.Join("\n\n", generatedScripts);
-                var fullValidation = await BasicValidator.RunFullValidationAsync(pointData, "", combinedCode);
+                
+                // 从ProjectCache获取所有代码进行验证
+                var allCodes = new List<string>();
+                allCodes.AddRange(currentProjectCache.IOMappingScripts);
+                foreach (var deviceGroup in currentProjectCache.DeviceSTPrograms.Values)
+                {
+                    allCodes.AddRange(deviceGroup);
+                }
+                
+                var combinedCode = string.Join("\n\n", allCodes);
+                // 使用原始pointData进行验证，因为BasicValidator期望Dictionary格式
+                var allPointData = pointData; // 使用现有的pointData列表
+                var fullValidation = await BasicValidator.RunFullValidationAsync(allPointData, "", combinedCode);
                 
                 if (!fullValidation.IsValid)
                 {
@@ -1750,7 +1763,7 @@ namespace WinFormsApp1
 
                     if (folderDialog.ShowDialog() == DialogResult.OK)
                     {
-                        ExportSTScripts(folderDialog.SelectedPath);
+                        ExportSTScriptsFromProjectCache(folderDialog.SelectedPath);
                     }
                     else
                     {
@@ -1803,6 +1816,147 @@ namespace WinFormsApp1
                 logger.LogError($"保存ST脚本文件时出错: {ex.Message}");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 新架构：从ProjectCache导出ST脚本，支持所有模板类型
+        /// </summary>
+        private async void ExportSTScriptsFromProjectCache(string selectedPath)
+        {
+            try
+            {
+                logger.LogInfo($"正在从ProjectCache导出ST脚本到: {selectedPath}");
+                
+                // 创建输出文件夹
+                var folderName = $"ST_Scripts_{DateTime.Now:yyyyMMdd_HHmmss}";
+                var outputDirectory = Path.Combine(selectedPath, folderName);
+                Directory.CreateDirectory(outputDirectory);
+                
+                logger.LogInfo($"创建输出文件夹: {folderName}");
+                
+                int totalFiles = 0;
+                var exportedFiles = new List<string>();
+                
+                // 1. 导出IO映射脚本
+                if (currentProjectCache.IOMappingScripts.Any())
+                {
+                    var ioFileName = "IO_Mapping.txt";
+                    var ioFilePath = Path.Combine(outputDirectory, ioFileName);
+                    var ioContent = GenerateFileHeader("IO映射脚本") + string.Join("\n\n", currentProjectCache.IOMappingScripts);
+                    File.WriteAllText(ioFilePath, ioContent, Encoding.UTF8);
+                    
+                    totalFiles++;
+                    exportedFiles.Add($"IO映射脚本: {ioFileName} ({currentProjectCache.IOMappingScripts.Count}个脚本)");
+                    logger.LogInfo($"导出IO映射脚本: {ioFileName}");
+                }
+                
+                // 2. 导出设备ST程序（动态处理所有模板类型）
+                foreach (var templateGroup in currentProjectCache.DeviceSTPrograms)
+                {
+                    var templateName = templateGroup.Key;
+                    var deviceCodes = templateGroup.Value;
+                    
+                    if (deviceCodes.Any())
+                    {
+                        var fileName = $"Device_{templateName}.txt";
+                        var filePath = Path.Combine(outputDirectory, fileName);
+                        var content = GenerateFileHeader($"设备ST程序 - {templateName}模板") + string.Join("\n\n", deviceCodes);
+                        File.WriteAllText(filePath, content, Encoding.UTF8);
+                        
+                        totalFiles++;
+                        exportedFiles.Add($"{templateName}设备: {fileName} ({deviceCodes.Count}个设备)");
+                        logger.LogInfo($"导出{templateName}设备ST程序: {fileName} ({deviceCodes.Count}个设备)");
+                    }
+                }
+                
+                // 3. 导出统计信息
+                var statsFileName = "Export_Statistics.txt";
+                var statsFilePath = Path.Combine(outputDirectory, statsFileName);
+                var statsContent = GenerateExportStatistics();
+                File.WriteAllText(statsFilePath, statsContent, Encoding.UTF8);
+                totalFiles++;
+                
+                logger.LogSuccess($"ProjectCache导出完成，共生成{totalFiles}个文件");
+                
+                // 显示导出成功信息
+                var exportSummary = string.Join("\n", exportedFiles);
+                var saveProjectResult = MessageBox.Show(
+                    $"ST脚本导出成功!\n\n输出文件夹: {Path.GetFileName(outputDirectory)}\n位置: {outputDirectory}\n\n导出文件:\n{exportSummary}\n\n是否保存当前项目？",
+                    "导出成功", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Information);
+                
+                if (saveProjectResult == DialogResult.Yes)
+                {
+                    // 更新项目数据
+                    UpdateProjectData();
+                    SimpleProjectManager.UpdateSettings("lastExportPath", outputDirectory);
+                    SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
+                    
+                    // 保存项目
+                    var projectSaved = await SaveProject();
+                    if (projectSaved)
+                    {
+                        logger.LogInfo("项目已保存");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"从ProjectCache导出ST脚本时出错: {ex.Message}");
+                MessageBox.Show($"导出ST脚本失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 生成文件头部信息
+        /// </summary>
+        private string GenerateFileHeader(string fileType)
+        {
+            var header = new StringBuilder();
+            header.AppendLine("(*");
+            header.AppendLine($" * {fileType}");
+            header.AppendLine($" * 生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            header.AppendLine($" * 项目: {currentProjectCache?.SourceFilePath ?? "未知项目"}");
+            header.AppendLine($" * 生成器: ST自动生成工具 v2.0");
+            header.AppendLine(" *)");
+            header.AppendLine();
+            return header.ToString();
+        }
+
+        /// <summary>
+        /// 生成导出统计信息
+        /// </summary>
+        private string GenerateExportStatistics()
+        {
+            var stats = new StringBuilder();
+            stats.AppendLine("ST脚本导出统计报告");
+            stats.AppendLine("=" + new string('=', 50));
+            stats.AppendLine();
+            stats.AppendLine($"导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            stats.AppendLine($"源文件: {currentProjectCache?.SourceFilePath ?? "未知"}");
+            stats.AppendLine();
+            
+            // 统计信息
+            stats.AppendLine("📊 统计数据:");
+            stats.AppendLine($"总设备数: {currentProjectCache?.Statistics.TotalDevices ?? 0}");
+            stats.AppendLine($"总点位数: {currentProjectCache?.Statistics.TotalPoints ?? 0}");
+            stats.AppendLine($"IO映射脚本数: {currentProjectCache?.IOMappingScripts.Count ?? 0}");
+            stats.AppendLine($"设备模板类型数: {currentProjectCache?.DeviceSTPrograms.Count ?? 0}");
+            stats.AppendLine();
+            
+            // 设备模板详情
+            if (currentProjectCache?.DeviceSTPrograms.Any() == true)
+            {
+                stats.AppendLine("📋 设备模板详情:");
+                foreach (var template in currentProjectCache.DeviceSTPrograms)
+                {
+                    stats.AppendLine($"• {template.Key}: {template.Value.Count} 个设备");
+                }
+            }
+            
+            return stats.ToString();
         }
 
         private void InitializeTheme()

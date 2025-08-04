@@ -1,3 +1,5 @@
+程序名称:ESDV_CTRL
+变量名称:ESDV_CTRL
 (*ESD阀门:{{device_tag}}控制块调用*)
 ESDV{{device_tag}}_CTRL(
 CS:=CS01,
