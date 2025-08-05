@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet run:*)",
+      "Bash(copy:*)",
+      "Bash(cp:*)"
+    ],
+    "deny": []
+  }
+}

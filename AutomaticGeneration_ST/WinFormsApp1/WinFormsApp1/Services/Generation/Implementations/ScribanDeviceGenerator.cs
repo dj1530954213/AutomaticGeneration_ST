@@ -3,6 +3,7 @@ using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using Scriban;
 using Scriban.Runtime;
 using System;
+using System.Collections.Generic;
 
 namespace AutomaticGeneration_ST.Services.Generation.Implementations
 {
@@ -115,12 +116,46 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
 
             string generatedContent = template.Render(context);
 
+            // 过滤掉程序名称和变量类型行（前两行）
+            string filteredContent = FilterMetadataLines(generatedContent);
+
             return new GenerationResult
             {
                 FileName = $"DEV_{device.DeviceTag}.st",
-                Content = generatedContent,
+                Content = filteredContent,
                 Category = "Device"
             };
+        }
+
+        /// <summary>
+        /// 过滤元数据行（程序名称和变量类型行）
+        /// </summary>
+        /// <param name="content">原始生成内容</param>
+        /// <returns>过滤后的内容</returns>
+        private string FilterMetadataLines(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return content;
+
+            var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+            var filteredLines = new List<string>();
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                
+                // 跳过程序名称和变量类型行
+                if (line.Trim().StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
+                    line.Trim().StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase) ||
+                    line.Trim().StartsWith("变量名称:", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                filteredLines.Add(line);
+            }
+
+            return string.Join(Environment.NewLine, filteredLines);
         }
     }
 }

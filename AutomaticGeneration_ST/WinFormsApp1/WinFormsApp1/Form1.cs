@@ -1869,7 +1869,33 @@ namespace WinFormsApp1
                     }
                 }
                 
-                // 3. 导出统计信息
+                // 3. 生成变量表Excel文件
+                logger.LogInfo("=== 开始尝试生成变量表Excel文件 ===");
+                try
+                {
+                    logger.LogInfo("调用GenerateVariableTable方法...");
+                    var variableTableGenerated = await GenerateVariableTable(outputDirectory);
+                    logger.LogInfo($"GenerateVariableTable方法返回结果: {variableTableGenerated}");
+                    
+                    if (variableTableGenerated)
+                    {
+                        totalFiles++;
+                        exportedFiles.Add("变量表: Variables_Table.xls");
+                        logger.LogSuccess("变量表生成成功并添加到导出文件列表");
+                    }
+                    else
+                    {
+                        logger.LogWarning("GenerateVariableTable返回false，未生成变量表");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"生成变量表时发生异常: {ex.Message}");
+                    logger.LogError($"异常堆栈: {ex.StackTrace}");
+                }
+                logger.LogInfo("=== 变量表生成流程结束 ===");
+                
+                // 4. 导出统计信息
                 var statsFileName = "Export_Statistics.txt";
                 var statsFilePath = Path.Combine(outputDirectory, statsFileName);
                 var statsContent = GenerateExportStatistics();
@@ -1957,6 +1983,157 @@ namespace WinFormsApp1
             }
             
             return stats.ToString();
+        }
+
+        /// <summary>
+        /// 生成变量表Excel文件
+        /// </summary>
+        /// <param name="outputDirectory">输出目录</param>
+        /// <returns>是否生成成功</returns>
+        private async Task<bool> GenerateVariableTable(string outputDirectory)
+        {
+            logger.LogInfo(">>> 进入GenerateVariableTable方法");
+            logger.LogInfo($">>> 输出目录: {outputDirectory}");
+            
+            try
+            {
+                // 检查前置条件
+                logger.LogInfo(">>> 检查前置条件...");
+                logger.LogInfo($">>> currentProjectCache 是否为null: {currentProjectCache == null}");
+                
+                if (currentProjectCache == null)
+                {
+                    logger.LogError(">>> currentProjectCache 为 null，无法生成变量表");
+                    return false;
+                }
+                
+                logger.LogInfo($">>> DeviceSTPrograms 是否为null: {currentProjectCache.DeviceSTPrograms == null}");
+                if (currentProjectCache.DeviceSTPrograms == null)
+                {
+                    logger.LogError(">>> DeviceSTPrograms 为 null，无法生成变量表");
+                    return false;
+                }
+                
+                logger.LogInfo($">>> DeviceSTPrograms 数量: {currentProjectCache.DeviceSTPrograms.Count}");
+                if (!currentProjectCache.DeviceSTPrograms.Any())
+                {
+                    logger.LogInfo(">>> 没有设备ST程序数据，跳过变量表生成");
+                    return false;
+                }
+
+                // 打印DeviceSTPrograms的详细信息
+                logger.LogInfo(">>> DeviceSTPrograms 详细信息:");
+                foreach (var deviceProgram in currentProjectCache.DeviceSTPrograms)
+                {
+                    logger.LogInfo($">>>   模板: {deviceProgram.Key}, ST代码数量: {deviceProgram.Value.Count}");
+                }
+
+                logger.LogInfo(">>> 开始生成变量表...");
+
+                // 1. 解析模板元数据
+                logger.LogInfo(">>> 步骤1: 解析模板元数据");
+                var templatesDirectory = Path.Combine(Application.StartupPath, "Templates");
+                logger.LogInfo($">>> 模板目录路径: {templatesDirectory}");
+                logger.LogInfo($">>> 模板目录是否存在: {Directory.Exists(templatesDirectory)}");
+                
+                var templateParser = new AutomaticGeneration_ST.Services.TemplateMetadataParser();
+                logger.LogInfo(">>> 创建TemplateMetadataParser完成");
+                
+                logger.LogInfo(">>> 调用ParseAllTemplates...");
+                var templateMetadataDict = templateParser.ParseAllTemplates(templatesDirectory);
+                logger.LogInfo($">>> ParseAllTemplates返回结果数量: {templateMetadataDict.Count}");
+
+                if (!templateMetadataDict.Any())
+                {
+                    logger.LogWarning(">>> 未找到有效的模板元数据");
+                    return false;
+                }
+
+                logger.LogInfo($">>> 解析到 {templateMetadataDict.Count} 个模板的元数据:");
+                foreach (var template in templateMetadataDict)
+                {
+                    logger.LogInfo($">>>   模板Key: {template.Key}");
+                    logger.LogInfo($">>>     程序名称: {template.Value.ProgramName}");
+                    logger.LogInfo($">>>     变量类型: {template.Value.VariableType}");
+                    logger.LogInfo($">>>     有TXT文件: {template.Value.HasTxtFile}");
+                    logger.LogInfo($">>>     TXT文件路径: {template.Value.TxtFilePath}");
+                }
+
+                // 2. 分析ST代码，提取变量信息
+                logger.LogInfo("开始分析ST代码...");
+                logger.LogInfo($"当前缓存中的设备ST程序类型: {string.Join(", ", currentProjectCache.DeviceSTPrograms.Keys)}");
+                logger.LogInfo($"当前缓存中的IO映射脚本数量: {currentProjectCache.IOMappingScripts.Count}");
+                
+                // 首先分析设备ST程序
+                var stCodeAnalyzer = new AutomaticGeneration_ST.Services.STCodeAnalyzer();
+                var variableEntriesByTemplate = stCodeAnalyzer.AnalyzeMultipleSTCodes(
+                    currentProjectCache.DeviceSTPrograms, 
+                    templateMetadataDict);
+                
+                // 然后分析IO映射脚本
+                logger.LogInfo(">>> 步骤2.1: 分析IO映射脚本");
+                var ioMappingSTCodes = ConvertIOMappingScriptsToTemplateGroups(currentProjectCache.IOMappingScripts);
+                logger.LogInfo($">>> 从IO映射脚本中识别出 {ioMappingSTCodes.Count} 个模板类型");
+                
+                var ioVariableEntriesByTemplate = stCodeAnalyzer.AnalyzeMultipleSTCodes(
+                    ioMappingSTCodes, 
+                    templateMetadataDict);
+                
+                // 合并设备ST程序和IO映射脚本的分析结果
+                logger.LogInfo(">>> 步骤2.2: 合并分析结果");
+                foreach (var ioTemplate in ioVariableEntriesByTemplate)
+                {
+                    if (variableEntriesByTemplate.ContainsKey(ioTemplate.Key))
+                    {
+                        variableEntriesByTemplate[ioTemplate.Key].AddRange(ioTemplate.Value);
+                        logger.LogInfo($">>> 合并模板 {ioTemplate.Key}: 添加了 {ioTemplate.Value.Count} 个IO变量");
+                    }
+                    else
+                    {
+                        variableEntriesByTemplate[ioTemplate.Key] = ioTemplate.Value;
+                        logger.LogInfo($">>> 新增模板 {ioTemplate.Key}: {ioTemplate.Value.Count} 个IO变量");
+                    }
+                }
+
+                if (!variableEntriesByTemplate.Any())
+                {
+                    logger.LogWarning("未提取到变量信息");
+                    return false;
+                }
+
+                logger.LogInfo($"提取到 {variableEntriesByTemplate.Count} 个模板的变量信息");
+                foreach (var template in variableEntriesByTemplate)
+                {
+                    logger.LogInfo($"模板 {template.Key}: {template.Value.Count} 个变量");
+                }
+
+                // 3. 生成Excel文件
+                var excelFilePath = Path.Combine(outputDirectory, "Variables_Table.xls");
+                var variableTableGenerator = new AutomaticGeneration_ST.Services.VariableTableGenerator();
+                
+                var generateResult = variableTableGenerator.GenerateVariableTable(variableEntriesByTemplate, excelFilePath);
+                
+                if (generateResult)
+                {
+                    logger.LogSuccess($"变量表生成成功: {Path.GetFileName(excelFilePath)}");
+                    
+                    // 生成统计信息
+                    var stats = variableTableGenerator.GenerateStatistics(variableEntriesByTemplate);
+                    logger.LogInfo($"变量表统计:\n{stats}");
+                    
+                    return true;
+                }
+                else
+                {
+                    logger.LogError("变量表生成失败");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"生成变量表时出错: {ex.Message}");
+                return false;
+            }
         }
 
         private void InitializeTheme()
@@ -3093,6 +3270,72 @@ namespace WinFormsApp1
         private bool HasValidProjectCache()
         {
             return currentProjectCache != null && currentProjectCache.IsValid();
+        }
+        
+        /// <summary>
+        /// 将IO映射脚本转换为按模板分组的格式，以便进行变量分析
+        /// </summary>
+        /// <param name="ioMappingScripts">IO映射脚本列表</param>
+        /// <returns>按模板名称分组的ST代码字典</returns>
+        private Dictionary<string, List<string>> ConvertIOMappingScriptsToTemplateGroups(List<string> ioMappingScripts)
+        {
+            var templateGroups = new Dictionary<string, List<string>>();
+            
+            logger.LogInfo($"[ConvertIOMappingScriptsToTemplateGroups] 开始分析 {ioMappingScripts.Count} 个IO映射脚本");
+            
+            foreach (var script in ioMappingScripts)
+            {
+                // 根据脚本内容判断模板类型
+                string templateType = DetermineTemplateTypeFromScript(script);
+                
+                if (!string.IsNullOrEmpty(templateType))
+                {
+                    if (!templateGroups.ContainsKey(templateType))
+                    {
+                        templateGroups[templateType] = new List<string>();
+                    }
+                    templateGroups[templateType].Add(script);
+                    logger.LogInfo($"[ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 {templateType} 类型");
+                }
+                else
+                {
+                    logger.LogInfo($"[ConvertIOMappingScriptsToTemplateGroups] 无法识别脚本类型，跳过");
+                }
+            }
+            
+            logger.LogInfo($"[ConvertIOMappingScriptsToTemplateGroups] 完成分析，识别出模板类型: {string.Join(", ", templateGroups.Keys)}");
+            return templateGroups;
+        }
+        
+        /// <summary>
+        /// 根据脚本内容判断模板类型
+        /// </summary>
+        /// <param name="script">ST脚本内容</param>
+        /// <returns>模板类型名称，如AI_CONVERT、AO_CONVERT等</returns>
+        private string DetermineTemplateTypeFromScript(string script)
+        {
+            if (string.IsNullOrWhiteSpace(script))
+                return "";
+                
+            // 根据脚本中的特征函数调用来判断模板类型
+            if (script.Contains("AI_ALARM_") || script.Contains("(* AI点位:"))
+            {
+                return "AI_CONVERT";
+            }
+            else if (script.Contains("ENGIN_HEX_") || script.Contains("(* AO点位:"))
+            {
+                return "AO_CONVERT";
+            }
+            else if (script.Contains("(* DI点位:") || script.Contains("DI_"))
+            {
+                return "DI_CONVERT";
+            }
+            else if (script.Contains("(* DO点位:") || script.Contains("DO_"))
+            {
+                return "DO_CONVERT";
+            }
+            
+            return "";
         }
 
         #endregion

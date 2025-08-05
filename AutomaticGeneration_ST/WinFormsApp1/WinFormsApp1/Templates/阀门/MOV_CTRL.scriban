@@ -1,5 +1,5 @@
 程序名称:MOV_CTRL
-变量名称:MOV_CTRL
+变量类型:MOV_CTRL
 (*电动阀门:{{device_tag}}控制块调用*)
 MOV{{device_tag}}_CTRL(
 CS:=CS01,
