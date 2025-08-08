@@ -1,5 +1,6 @@
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 using WinFormsApp1.Excel;
 using WinFormsApp1.Generators;
 using WinFormsApp1.Output;
@@ -9,6 +10,7 @@ using WinFormsApp1.Tests;
 using System.Windows.Forms;
 using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Models;
+using AutomaticGeneration_ST.Services.Interfaces;
 
 namespace WinFormsApp1
 {
@@ -31,6 +33,10 @@ namespace WinFormsApp1
         private readonly ImportPipeline importPipeline = new ImportPipeline();
         private bool deviceListNeedsRefresh = true;
         private readonly object projectCacheLock = new object(); // 线程同步锁
+        
+        // 服务容器和分类导出服务
+        private ServiceContainer? serviceContainer = null;
+        private ICategorizedExportService? categorizedExportService = null;
 
         public Form1()
         {
@@ -727,11 +733,41 @@ namespace WinFormsApp1
                     SimpleProjectManager.CreateNewProject();
                 }
                 
+                // 初始化服务容器和分类导出服务
+                InitializeServices();
+                
                 logger.LogInfo("项目管理系统已初始化");
             }
             catch (Exception ex)
             {
                 logger?.LogError($"初始化项目管理系统时出错: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 初始化服务容器和相关服务
+        /// </summary>
+        private void InitializeServices()
+        {
+            try
+            {
+                // 获取模板目录路径
+                var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                var templateDirectory = Path.Combine(appDirectory, "Templates");
+                var configPath = Path.Combine(templateDirectory, "template-mapping.json");
+                
+                // 创建服务容器
+                serviceContainer = ServiceContainer.CreateDefault(templateDirectory, configPath);
+                
+                // 获取分类导出服务
+                categorizedExportService = serviceContainer.GetService<ICategorizedExportService>();
+                
+                logger?.LogInfo("服务容器和分类导出服务初始化完成");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"初始化服务时出错: {ex.Message}");
+                // 即使初始化失败，也不影响主要功能
             }
         }
 
@@ -1837,17 +1873,51 @@ namespace WinFormsApp1
                 int totalFiles = 0;
                 var exportedFiles = new List<string>();
                 
-                // 1. 导出IO映射脚本
+                // 1. 导出IO映射脚本 - 按通道类型分类导出
                 if (currentProjectCache.IOMappingScripts.Any())
                 {
-                    var ioFileName = "IO_Mapping.txt";
-                    var ioFilePath = Path.Combine(outputDirectory, ioFileName);
-                    var ioContent = GenerateFileHeader("IO映射脚本") + string.Join("\n\n", currentProjectCache.IOMappingScripts);
-                    File.WriteAllText(ioFilePath, ioContent, Encoding.UTF8);
+                    logger.LogInfo($"开始分类导出IO映射脚本，共{currentProjectCache.IOMappingScripts.Count}个脚本");
                     
-                    totalFiles++;
-                    exportedFiles.Add($"IO映射脚本: {ioFileName} ({currentProjectCache.IOMappingScripts.Count}个脚本)");
-                    logger.LogInfo($"导出IO映射脚本: {ioFileName}");
+                    // 使用现有的分类方法将IO映射脚本按通道类型分类
+                    var ioMappingByType = ConvertIOMappingScriptsToTemplateGroups(currentProjectCache.IOMappingScripts);
+                    
+                    // 定义文件名映射（将模板类型映射为用户要求的文件名）
+                    var fileNameMapping = new Dictionary<string, string>
+                    {
+                        { "AI_CONVERT", "AI_CONVERT.txt" },
+                        { "AO_CONVERT", "AO_CONVERT.txt" },
+                        { "DI_CONVERT", "DI_MAPPING.txt" },
+                        { "DO_CONVERT", "DO_MAPPING.txt" }
+                    };
+                    
+                    // 为每个通道类型创建独立的txt文件
+                    foreach (var typeGroup in ioMappingByType)
+                    {
+                        var templateType = typeGroup.Key;
+                        var scripts = typeGroup.Value;
+                        
+                        if (scripts.Any() && fileNameMapping.ContainsKey(templateType))
+                        {
+                            var fileName = fileNameMapping[templateType];
+                            var filePath = Path.Combine(outputDirectory, fileName);
+                            var content = GenerateFileHeader($"IO映射脚本 - {templateType}通道") + string.Join("\n\n", scripts);
+                            File.WriteAllText(filePath, content, Encoding.UTF8);
+                            
+                            totalFiles++;
+                            exportedFiles.Add($"{templateType}通道: {fileName} ({scripts.Count}个脚本)");
+                            logger.LogInfo($"导出{templateType}通道IO映射脚本: {fileName} ({scripts.Count}个脚本)");
+                        }
+                    }
+                    
+                    // 如果有无法分类的脚本，单独导出
+                    var totalClassifiedScripts = ioMappingByType.Values.Sum(scripts => scripts.Count);
+                    if (totalClassifiedScripts < currentProjectCache.IOMappingScripts.Count)
+                    {
+                        var unclassifiedCount = currentProjectCache.IOMappingScripts.Count - totalClassifiedScripts;
+                        logger.LogWarning($"有{unclassifiedCount}个IO映射脚本无法分类，将包含在所有分类文件中");
+                    }
+                    
+                    logger.LogSuccess($"IO映射脚本分类导出完成，共生成{ioMappingByType.Count}个文件");
                 }
                 
                 // 2. 导出设备ST程序（动态处理所有模板类型）
@@ -1933,6 +2003,174 @@ namespace WinFormsApp1
                 MessageBox.Show($"导出ST脚本失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 throw;
             }
+        }
+        
+        /// <summary>
+        /// 分类导出ST脚本按钮事件处理方法
+        /// </summary>
+        private async void button_categorized_export_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                logger.LogInfo("开始执行分类导出ST脚本...");
+                
+                // 检查是否已初始化服务
+                if (categorizedExportService == null)
+                {
+                    logger.LogError("分类导出服务未初始化，请重启程序或联系技术支持");
+                    MessageBox.Show("分类导出服务未初始化，请重启程序后重试", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                
+                // 检查是否有ProjectCache数据
+                if (currentProjectCache == null || 
+                    currentProjectCache.IOMappingScripts == null || 
+                    !currentProjectCache.IOMappingScripts.Any())
+                {
+                    logger.LogWarning("没有可分类导出的ST脚本，请先上传并处理点表文件");
+                    MessageBox.Show("没有可分类导出的ST脚本，请先上传并处理点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                
+                // 选择导出目录
+                using (var folderDialog = new FolderBrowserDialog())
+                {
+                    folderDialog.Description = "选择分类导出目录";
+                    folderDialog.ShowNewFolderButton = true;
+                    
+                    if (folderDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        var selectedPath = folderDialog.SelectedPath;
+                        
+                        // 显示进度条
+                        UpdateProgressBar("正在执行分类导出...", 0, true);
+                        
+                        // 先将IO映射脚本转换为分类脚本
+                        var categorizedScripts = new List<CategorizedScript>();
+                        for (int i = 0; i < currentProjectCache.IOMappingScripts.Count; i++)
+                        {
+                            var scriptContent = currentProjectCache.IOMappingScripts[i];
+                            categorizedScripts.Add(new CategorizedScript
+                            {
+                                Content = scriptContent,
+                                Category = ScriptCategory.UNKNOWN, // 需要分类器来判断
+                                DeviceTag = $"Script_{i + 1}" // 临时标识
+                            });
+                        }
+                        
+                        // 创建导出配置
+                        var config = AutomaticGeneration_ST.Models.ExportConfiguration.CreateDefault(selectedPath);
+                        config.OverwriteExisting = true;
+                        config.IncludeTimestamp = false;
+                        
+                        // 执行分类导出
+                        var exportResult = await Task.Run(() => 
+                            categorizedExportService.ExportScriptsByCategory(
+                                categorizedScripts, 
+                                config));
+                        
+                        UpdateProgressBar("分类导出完成", 100, false);
+                        
+                        if (exportResult.IsSuccess)
+                        {
+                            // 生成成功统计信息
+                            var statsMessage = GenerateCategorizedExportStats(exportResult, selectedPath);
+                            
+                            logger.LogSuccess($"分类导出成功! 共导出{exportResult.Statistics.TotalScriptsExported}个脚本到{exportResult.SuccessfulFilesCount}个分类文件中");
+                            
+                            // 显示详细结果
+                            var result = MessageBox.Show(
+                                statsMessage,
+                                "分类导出成功", 
+                                MessageBoxButtons.YesNo, 
+                                MessageBoxIcon.Information,
+                                MessageBoxDefaultButton.Button2);
+                                
+                            // 询问是否打开输出目录
+                            if (result == DialogResult.Yes)
+                            {
+                                Process.Start(new ProcessStartInfo
+                                {
+                                    FileName = selectedPath,
+                                    UseShellExecute = true,
+                                    Verb = "open"
+                                });
+                            }
+                            
+                            // 询问是否保存项目
+                            var saveResult = MessageBox.Show(
+                                "是否保存当前项目？",
+                                "保存项目",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question);
+                                
+                            if (saveResult == DialogResult.Yes)
+                            {
+                                SaveProjectAs();
+                            }
+                        }
+                        else
+                        {
+                            logger.LogError($"分类导出失败: {exportResult.ErrorMessage}");
+                            MessageBox.Show($"分类导出失败:\n\n{exportResult.ErrorMessage}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    else
+                    {
+                        logger.LogInfo("用户取消了分类导出操作");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                UpdateProgressBar("分类导出失败", 0, false);
+                logger.LogError($"执行分类导出时出错: {ex.Message}");
+                MessageBox.Show($"分类导出失败:\n\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        
+        /// <summary>
+        /// 生成分类导出统计信息
+        /// </summary>
+        private string GenerateCategorizedExportStats(ExportResult exportResult, string outputPath)
+        {
+            var stats = new StringBuilder();
+            stats.AppendLine("🎉 ST脚本分类导出完成!");
+            stats.AppendLine();
+            stats.AppendLine($"📂 输出目录: {Path.GetFileName(outputPath)}");
+            stats.AppendLine($"📍 完整路径: {outputPath}");
+            stats.AppendLine();
+            stats.AppendLine("📊 分类统计:");
+            
+            foreach (var fileResult in exportResult.FileResults.OrderBy(f => f.Category.GetFileName()))
+            {
+                var icon = GetCategoryIcon(fileResult.Category.GetFileName());
+                stats.AppendLine($"  {icon} {fileResult.Category.GetDescription()}: {fileResult.ScriptCount}个脚本");
+                stats.AppendLine($"     📄 文件: {Path.GetFileName(fileResult.FilePath)} ({fileResult.FileSizeFormatted})");
+            }
+            
+            stats.AppendLine();
+            stats.AppendLine($"📈 总计: {exportResult.Statistics.TotalScriptsExported}个脚本已分类导出到{exportResult.SuccessfulFilesCount}个文件中");
+            stats.AppendLine($"⏱️ 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            stats.AppendLine();
+            stats.AppendLine("❓ 是否打开输出目录？");
+            
+            return stats.ToString();
+        }
+        
+        /// <summary>
+        /// 根据分类名称获取对应图标
+        /// </summary>
+        private string GetCategoryIcon(string categoryName)
+        {
+            return categoryName.ToUpper() switch
+            {
+                "AI_CONVERT" => "🔄",
+                "AO_CTRL" => "📤",
+                "DI_READ" => "📥",
+                "DO_CTRL" => "⚡",
+                _ => "📄"
+            };
         }
 
         /// <summary>
@@ -2452,6 +2690,16 @@ namespace WinFormsApp1
                     ControlStyleManager.MEDIUM_PADDING
                 );
             }
+            
+            // 分类导出按钮响应式设置
+            if (button_categorized_export != null)
+            {
+                button_categorized_export.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+                button_categorized_export.Location = new System.Drawing.Point(
+                    button_export.Right + ControlStyleManager.MEDIUM_PADDING, 
+                    ControlStyleManager.MEDIUM_PADDING
+                );
+            }
         }
 
         private void SetupControlAnchors()
@@ -2571,16 +2819,23 @@ namespace WinFormsApp1
         private void AdjustButtonLayout()
         {
             // 在小尺寸时调整按钮布局
-            if (this.Width < 1200)
+            if (this.Width < 1400) // 调整阈值以适应第三个按钮
             {
                 // 紧凑布局
-                if (button_upload != null && button_export != null)
+                if (button_upload != null && button_export != null && button_categorized_export != null)
                 {
-                    button_upload.Size = ControlStyleManager.SmallButtonSize;
-                    button_export.Size = ControlStyleManager.SmallButtonSize;
+                    var smallSize = new Size(160, 35); // 较小的按钮尺寸
+                    button_upload.Size = smallSize;
+                    button_export.Size = smallSize;
+                    button_categorized_export.Size = smallSize;
                     
                     button_export.Location = new System.Drawing.Point(
                         button_upload.Right + ControlStyleManager.SMALL_PADDING,
+                        button_upload.Top
+                    );
+                    
+                    button_categorized_export.Location = new System.Drawing.Point(
+                        button_export.Right + ControlStyleManager.SMALL_PADDING,
                         button_upload.Top
                     );
                 }
@@ -2588,13 +2843,19 @@ namespace WinFormsApp1
             else
             {
                 // 标准布局
-                if (button_upload != null && button_export != null)
+                if (button_upload != null && button_export != null && button_categorized_export != null)
                 {
                     button_upload.Size = ControlStyleManager.StandardButtonSize;
                     button_export.Size = ControlStyleManager.StandardButtonSize;
+                    button_categorized_export.Size = new Size(200, 45); // 略大一些以适应文字
                     
                     button_export.Location = new System.Drawing.Point(
                         button_upload.Right + ControlStyleManager.MEDIUM_PADDING,
+                        button_upload.Top
+                    );
+                    
+                    button_categorized_export.Location = new System.Drawing.Point(
+                        button_export.Right + ControlStyleManager.MEDIUM_PADDING,
                         button_upload.Top
                     );
                 }

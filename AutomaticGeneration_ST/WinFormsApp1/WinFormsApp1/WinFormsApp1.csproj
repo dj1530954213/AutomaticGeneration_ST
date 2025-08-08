@@ -35,6 +35,9 @@
     <None Update="Templates\阀门\ESDV_CTRL.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Templates\阀门\XV_CTRL.TXT">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Templates\阀门\MOV_CTRL.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

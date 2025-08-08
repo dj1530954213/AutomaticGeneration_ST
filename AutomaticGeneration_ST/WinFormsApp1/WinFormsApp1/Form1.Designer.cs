@@ -38,6 +38,7 @@
             // 原有控件
             button_upload = new Button();
             button_export = new Button();
+            button_categorized_export = new Button();
             richTextBox1 = new RichTextBox();
             
             // 新增控件
@@ -270,6 +271,17 @@
             button_export.UseVisualStyleBackColor = true;
             button_export.Click += button_export_Click;
             // 
+            // button_categorized_export
+            // 
+            button_categorized_export.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            button_categorized_export.Location = new Point(390, 10);
+            button_categorized_export.Name = "button_categorized_export";
+            button_categorized_export.Size = new Size(200, 45);
+            button_categorized_export.TabIndex = 2;
+            button_categorized_export.Text = "🗂️ 分类导出ST脚本";
+            button_categorized_export.UseVisualStyleBackColor = true;
+            button_categorized_export.Click += button_categorized_export_Click;
+            // 
             // fileListBox
             // 
             fileListBox.Dock = DockStyle.Fill;
@@ -350,6 +362,7 @@
             // leftPanel
             // 
             leftPanel.Controls.Add(fileListBox);
+            leftPanel.Controls.Add(button_categorized_export);
             leftPanel.Controls.Add(button_export);
             leftPanel.Controls.Add(button_upload);
             leftPanel.Dock = DockStyle.Fill;
@@ -443,6 +456,7 @@
         // 原有控件
         private Button button_upload;
         private Button button_export;
+        private Button button_categorized_export;
         private RichTextBox richTextBox1;
         
         // 新增主要控件

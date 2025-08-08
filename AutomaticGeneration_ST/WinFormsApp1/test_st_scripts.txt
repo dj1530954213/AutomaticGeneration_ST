@@ -1,0 +1,63 @@
+(* AI点位: 温度传感器 TT001 *)
+AI_TT001 := AI_ALARM_(
+    AI := TT001_PV,
+    RANGE_HIGH := 100.0,
+    RANGE_LOW := 0.0,
+    HHH := 85.0,
+    HH := 80.0,
+    H := 75.0,
+    L := 15.0,
+    LL := 10.0,
+    LLL := 5.0
+);
+
+(* AO点位: 控制阀 CV001 *)
+ENGIN_HEX_CV001 := ENGIN_HEX_(
+    SP := CV001_SP,
+    PV := PT001_PV,
+    OUTPUT := CV001_OUTPUT,
+    MODE := CV001_MODE,
+    KP := 1.5,
+    TI := 60.0,
+    TD := 5.0
+);
+
+(* DI点位: 泵运行状态 *)
+P001_RUN_STATUS := DI_INPUT_001;
+IF P001_RUN_STATUS THEN
+    P001_ALARM.RUNNING := FALSE;
+ELSE
+    P001_ALARM.RUNNING := TRUE;
+END_IF;
+
+(* DO点位: 阀门控制输出 *)
+DO_OUTPUT_001 := MOV001_OPEN_CMD;
+IF MOV001_OPEN_CMD THEN
+    MOV001_STATUS := 1;
+ELSE
+    MOV001_STATUS := 0;
+END_IF;
+
+(* AI点位: 压力传感器 PT002 *)  
+AI_PT002 := AI_ALARM_(
+    AI := PT002_PV,
+    RANGE_HIGH := 10.0,
+    RANGE_LOW := 0.0,
+    HHH := 9.5,
+    HH := 9.0,
+    H := 8.5,
+    L := 1.5,
+    LL := 1.0,
+    LLL := 0.5
+);
+
+(* AO点位: 频率控制器 *)
+ENGIN_HEX_FREQ := ENGIN_HEX_(
+    SP := FREQ_SP,
+    PV := FREQ_PV, 
+    OUTPUT := FREQ_OUTPUT,
+    MODE := FREQ_MODE,
+    KP := 2.0,
+    TI := 30.0,
+    TD := 2.0
+);

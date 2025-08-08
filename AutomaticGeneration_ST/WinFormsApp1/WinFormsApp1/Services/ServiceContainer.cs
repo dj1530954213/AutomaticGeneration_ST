@@ -58,6 +58,11 @@ namespace AutomaticGeneration_ST.Services
             // 兼容现有系统的IDataService
             RegisterTransient<IDataService>(() => 
                 new RefactoredExcelDataService(GetService<IDataProcessingOrchestrator>()));
+            
+            // 注册分类导出相关服务
+            RegisterSingleton<IScriptClassifier>(() => new ScriptClassificationService());
+            RegisterTransient<ICategorizedExportService>(() => 
+                new CategorizedFileExportService(GetService<IScriptClassifier>()));
         }
 
         /// <summary>
