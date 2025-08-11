@@ -2,6 +2,7 @@ using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using Scriban;
 using Scriban.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using WinFormsApp1.Utils;
@@ -104,15 +105,48 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             context.PushGlobal(scriptObject);
 
             // 步骤 2: 渲染模板
-            var content = template.Render(context);
+            var rawContent = template.Render(context);
+            
+            // 步骤 3: 过滤掉模板中的分类标识行
+            var content = FilterClassificationLines(rawContent);
 
-            // 步骤 3: 封装结果
+            // 步骤 4: 封装结果
             return new GenerationResult
             {
                 FileName = $"{moduleType}_Mapping.st",
                 Content = content,
                 Category = "IO"
             };
+        }
+        
+        /// <summary>
+        /// 过滤掉模板生成内容中的分类标识行
+        /// </summary>
+        /// <param name="content">原始生成内容</param>
+        /// <returns>过滤后的内容</returns>
+        private static string FilterClassificationLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+            var filteredLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                
+                // 过滤掉程序名称和变量类型标识行
+                if (trimmedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
+                    trimmedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue; // 跳过这些行
+                }
+                
+                filteredLines.Add(line);
+            }
+
+            return string.Join(Environment.NewLine, filteredLines);
         }
     }
 }
