@@ -40,8 +40,11 @@ namespace WinFormsApp1.Template
                 
                 var result = template.Render(processedData);
                 
-                logger.LogDebug($"模板渲染完成，生成{result.Length}个字符");
-                return result;
+                // 应用内容过滤功能，移除分类标识行
+                var filteredResult = FilterClassificationLines(result);
+                
+                logger.LogDebug($"模板渲染完成，生成{result.Length}个字符，过滤后{filteredResult.Length}个字符");
+                return filteredResult;
             }
             catch (Exception ex)
             {
@@ -115,8 +118,11 @@ namespace WinFormsApp1.Template
                 
                 var result = template.Render(data);
                 
-                logger.LogDebug($"内联模板渲染完成，生成{result.Length}个字符");
-                return result;
+                // 应用内容过滤功能，移除分类标识行
+                var filteredResult = FilterClassificationLines(result);
+                
+                logger.LogDebug($"内联模板渲染完成，生成{result.Length}个字符，过滤后{filteredResult.Length}个字符");
+                return filteredResult;
             }
             catch (Exception ex)
             {
@@ -196,6 +202,112 @@ namespace WinFormsApp1.Template
                 logger.LogError($"提取模板变量失败: {ex.Message}");
                 return variables;
             }
+        }
+        
+        /// <summary>
+        /// 过滤掉模板生成内容中的分类标识行
+        /// 复用ScribanIoMappingGenerator中已验证的过滤逻辑
+        /// </summary>
+        /// <param name="content">原始生成内容</param>
+        /// <returns>过滤后的内容</returns>
+        private static string FilterClassificationLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            // 使用智能换行符处理
+            var lines = SplitLines(content);
+            var filteredLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                
+                // 过滤掉程序名称、变量类型和变量名称标识行
+                if (IsMetadataLine(trimmedLine))
+                {
+                    logger.LogDebug($"过滤掉分类标识行: {trimmedLine}");
+                    continue; // 跳过这些行
+                }
+                
+                filteredLines.Add(line);
+            }
+
+            return NormalizeLineEndings(filteredLines);
+        }
+        
+        /// <summary>
+        /// 判断是否为需要过滤的元数据行
+        /// </summary>
+        /// <param name="line">待检查的文本行</param>
+        /// <returns>如果是元数据行返回true</returns>
+        private static bool IsMetadataLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+            
+            // 标准化处理：去除空格，统一冒号格式
+            var normalizedLine = line.Replace(" ", "").Replace("：", ":");
+            
+            return normalizedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量名称:", StringComparison.OrdinalIgnoreCase);
+        }
+        
+        /// <summary>
+        /// 智能分割文本行，正确处理各种换行符组合
+        /// </summary>
+        /// <param name="content">原始文本内容</param>
+        /// <returns>分割后的行数组</returns>
+        private static string[] SplitLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new string[0];
+
+            // 先统一换行符为\n，然后分割
+            var normalizedContent = content.Replace("\r\n", "\n").Replace("\r", "\n");
+            return normalizedContent.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// 标准化换行符并清理多余空行
+        /// </summary>
+        /// <param name="lines">文本行列表</param>
+        /// <returns>标准化后的文本内容</returns>
+        private static string NormalizeLineEndings(List<string> lines)
+        {
+            if (lines == null || lines.Count == 0)
+                return string.Empty;
+
+            // 清理连续的空行，最多保留一个空行
+            var cleanedLines = new List<string>();
+            bool lastLineWasEmpty = false;
+
+            foreach (var line in lines)
+            {
+                bool currentLineEmpty = string.IsNullOrWhiteSpace(line);
+                
+                if (currentLineEmpty && lastLineWasEmpty)
+                {
+                    // 跳过连续的空行
+                    continue;
+                }
+                
+                cleanedLines.Add(line);
+                lastLineWasEmpty = currentLineEmpty;
+            }
+
+            // 移除开头和结尾的空行
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[0]))
+            {
+                cleanedLines.RemoveAt(0);
+            }
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[cleanedLines.Count - 1]))
+            {
+                cleanedLines.RemoveAt(cleanedLines.Count - 1);
+            }
+
+            // 使用平台标准换行符重新组合
+            return string.Join(Environment.NewLine, cleanedLines);
         }
     }
 }
