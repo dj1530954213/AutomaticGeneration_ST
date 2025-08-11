@@ -26,19 +26,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Templates\AI\AI.TXT">
+    <None Update="Templates\AI\AI_ALARM.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Templates\AO\AO.TXT">
+    <None Update="Templates\AO\ENGIN_HEX.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Templates\阀门\ESDV_CTRL.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Templates\阀门\XV_CTRL.TXT">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Templates\阀门\MOV_CTRL.TXT">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Templates\阀门\PV_CTRL.TXT">

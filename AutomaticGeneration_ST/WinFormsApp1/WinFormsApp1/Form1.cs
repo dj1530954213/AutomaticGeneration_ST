@@ -1,6 +1,7 @@
 using System.Text;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Generic;
 using WinFormsApp1.Excel;
 using WinFormsApp1.Generators;
 using WinFormsApp1.Output;
@@ -1901,7 +1902,9 @@ namespace WinFormsApp1
                             var fileName = fileNameMapping[templateType];
                             var filePath = Path.Combine(outputDirectory, fileName);
                             var content = GenerateFileHeader($"IO映射脚本 - {templateType}通道") + string.Join("\n\n", scripts);
-                            File.WriteAllText(filePath, content, Encoding.UTF8);
+                            // 应用过滤功能，移除程序名称和变量类型标识行
+                            var filteredContent = FilterMetadataLines(content);
+                            File.WriteAllText(filePath, filteredContent, Encoding.UTF8);
                             
                             totalFiles++;
                             exportedFiles.Add($"{templateType}通道: {fileName} ({scripts.Count}个脚本)");
@@ -1931,7 +1934,9 @@ namespace WinFormsApp1
                         var fileName = $"Device_{templateName}.txt";
                         var filePath = Path.Combine(outputDirectory, fileName);
                         var content = GenerateFileHeader($"设备ST程序 - {templateName}模板") + string.Join("\n\n", deviceCodes);
-                        File.WriteAllText(filePath, content, Encoding.UTF8);
+                        // 应用过滤功能，移除程序名称和变量类型标识行
+                        var filteredContent = FilterMetadataLines(content);
+                        File.WriteAllText(filePath, filteredContent, Encoding.UTF8);
                         
                         totalFiles++;
                         exportedFiles.Add($"{templateName}设备: {fileName} ({deviceCodes.Count}个设备)");
@@ -4175,6 +4180,110 @@ namespace WinFormsApp1
                 logger?.LogError($"GenerateDeviceSTPreview失败: {ex.Message}");
                 return $"❌ 生成设备ST程序预览时出错: {ex.Message}";
             }
+        }
+
+        /// <summary>
+        /// 过滤元数据行（程序名称、变量类型等标识行）
+        /// 复用TemplateRenderer中已验证的过滤逻辑
+        /// </summary>
+        /// <param name="content">原始内容</param>
+        /// <returns>过滤后的内容</returns>
+        private string FilterMetadataLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            var lines = SplitLines(content);
+            var filteredLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                
+                // 过滤掉程序名称和变量类型标识行
+                if (IsMetadataLine(trimmedLine))
+                {
+                    logger.LogDebug($"导出时过滤掉元数据行: {trimmedLine}");
+                    continue; // 跳过这些行
+                }
+                
+                filteredLines.Add(line);
+            }
+
+            return NormalizeLineEndings(filteredLines);
+        }
+
+        /// <summary>
+        /// 判断是否为需要过滤的元数据行
+        /// </summary>
+        /// <param name="line">待检查的文本行</param>
+        /// <returns>如果是元数据行返回true</returns>
+        private bool IsMetadataLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+            
+            // 标准化处理：去除空格，统一冒号格式
+            var normalizedLine = line.Replace(" ", "").Replace("：", ":");
+            
+            return normalizedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量名称:", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 智能分割文本行，正确处理各种换行符组合
+        /// </summary>
+        /// <param name="content">原始文本内容</param>
+        /// <returns>分割后的行数组</returns>
+        private string[] SplitLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new string[0];
+
+            // 先统一换行符为\n，然后分割
+            var normalizedContent = content.Replace("\r\n", "\n").Replace("\r", "\n");
+            return normalizedContent.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// 标准化换行符并清理多余空行
+        /// </summary>
+        /// <param name="lines">文本行列表</param>
+        /// <returns>标准化后的文本内容</returns>
+        private string NormalizeLineEndings(List<string> lines)
+        {
+            if (lines == null || lines.Count == 0)
+                return string.Empty;
+
+            // 清理连续的空行，最多保留一个空行
+            var cleanedLines = new List<string>();
+            bool lastLineWasEmpty = false;
+
+            foreach (var line in lines)
+            {
+                bool currentLineEmpty = string.IsNullOrWhiteSpace(line);
+                
+                if (currentLineEmpty && lastLineWasEmpty)
+                {
+                    continue; // 跳过连续的空行
+                }
+                
+                cleanedLines.Add(line);
+                lastLineWasEmpty = currentLineEmpty;
+            }
+
+            // 移除开头和结尾的空行
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[0]))
+            {
+                cleanedLines.RemoveAt(0);
+            }
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[cleanedLines.Count - 1]))
+            {
+                cleanedLines.RemoveAt(cleanedLines.Count - 1);
+            }
+
+            // 使用平台标准换行符重新组合
+            return string.Join(Environment.NewLine, cleanedLines);
         }
 
     }

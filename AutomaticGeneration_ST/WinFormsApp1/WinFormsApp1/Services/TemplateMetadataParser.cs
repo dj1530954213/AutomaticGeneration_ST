@@ -69,9 +69,28 @@ namespace AutomaticGeneration_ST.Services
                     Console.WriteLine($"[TemplateMetadataParser] 未能提取变量类型，第2行格式不匹配");
                 }
 
-                // 检查并读取同名.TXT文件
-                var txtFilePath = GetCorrespondingTxtFile(scribanFilePath);
-                Console.WriteLine($"[TemplateMetadataParser] 查找对应TXT文件: {txtFilePath}");
+                // 检查并读取与变量类型同名的.TXT文件
+                string txtFilePath = null;
+                if (!string.IsNullOrWhiteSpace(metadata.VariableType))
+                {
+                    var directory = Path.GetDirectoryName(scribanFilePath);
+                    txtFilePath = Path.Combine(directory!, $"{metadata.VariableType}.TXT");
+                    Console.WriteLine($"[TemplateMetadataParser] 根据变量类型查找TXT文件: {txtFilePath}");
+                    
+                    // 如果按变量类型找不到，回退到按文件名查找
+                    if (!File.Exists(txtFilePath))
+                    {
+                        Console.WriteLine($"[TemplateMetadataParser] 按变量类型未找到TXT文件，尝试按文件名查找");
+                        txtFilePath = GetCorrespondingTxtFile(scribanFilePath);
+                        Console.WriteLine($"[TemplateMetadataParser] 按文件名查找TXT文件: {txtFilePath}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[TemplateMetadataParser] 变量类型为空，使用文件名查找TXT文件");
+                    txtFilePath = GetCorrespondingTxtFile(scribanFilePath);
+                    Console.WriteLine($"[TemplateMetadataParser] 查找对应TXT文件: {txtFilePath}");
+                }
                 
                 if (File.Exists(txtFilePath))
                 {
@@ -159,15 +178,27 @@ namespace AutomaticGeneration_ST.Services
                     if (metadata != null) // ParseTemplate已经做了完整的过滤
                     {
                         // 使用程序名称作为Key，确保唯一性
-                        var key = metadata.ProgramName;
-                        if (!results.ContainsKey(key))
+                        var programNameKey = metadata.ProgramName;
+                        if (!results.ContainsKey(programNameKey))
                         {
-                            results[key] = metadata;
-                            Console.WriteLine($"[TemplateMetadataParser] 添加有效模板: {key}");
+                            results[programNameKey] = metadata;
+                            Console.WriteLine($"[TemplateMetadataParser] 添加有效模板(按程序名称): {programNameKey}");
                         }
                         else
                         {
-                            Console.WriteLine($"[TemplateMetadataParser] 发现重复的模板键: {key}，跳过");
+                            Console.WriteLine($"[TemplateMetadataParser] 发现重复的模板键(程序名称): {programNameKey}，跳过");
+                        }
+
+                        // 新增：同时使用模板文件名作为Key，解决第三方设备匹配问题
+                        var templateFileName = Path.GetFileNameWithoutExtension(scribanFile);
+                        if (!results.ContainsKey(templateFileName) && templateFileName != programNameKey)
+                        {
+                            results[templateFileName] = metadata;
+                            Console.WriteLine($"[TemplateMetadataParser] 添加有效模板(按文件名): {templateFileName}");
+                        }
+                        else if (templateFileName != programNameKey)
+                        {
+                            Console.WriteLine($"[TemplateMetadataParser] 发现重复的模板键(文件名): {templateFileName}，跳过");
                         }
                     }
                 }

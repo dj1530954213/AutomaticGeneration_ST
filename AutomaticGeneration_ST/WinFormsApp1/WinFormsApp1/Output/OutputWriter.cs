@@ -94,29 +94,6 @@ namespace WinFormsApp1.Output
             return content.ToString();
         }
         
-        public static void WriteMultipleFiles(Dictionary<string, IEnumerable<string>> categorizedSegments, string baseOutputPath)
-        {
-            try
-            {
-                logger.LogInfo($"开始写入多个分类文件到: {baseOutputPath}");
-                
-                foreach (var category in categorizedSegments)
-                {
-                    var fileName = $"{category.Key}.st";
-                    var filePath = Path.Combine(baseOutputPath, fileName);
-                    
-                    WriteToFile(category.Value, filePath);
-                }
-                
-                logger.LogSuccess($"多文件输出完成，共{categorizedSegments.Count}个文件");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"多文件输出失败: {ex.Message}");
-                throw;
-            }
-        }
-        
         public static string WriteCategorizedFiles(List<string> scripts, List<Dictionary<string, object>> pointData, string selectedPath)
         {
             try
