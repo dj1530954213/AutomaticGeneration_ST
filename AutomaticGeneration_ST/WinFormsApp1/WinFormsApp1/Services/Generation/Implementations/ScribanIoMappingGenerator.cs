@@ -184,16 +184,16 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             if (string.IsNullOrEmpty(content))
                 return content;
 
-            var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+            // 使用智能换行符处理
+            var lines = SplitLines(content);
             var filteredLines = new List<string>();
 
             foreach (var line in lines)
             {
                 var trimmedLine = line.Trim();
                 
-                // 过滤掉程序名称和变量类型标识行
-                if (trimmedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
-                    trimmedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase))
+                // 过滤掉程序名称、变量类型和变量名称标识行
+                if (IsMetadataLine(trimmedLine))
                 {
                     continue; // 跳过这些行
                 }
@@ -201,9 +201,83 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
                 filteredLines.Add(line);
             }
 
-            return string.Join(Environment.NewLine, filteredLines);
+            return NormalizeLineEndings(filteredLines);
         }
         
+        /// <summary>
+        /// 判断是否为需要过滤的元数据行
+        /// </summary>
+        /// <param name="line">待检查的文本行</param>
+        /// <returns>如果是元数据行返回true</returns>
+        private static bool IsMetadataLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+            
+            // 标准化处理：去除空格，统一冒号格式
+            var normalizedLine = line.Replace(" ", "").Replace("：", ":");
+            
+            return normalizedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("变量名称:", StringComparison.OrdinalIgnoreCase);
+        }
+        
+        /// <summary>
+        /// 智能分割文本行，正确处理各种换行符组合
+        /// </summary>
+        /// <param name="content">原始文本内容</param>
+        /// <returns>分割后的行数组</returns>
+        private static string[] SplitLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new string[0];
+
+            // 先统一换行符为\n，然后分割
+            var normalizedContent = content.Replace("\r\n", "\n").Replace("\r", "\n");
+            return normalizedContent.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// 标准化换行符并清理多余空行
+        /// </summary>
+        /// <param name="lines">文本行列表</param>
+        /// <returns>标准化后的文本内容</returns>
+        private static string NormalizeLineEndings(List<string> lines)
+        {
+            if (lines == null || lines.Count == 0)
+                return string.Empty;
+
+            // 清理连续的空行，最多保留一个空行
+            var cleanedLines = new List<string>();
+            bool lastLineWasEmpty = false;
+
+            foreach (var line in lines)
+            {
+                bool currentLineEmpty = string.IsNullOrWhiteSpace(line);
+                
+                if (currentLineEmpty && lastLineWasEmpty)
+                {
+                    // 跳过连续的空行
+                    continue;
+                }
+                
+                cleanedLines.Add(line);
+                lastLineWasEmpty = currentLineEmpty;
+            }
+
+            // 移除开头和结尾的空行
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[0]))
+            {
+                cleanedLines.RemoveAt(0);
+            }
+            while (cleanedLines.Count > 0 && string.IsNullOrWhiteSpace(cleanedLines[cleanedLines.Count - 1]))
+            {
+                cleanedLines.RemoveAt(cleanedLines.Count - 1);
+            }
+
+            // 使用平台标准换行符重新组合
+            return string.Join(Environment.NewLine, cleanedLines);
+        }
+
         /// <summary>
         /// 验证修复效果的测试方法
         /// </summary>
