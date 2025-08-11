@@ -16,17 +16,20 @@ namespace AutomaticGeneration_ST.Services.Implementations
         private readonly IPointFactory _pointFactory;
         private readonly IDeviceClassificationService _deviceClassificationService;
         private readonly ITemplateRegistry _templateRegistry;
+        private readonly IWorksheetLocatorService _worksheetLocator;
 
         public DataProcessingOrchestrator(
             IExcelWorkbookParser excelParser,
             IPointFactory pointFactory,
             IDeviceClassificationService deviceClassificationService,
-            ITemplateRegistry templateRegistry)
+            ITemplateRegistry templateRegistry,
+            IWorksheetLocatorService worksheetLocator)
         {
             _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
             _pointFactory = pointFactory ?? throw new ArgumentNullException(nameof(pointFactory));
             _deviceClassificationService = deviceClassificationService ?? throw new ArgumentNullException(nameof(deviceClassificationService));
             _templateRegistry = templateRegistry ?? throw new ArgumentNullException(nameof(templateRegistry));
+            _worksheetLocator = worksheetLocator ?? throw new ArgumentNullException(nameof(worksheetLocator));
         }
 
         public ProcessingResult ProcessData(string excelFilePath)
@@ -81,12 +84,19 @@ namespace AutomaticGeneration_ST.Services.Implementations
         {
             Console.WriteLine("[INFO] 步骤1: 处理IO点表...");
 
-            if (!_excelParser.WorksheetExists(excelFilePath, "IO点表"))
+            // 使用智能工作表定位服务
+            var validation = _worksheetLocator.ValidateWorksheet(excelFilePath, "IO点表");
+            if (!validation.IsFound)
             {
-                throw new InvalidOperationException("Excel文件中未找到'IO点表'工作簿");
+                throw new InvalidOperationException(
+                    $"在Excel文件中未找到'IO点表'工作表。\n" +
+                    $"错误信息: {validation.ErrorMessage}\n" +
+                    $"建议: 请检查工作表名称是否正确或尝试使用以下别名: IO, IO表, Points, 点位表, 点表");
             }
 
-            var ioPointsData = _excelParser.ParseWorksheet(excelFilePath, "IO点表");
+            Console.WriteLine($"[INFO] 找到IO点表: '{validation.ActualName}' (匹配类型: {validation.MatchType})");
+            
+            var ioPointsData = _excelParser.ParseWorksheetSmart(excelFilePath, "IO点表", _worksheetLocator);
             Console.WriteLine($"[INFO] IO点表包含 {ioPointsData.Count} 行数据");
 
             var points = _pointFactory.CreatePointsBatch(ioPointsData);
@@ -103,13 +113,19 @@ namespace AutomaticGeneration_ST.Services.Implementations
         {
             Console.WriteLine("[INFO] 步骤2: 处理设备分类表...");
 
-            if (!_excelParser.WorksheetExists(excelFilePath, "设备分类表"))
+            // 使用智能工作表定位服务
+            var validation = _worksheetLocator.ValidateWorksheet(excelFilePath, "设备分类表");
+            if (!validation.IsFound)
             {
-                Console.WriteLine("[WARNING] 未找到设备分类表，所有点位将作为独立点位处理");
+                Console.WriteLine($"[WARNING] 未找到设备分类表，所有点位将作为独立点位处理");
+                Console.WriteLine($"[INFO] 错误信息: {validation.ErrorMessage}");
+                Console.WriteLine($"[INFO] 建议使用以下别名: 设备分类, 分类表, Device Classification, Devices, Device, 设备表, 设备");
                 return (new List<Device>(), new HashSet<string>());
             }
 
-            var classificationData = _excelParser.ParseWorksheet(excelFilePath, "设备分类表");
+            Console.WriteLine($"[INFO] 找到设备分类表: '{validation.ActualName}' (匹配类型: {validation.MatchType})");
+            
+            var classificationData = _excelParser.ParseWorksheetSmart(excelFilePath, "设备分类表", _worksheetLocator);
             Console.WriteLine($"[INFO] 设备分类表包含 {classificationData.Count} 行数据");
 
             var (devices, assignedPointNames) = _deviceClassificationService.BuildDevicesFromClassification(
@@ -136,11 +152,14 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
             foreach (var tableName in deviceTableNames)
             {
-                if (_excelParser.WorksheetExists(excelFilePath, tableName))
+                // 使用智能工作表查找
+                var validation = _worksheetLocator.ValidateWorksheet(excelFilePath, tableName);
+                if (validation.IsFound)
                 {
                     try
                     {
-                        var tableData = _excelParser.ParseWorksheet(excelFilePath, tableName);
+                        Console.WriteLine($"[INFO] 找到设备表: '{validation.ActualName}' (匹配类型: {validation.MatchType})");
+                        var tableData = _excelParser.ParseWorksheetSmart(excelFilePath, tableName, _worksheetLocator);
                         tablesProcessed++;
 
                         foreach (var row in tableData)

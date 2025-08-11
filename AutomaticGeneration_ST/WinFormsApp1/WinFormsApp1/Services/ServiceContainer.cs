@@ -48,12 +48,17 @@ namespace AutomaticGeneration_ST.Services
             RegisterTransient<IDeviceClassificationService>(() => 
                 new DeviceClassificationService(GetService<IPointFactory>()));
 
+            // 注册工作表定位服务
+            RegisterTransient<IWorksheetLocatorService>(() => 
+                new WorksheetLocatorService(GetService<IExcelWorkbookParser>()));
+
             RegisterTransient<IDataProcessingOrchestrator>(() => 
                 new DataProcessingOrchestrator(
                     GetService<IExcelWorkbookParser>(),
                     GetService<IPointFactory>(),
                     GetService<IDeviceClassificationService>(),
-                    GetService<ITemplateRegistry>()));
+                    GetService<ITemplateRegistry>(),
+                    GetService<IWorksheetLocatorService>()));
 
             // 兼容现有系统的IDataService
             RegisterTransient<IDataService>(() => 

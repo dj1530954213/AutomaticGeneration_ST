@@ -201,5 +201,40 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 return default(T);
             }
         }
+
+        public List<Dictionary<string, object>> ParseWorksheetSmart(string filePath, string expectedSheetName, IWorksheetLocatorService locatorService)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentException("文件路径不能为空", nameof(filePath));
+
+            if (string.IsNullOrWhiteSpace(expectedSheetName))
+                throw new ArgumentException("工作表名称不能为空", nameof(expectedSheetName));
+
+            if (locatorService == null)
+                throw new ArgumentNullException(nameof(locatorService));
+
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"Excel文件不存在: {filePath}");
+
+            var actualSheetName = locatorService.LocateWorksheet(filePath, expectedSheetName);
+            if (string.IsNullOrEmpty(actualSheetName))
+            {
+                var availableSheets = GetWorksheetNames(filePath);
+                var errorMsg = $"在Excel文件中未找到名为'{expectedSheetName}'的工作表。\n" +
+                              $"可用的工作表: {string.Join(", ", availableSheets)}";
+                throw new ArgumentException(errorMsg);
+            }
+
+            Console.WriteLine($"[INFO] 智能匹配工作表: '{expectedSheetName}' -> '{actualSheetName}'");
+            return ParseWorksheet(filePath, actualSheetName);
+        }
+
+        public WorksheetValidationResult ValidateWorksheetSmart(string filePath, string expectedSheetName, IWorksheetLocatorService locatorService)
+        {
+            if (locatorService == null)
+                throw new ArgumentNullException(nameof(locatorService));
+
+            return locatorService.ValidateWorksheet(filePath, expectedSheetName);
+        }
     }
 }

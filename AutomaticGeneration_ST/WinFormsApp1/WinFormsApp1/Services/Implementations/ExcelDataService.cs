@@ -13,6 +13,18 @@ namespace AutomaticGeneration_ST.Services.Implementations
     public class ExcelDataService : IDataService
     {
         private readonly LogService _logger = LogService.Instance;
+        private readonly IWorksheetLocatorService _worksheetLocator;
+
+        // 支持向后兼容的无参构造函数
+        public ExcelDataService() : this(null)
+        {
+        }
+
+        // 支持新架构的有参构造函数
+        public ExcelDataService(IWorksheetLocatorService worksheetLocator)
+        {
+            _worksheetLocator = worksheetLocator;
+        }
         
         // 在类级别设置EPPlus的许可证上下文。这是EPPlus 5.x及以上版本所必需的。
         static ExcelDataService()
@@ -45,11 +57,14 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                     // --- 步骤 1: 解析 "IO点表"，构建点位数据的基础和权威 ---
                     _logger.LogInfo("🔍 步骤1: 开始解析IO点表...");
-                    var ioSheet = package.Workbook.Worksheets["IO点表"];
+                    var ioSheet = FindWorksheetSmart(package, "IO点表");
                     if (ioSheet == null) 
                     {
                         var availableSheets = string.Join(", ", package.Workbook.Worksheets.Select(ws => ws.Name));
-                        throw new InvalidDataException($"在Excel文件中未找到名为'IO点表'的工作簿。可用的工作表: {availableSheets}");
+                        throw new InvalidDataException(
+                            $"在Excel文件中未找到名为'IO点表'的工作表。\n" +
+                            $"可用的工作表: {availableSheets}\n" +
+                            $"建议使用以下别名: IO, IO表, Points, 点位表, 点表");
                     }
 
                     var parsedPointsCount = ParseIoSheet(ioSheet, context.AllPointsMasterList);
@@ -57,7 +72,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                 // --- 步骤 2: 解析 "设备分类表"，构建设备实例和点位字典 ---
                 _logger.LogInfo("🏭 步骤2: 开始处理设备分类表...");
-                var deviceSheet = package.Workbook.Worksheets["设备分类表"];
+                var deviceSheet = FindWorksheetSmart(package, "设备分类表");
                 var deviceMap = new Dictionary<string, Device>(); // 临时字典用于高效构建设备
                 
                 if (deviceSheet != null)
@@ -77,7 +92,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 
                 foreach (var sheetName in deviceSheetNames)
                 {
-                    var devicePointSheet = package.Workbook.Worksheets[sheetName];
+                    var devicePointSheet = FindWorksheetSmart(package, sheetName);
                     if (devicePointSheet != null)
                     {
                         FillDevicePointDetails(devicePointSheet, deviceMap, sheetName);
@@ -558,6 +573,169 @@ namespace AutomaticGeneration_ST.Services.Implementations
         {
             Console.WriteLine($"[ERROR] {DateTime.Now:yyyy-MM-dd HH:mm:ss} ExcelDataService: {message}");
             System.Diagnostics.Debug.WriteLine($"[ERROR] {DateTime.Now:yyyy-MM-dd HH:mm:ss} ExcelDataService: {message}");
+        }
+
+        /// <summary>
+        /// 智能查找工作表 - 支持模糊匹配和别名
+        /// </summary>
+        /// <param name="package">Excel包</param>
+        /// <param name="expectedName">期望的工作表名称</param>
+        /// <returns>找到的工作表，如果未找到则返回null</returns>
+        private ExcelWorksheet FindWorksheetSmart(ExcelPackage package, string expectedName)
+        {
+            if (package?.Workbook?.Worksheets == null || string.IsNullOrWhiteSpace(expectedName))
+                return null;
+
+            var worksheets = package.Workbook.Worksheets;
+
+            // 如果有新的工作表定位服务，优先使用
+            if (_worksheetLocator != null)
+            {
+                try
+                {
+                    // 伴随临时文件路径，需要从包中获取所有工作表名称
+                    var availableNames = worksheets.Select(w => w.Name).ToList();
+                    var match = FindWorksheetByLogic(availableNames, expectedName);
+                    if (!string.IsNullOrEmpty(match))
+                    {
+                        var found = worksheets[match];
+                        if (found != null)
+                        {
+                            LogInfo($"智能匹配工作表: '{expectedName}' -> '{match}'");
+                            return found;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"智能工作表定位失败，使用默认逻辑: {ex.Message}");
+                }
+            }
+
+            // 使用内置的智能匹配逻辑
+            var availableSheets = worksheets.Select(w => w.Name).ToList();
+            var matchedName = FindWorksheetByLogic(availableSheets, expectedName);
+            if (!string.IsNullOrEmpty(matchedName))
+            {
+                var result = worksheets[matchedName];
+                if (result != null)
+                {
+                    LogInfo($"内置匹配工作表: '{expectedName}' -> '{matchedName}'");
+                }
+                return result;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 工作表查找逻辑 - 支持多种匹配策略
+        /// </summary>
+        private string FindWorksheetByLogic(List<string> availableNames, string expectedName)
+        {
+            if (availableNames == null || !availableNames.Any() || string.IsNullOrWhiteSpace(expectedName))
+                return null;
+
+            // 1. 精确匹配
+            var exactMatch = availableNames.FirstOrDefault(n => n == expectedName);
+            if (!string.IsNullOrEmpty(exactMatch))
+                return exactMatch;
+
+            // 2. 忽略大小写匹配
+            var ignoreCaseMatch = availableNames.FirstOrDefault(n => 
+                string.Equals(n, expectedName, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(ignoreCaseMatch))
+                return ignoreCaseMatch;
+
+            // 3. 去除空格和特殊字符匹配
+            var normalizedExpected = NormalizeWorksheetName(expectedName);
+            var normalizedMatch = availableNames.FirstOrDefault(n => 
+                NormalizeWorksheetName(n) == normalizedExpected);
+            if (!string.IsNullOrEmpty(normalizedMatch))
+                return normalizedMatch;
+
+            // 4. 模糊匹配（包含关系）
+            var fuzzyMatch = availableNames.FirstOrDefault(n => 
+                n.Contains(expectedName, StringComparison.OrdinalIgnoreCase) ||
+                expectedName.Contains(n, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(fuzzyMatch))
+                return fuzzyMatch;
+
+            // 5. 别名匹配
+            var aliasMatch = FindByBuiltInAliases(availableNames, expectedName);
+            if (!string.IsNullOrEmpty(aliasMatch))
+                return aliasMatch;
+
+            return null;
+        }
+
+        /// <summary>
+        /// 根据内置别名查找工作表
+        /// </summary>
+        private string FindByBuiltInAliases(List<string> availableNames, string expectedName)
+        {
+            // 预定义的工作表别名映射
+            var aliases = new Dictionary<string, string[]>()
+            {
+                ["IO点表"] = new[] { "IO", "IO表", "Points", "IO Points", "点位表", "点表" },
+                ["设备分类表"] = new[] { "设备分类", "分类表", "Device", "Devices", "设备表", "设备" },
+                ["阀门"] = new[] { "Valve", "Valves", "阀" },
+                ["调节阀"] = new[] { "Control Valve", "CV", "调节", "控制阀" },
+                ["可燃气体探测器"] = new[] { "气体探测器", "Gas Detector", "Gas", "探测器" },
+                ["低压开关柜"] = new[] { "开关柜", "Switchgear", "LV Panel", "低压柜" },
+                ["撇装机柜"] = new[] { "机柜", "Cabinet", "Skid", "撇装" },
+                ["加臭"] = new[] { "Odorizer", "Odorant", "臭化" },
+                ["恒电位仪"] = new[] { "Potentiostat", "电位仪" }
+            };
+
+            // 检查expectedName是否有预定义的别名
+            if (aliases.ContainsKey(expectedName))
+            {
+                var candidateAliases = aliases[expectedName];
+                foreach (var alias in candidateAliases)
+                {
+                    var match = availableNames.FirstOrDefault(n => 
+                        string.Equals(n, alias, StringComparison.OrdinalIgnoreCase) ||
+                        NormalizeWorksheetName(n) == NormalizeWorksheetName(alias));
+                    if (!string.IsNullOrEmpty(match))
+                        return match;
+                }
+            }
+
+            // 反向查找：检查expectedName是否是某个主名称的别名
+            foreach (var kvp in aliases)
+            {
+                if (kvp.Value.Any(alias => string.Equals(alias, expectedName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    // 尝试找到主名称或其他别名
+                    foreach (var candidate in new[] { kvp.Key }.Concat(kvp.Value))
+                    {
+                        var match = availableNames.FirstOrDefault(n => 
+                            string.Equals(n, candidate, StringComparison.OrdinalIgnoreCase));
+                        if (!string.IsNullOrEmpty(match))
+                            return match;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 标准化工作表名称
+        /// </summary>
+        private string NormalizeWorksheetName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+
+            // 移除空格、制表符、换行符等
+            var normalized = System.Text.RegularExpressions.Regex.Replace(name, @"\s+", "");
+            
+            // 移除常见的特殊字符
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[\(\)\[\]\-_、，（）【】]", "");
+            
+            return normalized.ToLowerInvariant();
         }
     }
 }
