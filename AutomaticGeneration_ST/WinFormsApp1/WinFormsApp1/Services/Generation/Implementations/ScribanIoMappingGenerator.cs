@@ -33,15 +33,70 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             {
                 if (p == null) return "(* 点位未找到 *)";
                 
-                // 对于IO映射，优先使用PlcAbsoluteAddress并进行转换
-                if (!string.IsNullOrWhiteSpace(p.PlcAbsoluteAddress))
+                // 对于IO映射，优先使用ChannelNumber（通道位号）并进行转换
+                if (!string.IsNullOrWhiteSpace(p.ChannelNumber))
                 {
-                    // 使用ChannelConverter将通道位号转换为硬点通道号
-                    // 例如: 1_1_AI_0 -> DPIO_2_1_2_1
-                    return ChannelConverter.ConvertToHardChannel(p.PlcAbsoluteAddress);
+                    try 
+                    {
+                        // 使用ChannelConverter将通道位号转换为硬点通道号
+                        // 例如: 1_1_AI_0 -> DPIO_2_1_2_1
+                        var result = ChannelConverter.ConvertToHardChannel(p.ChannelNumber);
+                        System.Diagnostics.Debug.WriteLine($"成功转换ChannelNumber: {p.ChannelNumber} -> {result} (点位: {p.HmiTagName})");
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"错误: ChannelNumber转换失败 - {p.ChannelNumber}, 错误: {ex.Message}");
+                        // 继续尝试备用方案
+                    }
                 }
                 
-                return p.HmiTagName ?? "(* 地址未找到 *)";
+                // 备用方案：如果ChannelNumber为空或转换失败，尝试使用PlcAbsoluteAddress
+                if (!string.IsNullOrWhiteSpace(p.PlcAbsoluteAddress))
+                {
+                    try 
+                    {
+                        // 记录警告信息，表明使用了备用方案
+                        System.Diagnostics.Debug.WriteLine($"警告: 点位 {p.HmiTagName} 使用PlcAbsoluteAddress作为备用: {p.PlcAbsoluteAddress}");
+                        var result = ChannelConverter.ConvertToHardChannel(p.PlcAbsoluteAddress);
+                        System.Diagnostics.Debug.WriteLine($"成功转换PlcAbsoluteAddress: {p.PlcAbsoluteAddress} -> {result}");
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"错误: PlcAbsoluteAddress转换也失败 - {p.PlcAbsoluteAddress}, 错误: {ex.Message}");
+                    }
+                }
+                
+                // 最终fallback：所有转换都失败时的处理
+                var fallbackMsg = $"(* 无法解析地址: {p.HmiTagName} *)";
+                System.Diagnostics.Debug.WriteLine($"警告: 点位 {p.HmiTagName} 无法解析地址，ChannelNumber: '{p.ChannelNumber}', PlcAbsoluteAddress: '{p.PlcAbsoluteAddress}'");
+                return fallbackMsg;
+            }));
+
+            // 添加调试信息函数，用于验证通道号解析
+            scriptObject.Import("debug_channel_info", new Func<Models.Point, string>((p) =>
+            {
+                if (p == null) return "点位为空";
+                
+                var info = new System.Text.StringBuilder();
+                info.AppendLine($"点位: {p.HmiTagName}");
+                info.AppendLine($"ChannelNumber: '{p.ChannelNumber}'");
+                info.AppendLine($"PlcAbsoluteAddress: '{p.PlcAbsoluteAddress}'");
+                
+                // 验证ChannelNumber格式
+                if (!string.IsNullOrWhiteSpace(p.ChannelNumber))
+                {
+                    var isValid = WinFormsApp1.Utils.ChannelConverter.IsValidChannelPosition(p.ChannelNumber);
+                    info.AppendLine($"ChannelNumber格式有效: {isValid}");
+                    if (isValid)
+                    {
+                        var converted = ChannelConverter.ConvertToHardChannel(p.ChannelNumber);
+                        info.AppendLine($"转换结果: {converted}");
+                    }
+                }
+                
+                return info.ToString();
             }));
 
             // 获取安全的默认值
@@ -147,6 +202,26 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             }
 
             return string.Join(Environment.NewLine, filteredLines);
+        }
+        
+        /// <summary>
+        /// 验证修复效果的测试方法
+        /// </summary>
+        public static void ValidateChannelParsing()
+        {
+            var testPoint = new Models.Point("TestPoint")
+            {
+                ChannelNumber = "1_1_AI_0",
+                PlcAbsoluteAddress = "%MD320"
+            };
+            
+            var generator = new ScribanIoMappingGenerator();
+            var template = Scriban.Template.Parse("{{ get_address points.0 }}");
+            
+            var result = generator.Generate("AI", new[] { testPoint }, template);
+            
+            System.Diagnostics.Debug.WriteLine($"测试结果: {result.Content}");
+            System.Diagnostics.Debug.WriteLine("如果结果包含DPIO_2_1_2_1，说明修复成功地优先使用了ChannelNumber");
         }
     }
 }
