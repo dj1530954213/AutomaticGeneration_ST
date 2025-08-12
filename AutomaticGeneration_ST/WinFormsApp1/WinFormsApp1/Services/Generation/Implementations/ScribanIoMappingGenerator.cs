@@ -302,19 +302,52 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
 
 public static class StringExtensions
 {
+    private static readonly Dictionary<string, string> SpecialMappings = new Dictionary<string, string>
+    {
+        { "SHH_Value", "shh_value" },
+        { "SH_Value", "sh_value" },
+        { "SL_Value", "sl_value" },
+        { "SLL_Value", "sll_value" },
+        { "SHH_Point", "shh_point" },
+        { "SH_Point", "sh_point" },
+        { "SL_Point", "sl_point" },
+        { "SLL_Point", "sll_point" },
+        { "SHH_PlcAddress", "shh_plc_address" },
+        { "SH_PlcAddress", "sh_plc_address" },
+        { "SL_PlcAddress", "sl_plc_address" },
+        { "SLL_PlcAddress", "sll_plc_address" }
+    };
+
     public static string ToSnakeCase(this string input)
     {
         if (string.IsNullOrEmpty(input)) return input;
 
+        // 优先检查特殊映射
+        if (SpecialMappings.TryGetValue(input, out var specialMapping))
+        {
+            return specialMapping;
+        }
+
+        // 标准的snake_case转换
         var result = "";
         for (int i = 0; i < input.Length; i++)
         {
-            if (char.IsUpper(input[i]) && i > 0)
+            var currentChar = input[i];
+            
+            // 如果是大写字母且不是第一个字符，则在前面添加下划线
+            if (char.IsUpper(currentChar) && i > 0)
             {
-                result += "_";
+                // 避免在现有下划线后再添加下划线
+                if (result.Length > 0 && result[result.Length - 1] != '_')
+                {
+                    result += "_";
+                }
             }
-            result += char.ToLower(input[i]);
+            
+            // 将字符转换为小写并添加到结果中
+            result += char.ToLower(currentChar);
         }
+        
         return result;
     }
 }

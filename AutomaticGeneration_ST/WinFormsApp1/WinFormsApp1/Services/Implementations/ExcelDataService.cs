@@ -186,6 +186,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                 try
                 {
+                    //实际解析点表的地方
                     var point = new Models.Point(hmiTagName)
                     {
                         ModuleName = GetSafeFieldValue<string>(sheet, row, headerIndexes, "模块名称"),
@@ -201,16 +202,16 @@ namespace AutomaticGeneration_ST.Services.Implementations
                         ScadaCommAddress = GetSafeFieldValue<string>(sheet, row, headerIndexes, "上位机通讯地址"),
                         StoreHistory = GetSafeFieldValue<bool?>(sheet, row, headerIndexes, "是否历史存储"),
                         PowerDownProtection = GetSafeFieldValue<bool?>(sheet, row, headerIndexes, "是否掉电保护"),
-                        RangeLow = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程低"),
-                        RangeHigh = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程高"),
+                        RangeLow = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程低限"),
+                        RangeHigh = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "量程高限"),
                         Unit = GetSafeFieldValue<string>(sheet, row, headerIndexes, "单位"),
                         InstrumentType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "仪表类型"),
                         PointType = GetSafeFieldValue<string>(sheet, row, headerIndexes, "点位类型"),
                         // 添加报警相关字段
-                        SHH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SHH值"),
-                        SH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SH值"),
-                        SL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SL值"),
-                        SLL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SLL值")
+                        SHH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SHH设定值"),
+                        SH_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SH设定值"),
+                        SL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SL设定值"),
+                        SLL_Value = GetSafeFieldValue<double?>(sheet, row, headerIndexes, "SLL设定值")
                     };
 
                     if (!masterList.ContainsKey(hmiTagName))
