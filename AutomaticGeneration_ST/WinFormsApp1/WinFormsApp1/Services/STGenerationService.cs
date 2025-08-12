@@ -600,6 +600,9 @@ namespace AutomaticGeneration_ST.Services
                         // 渲染模板
                         var deviceCode = template.Render(dataContext);
                         
+                        // 处理尖括号占位符，将未匹配的点位注释化
+                        deviceCode = ProcessAngleBracketPlaceholders(deviceCode);
+                        
                         if (!string.IsNullOrWhiteSpace(deviceCode))
                         {
                             var finalCode = $"(* 设备: {device.DeviceTag} - 模板: {templateName} *)\n{deviceCode}";
@@ -875,6 +878,89 @@ namespace AutomaticGeneration_ST.Services
             _deviceSTCacheTime.Clear();
             _deviceTemplateBinder.ClearExpiredCache();
             LogInfo("🧹 已清理所有缓存");
+        }
+
+        /// <summary>
+        /// 处理尖括号标识的未匹配点位，将其注释化
+        /// 例如：XO=><XO>, 转换为 (*XO=>XO*)
+        /// </summary>
+        /// <param name="content">原始生成内容</param>
+        /// <returns>处理后的内容</returns>
+        private static string ProcessAngleBracketPlaceholders(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            var lines = SplitLines(content);
+            var processedLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var processedLine = line;
+                
+                // 检查是否包含尖括号占位符
+                if (line.Contains("<") && line.Contains(">"))
+                {
+                    // 使用正则表达式匹配尖括号内容模式
+                    // 匹配形如：变量名:=<内容> 或 变量名=><内容>
+                    var pattern = @"(\w+)\s*([:=]+>?)\s*<([^>]+)>";
+                    var regex = new System.Text.RegularExpressions.Regex(pattern);
+                    
+                    if (regex.IsMatch(processedLine))
+                    {
+                        // 将整行包装为注释
+                        var trimmedLine = processedLine.Trim();
+                        if (trimmedLine.EndsWith(","))
+                        {
+                            // 移除末尾逗号，然后注释化
+                            trimmedLine = trimmedLine.Substring(0, trimmedLine.Length - 1);
+                        }
+                        
+                        // 去除尖括号，保持原有缩进
+                        var leadingWhitespace = GetLeadingWhitespace(processedLine);
+                        var commentedLine = regex.Replace(trimmedLine, "$1$2$3");
+                        processedLine = $"{leadingWhitespace}(*{commentedLine}*)";
+                    }
+                }
+                
+                processedLines.Add(processedLine);
+            }
+
+            return string.Join(Environment.NewLine, processedLines);
+        }
+
+        /// <summary>
+        /// 智能分割文本行，正确处理各种换行符组合
+        /// </summary>
+        /// <param name="content">原始文本内容</param>
+        /// <returns>分割后的行数组</returns>
+        private static string[] SplitLines(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new string[0];
+
+            // 先统一换行符为\n，然后分割
+            var normalizedContent = content.Replace("\r\n", "\n").Replace("\r", "\n");
+            return normalizedContent.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// 获取字符串的前导空白字符
+        /// </summary>
+        /// <param name="line">文本行</param>
+        /// <returns>前导空白字符</returns>
+        private static string GetLeadingWhitespace(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+                return string.Empty;
+
+            int i = 0;
+            while (i < line.Length && char.IsWhiteSpace(line[i]))
+            {
+                i++;
+            }
+            
+            return line.Substring(0, i);
         }
     }
 
