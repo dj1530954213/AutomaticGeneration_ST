@@ -165,6 +165,12 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             // 步骤 3: 过滤掉模板中的分类标识行
             var content = FilterClassificationLines(rawContent);
 
+            // 步骤 3.5: 专门处理AI点位的逗号问题
+            if (moduleType.ToUpper() == "AI")
+            {
+                content = RemoveTrailingCommaFromAiPoints(content);
+            }
+
             // 步骤 4: 封装结果
             return new GenerationResult
             {
@@ -234,6 +240,72 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             // 先统一换行符为\n，然后分割
             var normalizedContent = content.Replace("\r\n", "\n").Replace("\r", "\n");
             return normalizedContent.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// 专门处理AI点位函数块调用中倒数第二行的逗号问题
+        /// 移除AI点位函数块调用中最后一个参数后的逗号
+        /// </summary>
+        /// <param name="content">原始生成内容</param>
+        /// <returns>处理后的内容</returns>
+        private static string RemoveTrailingCommaFromAiPoints(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            var lines = SplitLines(content);
+            var processedLines = new List<string>();
+            
+            bool inAiFunctionBlock = false;
+            int functionBlockStartIndex = -1;
+            
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var trimmedLine = line.Trim();
+                
+                // 检测AI函数块调用的开始（如：AI_ALARM_xxx(）
+                if (trimmedLine.StartsWith("AI_ALARM_", StringComparison.OrdinalIgnoreCase) && 
+                    trimmedLine.Contains("(") && !trimmedLine.Contains(");"))
+                {
+                    inAiFunctionBlock = true;
+                    functionBlockStartIndex = i;
+                    processedLines.Add(line);
+                    continue;
+                }
+                
+                // 检测AI函数块调用的结束
+                if (inAiFunctionBlock && trimmedLine == ");")
+                {
+                    // 处理倒数第二行的逗号
+                    if (processedLines.Count > functionBlockStartIndex + 1)
+                    {
+                        var lastParamIndex = processedLines.Count - 1;
+                        var lastParamLine = processedLines[lastParamIndex];
+                        
+                        // 如果最后一个参数行以逗号结尾，则移除逗号
+                        if (lastParamLine.TrimEnd().EndsWith(","))
+                        {
+                            // 保持原有的缩进，只移除末尾的逗号
+                            var trimmedLastParam = lastParamLine.TrimEnd();
+                            var newLastParamLine = trimmedLastParam.Substring(0, trimmedLastParam.Length - 1);
+                            
+                            // 恢复原来的行末空白字符（如果有的话），但不包括逗号
+                            var originalWhitespace = lastParamLine.Substring(trimmedLastParam.Length);
+                            processedLines[lastParamIndex] = newLastParamLine + originalWhitespace;
+                        }
+                    }
+                    
+                    inAiFunctionBlock = false;
+                    functionBlockStartIndex = -1;
+                    processedLines.Add(line);
+                    continue;
+                }
+                
+                processedLines.Add(line);
+            }
+            
+            return string.Join(Environment.NewLine, processedLines);
         }
 
         /// <summary>
