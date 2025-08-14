@@ -1,0 +1,4 @@
+程序名称:TCP_DIGITAL
+变量类型:
+(*TCP状态量数据采集:{{point.hmi_tag_name}}*)
+{{point.hmi_tag_name}}:={{point.INPUT }};

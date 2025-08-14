@@ -1,30 +1,42 @@
-程序名称:ESDV_CTRL
-变量类型:ESDV_CTRL
-(*ESD阀门:{{device_tag}}控制块调用*)
-ESDV{{device_tag}}_CTRL(
-CS:=CS01,
-ZIX:={{XS}},
-ZIO:={{ZSH}},
-ZIC:={{ZSL}},
-DA_TIME:=T#90S,
-DA_RST:=RESET,
-ESD_ACT:=ESD_ACTION,
-ESD_RST:=ESD_RESET,
-C_AM:={{C_AM}},
-S_AM:={{S_AM}},
-C_OPEN:={{C_OPEN}},
-C_CLOSE:={{C_CLOSE}},
-S_OPEN:={{S_OPEN}},
-S_CLOSE:={{S_CLOSE}},
-AM=>{{AM}},
-XO=>{{X0}},
-XC=>{{XC}},
-DA=>{{DA}},
-ESD_OUT=>{{EXC}},
-C_AM=>{{C_AM}},
-S_AM=>{{S_AM}},
-C_OPEN=>{{C_OPEN}},
-C_CLOSE=>{{C_CLOSE}},
-S_OPEN=>{{S_OPEN}},
-S_CLOSE=>{{S_CLOSE}},
+程序名称:TCP_ANALOG
+变量类型:DATA_CONVERT_BY_BYTE
+(*TCP模拟量数据采集:{{point.hmi_tag_name}}*)
+DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
+{{~ if point.IN1 != null ~}}
+    IN1:={{point.IN1 }},
+{{~ end ~}}
+{{~ if point.IN2 != null ~}}
+    IN2:={{point.IN2 }},
+{{~ end ~}}
+{{~ if point.IN3 != null ~}}
+    IN3:={{point.IN3 }},
+{{~ end ~}}
+{{~ if point.IN4 != null ~}}
+    IN4:={{point.IN4 }},
+{{~ end ~}}
+{{~ if point.BYTE_ORDER != null ~}}
+    BYTE_ORDER:={{point.BYTE_ORDER }},
+{{~ end ~}}
+{{~ if point.BYTE_ORDER != null ~}}
+    BYTE_ORDER:={{point.BYTE_ORDER }},
+{{~ end ~}}
+{{~ if point.TYPE_NUMBER != null ~}}
+    TYPE_NUMBER:={{point.TYPE_NUMBER }},
+{{~ end ~}}
+{{~ if point.TYPE_NUMBER != null ~}}
+    TYPE_NUMBER:={{point.TYPE_NUMBER }},
+{{~ end ~}}
+{{~ switch point.TYPE_NUMBER ~}}
+  {{~ case 1 ~}}
+    RESULT_REAL=>{{point.hmi_tag_name}}
+  {{~ case 2 ~}}
+    RESULT_INT=>{{point.hmi_tag_name}}
+  {{~ case 3 ~}}
+    RESULT_DINT=>{{point.hmi_tag_name}}
+  {{~ default ~}}
+{{~ end ~}}
 );
+{{*数值缩放*}}
+{{~ if point.SCALE != null ~}}
+    {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.SCALE }};
+{{~ end ~}}
