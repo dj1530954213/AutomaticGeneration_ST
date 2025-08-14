@@ -6,6 +6,8 @@ using System.IO;
 
 namespace WinFormsApp1.Excel
 {
+    //TODO: 重复代码(ID:DUP-003) - [Excel解析：工作表解析逻辑分散在多个类中] 
+    //TODO: 建议重构为统一的WorksheetParsingEngine，提取公共解析流程 优先级:中等
     public class ExcelReader
     {
         private LogService logger = LogService.Instance;
@@ -102,6 +104,8 @@ namespace WinFormsApp1.Excel
             }
         }
         
+        //TODO: 重复代码(ID:DUP-006) - [单元格值获取：GetCellValue逻辑重复] 
+        //TODO: 建议重构为共享的CellValueExtractor工具类 优先级:中等
         private object? GetCellValue(ICell? cell)
         {
             if (cell == null) return null;
@@ -137,6 +141,8 @@ namespace WinFormsApp1.Excel
             }
         }
         
+        //TODO: 重复代码(ID:DUP-007) - [数据提取：GetCellValueAs*方法在多个类中重复实现] 
+        //TODO: 建议重构为通用的DataValueExtractor工具类 优先级:中等
         public string GetCellValueAsString(Dictionary<string, object> row, string columnName)
         {
             return row.TryGetValue(columnName, out var value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;

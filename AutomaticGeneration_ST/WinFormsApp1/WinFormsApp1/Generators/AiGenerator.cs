@@ -6,6 +6,8 @@ using WinFormsApp1.Utils;
 
 namespace WinFormsApp1.Generators
 {
+    //TODO: 重复代码(ID:DUP-001) - [点位生成器：Generate方法逻辑高度相似] 
+    //TODO: 建议重构为抽象基类BasePointGenerator，提取公共生成流程 优先级:高
     public class AiGenerator : IPointGenerator
     {
         private static readonly LogService logger = LogService.Instance;
@@ -89,6 +91,8 @@ namespace WinFormsApp1.Generators
             return templatePath;
         }
         
+        //TODO: 重复代码(ID:DUP-002) - [数据预处理：硬点通道号转换逻辑重复] 
+        //TODO: 建议重构为共享工具类ChannelDataProcessor 优先级:高
         private Dictionary<string, object> PreprocessData(Dictionary<string, object> row)
         {
             var processedData = new Dictionary<string, object>(row);
@@ -137,6 +141,8 @@ namespace WinFormsApp1.Generators
             }
         }
         
+        //TODO: 重复代码(ID:DUP-007) - [数据提取：GetStringValue方法在多个生成器中重复实现] 
+        //TODO: 建议重构为通用的DataValueExtractor工具类 优先级:中等
         private string GetStringValue(Dictionary<string, object> data, string key)
         {
             return data.TryGetValue(key, out var value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;

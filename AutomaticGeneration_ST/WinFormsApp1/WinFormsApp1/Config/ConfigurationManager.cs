@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace WinFormsApp1.Config
 {
+    //TODO: 重复代码(ID:DUP-005) - [配置管理：序列化、验证和持久化逻辑在多个配置管理器中冗余] 
+    //TODO: 建议重构为通用ConfigurationService基础设施 优先级:中等
     /// <summary>
     /// 配置变更事件参数
     /// </summary>

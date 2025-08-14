@@ -7,6 +7,8 @@ using System.Linq;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
+    //TODO: 重复代码(ID:DUP-003) - [Excel解析：工作表解析逻辑分散在多个类中] 
+    //TODO: 建议重构为统一的WorksheetParsingEngine，提取公共解析流程 优先级:中等
     /// <summary>
     /// Excel工作簿解析器实现类
     /// </summary>
@@ -155,6 +157,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
             return result;
         }
 
+        //TODO: 重复代码(ID:DUP-006) - [单元格值获取：GetCellValue逻辑重复] 
+        //TODO: 建议重构为共享的CellValueExtractor工具类 优先级:中等
         private T GetCellValue<T>(ExcelRange cell)
         {
             if (cell?.Value == null)

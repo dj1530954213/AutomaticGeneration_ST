@@ -9,6 +9,8 @@ using WinFormsApp1.Config;
 
 namespace WinFormsApp1.Forms
 {
+    //TODO: 重复代码(ID:DUP-004) - [UI初始化：窗体样式设置和组件初始化模式重复] 
+    //TODO: 建议重构为FormStyleApplier基类或FormBuilder工厂模式 优先级:中等
     public partial class ConfigurationForm : Form
     {
         private TreeView _categoryTreeView;
