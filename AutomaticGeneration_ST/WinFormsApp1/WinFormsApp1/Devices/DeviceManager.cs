@@ -69,6 +69,22 @@ namespace WinFormsApp1.Devices
     /// <summary>
     /// 设备管理器
     /// </summary>
+    /// <remarks>
+    /// 状态: @zombie-complete
+    /// 优先级: P0 (零风险级别)
+    /// 调用情况: 零调用 (经MCP工具扫描确认)
+    /// 扫描工具: MCP代码分析工具 v1.0
+    /// 扫描时间: 2025-08-15
+    /// 功能完整性: 功能完整但从未被使用
+    /// 创建时间: v1.0版本引入
+    /// 预期用途: 静态设备管理功能，提供设备CRUD操作
+    /// 文件依赖: 无
+    /// 与CompositeDeviceManager重复: 功能重叠
+    /// 风险评估: 零风险 (无任何引用)
+    /// 注释时间: 2025-08-15
+    /// 注释人: 配置专家
+    /// 可安全移除: 是
+    /// </remarks>
     public static class DeviceManager
     {
         private static readonly Dictionary<string, CompositeDevice> _devices = new();

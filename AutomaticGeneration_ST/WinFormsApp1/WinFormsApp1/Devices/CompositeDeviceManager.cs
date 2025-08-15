@@ -18,6 +18,21 @@ namespace WinFormsApp1.Devices
     /// <summary>
     /// 组合设备管理器 - 统一管理所有组合设备的创建、配置和监控
     /// </summary>
+    /// <remarks>
+    /// 状态: @zombie-complete
+    /// 优先级: P0 (零风险级别)
+    /// 调用情况: 零调用 (经MCP工具扫描确认)
+    /// 扫描工具: MCP代码分析工具 v1.0
+    /// 扫描时间: 2025-08-15
+    /// 功能完整性: 功能完整但从未被使用
+    /// 创建时间: v1.5版本引入
+    /// 预期用途: 管理复合设备的生命周期和配置
+    /// 文件依赖: 仅在DeviceTopologyManager构造函数中被引用，但DeviceTopologyManager本身也未被使用
+    /// 风险评估: 零风险 (无任何引用)
+    /// 注释时间: 2025-08-15
+    /// 注释人: 配置专家
+    /// 可安全移除: 是
+    /// </remarks>
     public class CompositeDeviceManager
     {
         #region 单例模式

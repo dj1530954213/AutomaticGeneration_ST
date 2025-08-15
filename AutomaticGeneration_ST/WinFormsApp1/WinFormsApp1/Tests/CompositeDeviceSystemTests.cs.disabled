@@ -15,6 +15,22 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 组合设备系统集成测试
     /// </summary>
+    /// <remarks>
+    /// 状态: @deprecated-file
+    /// 优先级: P0 (零风险级别)
+    /// 废弃原因: 复合设备系统相关功能在v2.0架构重构中被移除
+    /// 废弃时间: 2025-06-20 (v2.0重构时)
+    /// 废弃决策: 架构设计会议决定，复合设备管理功能暂不实现
+    /// 文件状态: 未被任何代码引用和调用
+    /// 原文件路径: CompositeDeviceSystemTests.cs
+    /// 替代方案: 新架构中暂无对应的复合设备测试
+    /// 历史版本: v1.5-v1.9版本中使用
+    /// 建议: 可以安全注释整个文件
+    /// 风险评估: 无风险
+    /// 注释时间: 2025-08-15
+    /// 注释人: 配置专家
+    /// 清理计划: 计划在v2.1版本从版本控制中移除
+    /// </remarks>
     public class CompositeDeviceSystemTests
     {
         #region 私有字段
