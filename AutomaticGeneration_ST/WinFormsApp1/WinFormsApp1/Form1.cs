@@ -379,14 +379,8 @@ namespace WinFormsApp1
 
         private void ShowSettings()
         {
-            logger.LogInfo("打开设置窗口");
-            using (var settingsForm = new Forms.SettingsForm())
-            {
-                if (settingsForm.ShowDialog(this) == DialogResult.OK)
-                {
-                    logger.LogInfo("设置已更新");
-                }
-            }
+            logger.LogInfo("设置功能已移除");
+            MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ShowHelp()
@@ -2487,9 +2481,9 @@ namespace WinFormsApp1
             {
                 logger.LogInfo("正在打开模板编辑器...");
                 
-                // 创建并显示模板编辑器窗体
-                var templateEditor = new Forms.TemplateEditorForm();
-                templateEditor.Show(); // 使用Show而不是ShowDialog，允许同时打开多个编辑器
+                // 模板编辑器功能已移除
+                MessageBox.Show("模板编辑器功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
                 
                 logger.LogInfo("模板编辑器已打开");
             }
@@ -2507,11 +2501,12 @@ namespace WinFormsApp1
             {
                 logger.LogInfo("正在打开设置对话框...");
                 
-                // 创建并显示设置对话框
-                using var settingsForm = new Forms.SettingsForm();
-                var result = settingsForm.ShowDialog(this);
+                // 设置功能已移除
+                MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                logger.LogInfo("设置功能已移除");
+                return;
                 
-                if (result == DialogResult.OK)
+                if (false) // 原设置保存逻辑已注释
                 {
                     logger.LogInfo("设置已更新并保存");
                     
@@ -3141,11 +3136,9 @@ namespace WinFormsApp1
             // 打开设置对话框
             try
             {
-                using var settingsForm = new Forms.SettingsForm();
-                if (settingsForm.ShowDialog() == DialogResult.OK)
-                {
-                    logger.LogInfo("设置已更新");
-                }
+                // 设置功能已移除
+                MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                logger.LogInfo("设置功能已移除");
             }
             catch (Exception ex)
             {

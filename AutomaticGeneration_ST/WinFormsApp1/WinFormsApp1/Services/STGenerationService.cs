@@ -475,8 +475,8 @@ namespace AutomaticGeneration_ST.Services
 
             try
             {
-                // 确保模板库已初始化
-                TemplateLibraryManager.Initialize();
+                // 模板库管理器已移除，跳过初始化
+                // TemplateLibraryManager.Initialize(); // 已注释掉
 
                 // 按模板名称分组处理设备
                 var devicesByTemplate = devices

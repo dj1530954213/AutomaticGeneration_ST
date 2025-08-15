@@ -298,7 +298,8 @@ namespace WinFormsApp1.Templates
         {
             try
             {
-                // 检查模板库是否已初始化
+                // 模板库管理器已移除，跳过收藏夹功能
+                /*
                 if (!WinFormsApp1.Templates.TemplateLibraryManager.LibraryConfig.Favorites.Any(f => 
                     f.Template.FilePath == templateInfo.FilePath))
                 {
@@ -311,6 +312,7 @@ namespace WinFormsApp1.Templates
                         notes: $"从{category}文件夹自动发现的模板"
                     );
                 }
+                */
             }
             catch (Exception ex)
             {
