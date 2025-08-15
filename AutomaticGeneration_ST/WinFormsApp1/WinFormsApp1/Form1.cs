@@ -2475,59 +2475,7 @@ namespace WinFormsApp1
             selectedItem.Checked = true;
         }
 
-        private void TemplateEditorMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                logger.LogInfo("正在打开模板编辑器...");
-                
-                // 模板编辑器功能已移除
-                MessageBox.Show("模板编辑器功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-                
-                logger.LogInfo("模板编辑器已打开");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"打开模板编辑器失败: {ex.Message}");
-                MessageBox.Show($"打开模板编辑器失败: {ex.Message}", "错误", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
 
-        private void SettingsMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                logger.LogInfo("正在打开设置对话框...");
-                
-                // 设置功能已移除
-                MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                logger.LogInfo("设置功能已移除");
-                return;
-                
-                if (false) // 原设置保存逻辑已注释
-                {
-                    logger.LogInfo("设置已更新并保存");
-                    
-                    // 重新应用主题和样式
-                    ApplyCurrentTheme();
-                    
-                    // 重新加载配置
-                    ReloadApplicationSettings();
-                }
-                else
-                {
-                    logger.LogInfo("用户取消了设置更改");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"打开设置对话框失败: {ex.Message}");
-                MessageBox.Show($"打开设置对话框失败: {ex.Message}", "错误", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
 
         private void ReloadApplicationSettings()
         {
@@ -3803,70 +3751,7 @@ namespace WinFormsApp1
             }
         }
 
-        /// <summary>
-        /// 性能监控菜单项点击事件
-        /// </summary>
-        private void PerformanceMonitorMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                logger.LogInfo("打开性能监控面板");
-                
-                // 简化实现：显示性能信息
-                var performanceInfo = new StringBuilder();
-                performanceInfo.AppendLine("=== 性能监控统计 ===");
-                performanceInfo.AppendLine($"当前时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                performanceInfo.AppendLine($"内存使用: {GC.GetTotalMemory(false) / 1024 / 1024} MB");
-                performanceInfo.AppendLine($"已生成脚本数: {generatedScripts.Count}");
-                performanceInfo.AppendLine($"处理点位数: {pointData.Count}");
-                
-                MessageBox.Show(performanceInfo.ToString(), 
-                              "性能监控", 
-                              MessageBoxButtons.OK, 
-                              MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"显示性能监控时发生错误: {ex.Message}");
-                MessageBox.Show($"显示性能监控时发生错误: {ex.Message}", 
-                              "错误", 
-                              MessageBoxButtons.OK, 
-                              MessageBoxIcon.Error);
-            }
-        }
 
-        /// <summary>
-        /// 系统测试运行器菜单项点击事件
-        /// </summary>
-        private void TestRunnerMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                logger.LogInfo("启动系统测试运行器");
-                
-                // 简化实现：显示测试状态
-                var testInfo = new StringBuilder();
-                testInfo.AppendLine("=== 系统测试状态 ===");
-                testInfo.AppendLine("✅ 核心ST生成功能 - 正常");
-                testInfo.AppendLine("✅ Excel数据解析 - 正常");
-                testInfo.AppendLine("✅ 模板引擎 - 正常");
-                testInfo.AppendLine("⚠️ UI组件测试 - 部分功能待修复");
-                testInfo.AppendLine("⚠️ 高级功能 - 待恢复");
-                
-                MessageBox.Show(testInfo.ToString(), 
-                              "系统测试", 
-                              MessageBoxButtons.OK, 
-                              MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"运行系统测试时发生错误: {ex.Message}");
-                MessageBox.Show($"运行系统测试时发生错误: {ex.Message}", 
-                              "错误", 
-                              MessageBoxButtons.OK, 
-                              MessageBoxIcon.Error);
-            }
-        }
 
         #region 新增UI功能方法
 

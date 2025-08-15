@@ -56,7 +56,6 @@
             fileMenu = new ToolStripMenuItem();
             editMenu = new ToolStripMenuItem();
             viewMenu = new ToolStripMenuItem();
-            toolsMenu = new ToolStripMenuItem();
             helpMenu = new ToolStripMenuItem();
             
             // 文件菜单项
@@ -77,11 +76,6 @@
             darkThemeMenuItem = new ToolStripMenuItem();
             systemThemeMenuItem = new ToolStripMenuItem();
             
-            // 工具菜单项
-            templateEditorMenuItem = new ToolStripMenuItem();
-            settingsMenuItem = new ToolStripMenuItem();
-            performanceMonitorMenuItem = new ToolStripMenuItem();
-            testRunnerMenuItem = new ToolStripMenuItem();
             
             SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
@@ -90,7 +84,7 @@
             // mainMenuStrip
             // 
             mainMenuStrip.ImageScalingSize = new Size(24, 24);
-            mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, toolsMenu, helpMenu });
+            mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, helpMenu });
             mainMenuStrip.Location = new Point(0, 0);
             mainMenuStrip.Name = "mainMenuStrip";
             mainMenuStrip.Size = new Size(1200, 32);
@@ -190,48 +184,6 @@
             systemThemeMenuItem.Size = new Size(180, 26);
             systemThemeMenuItem.Text = "跟随系统(&S)";
             systemThemeMenuItem.Click += SystemThemeMenuItem_Click;
-            // 
-            // templateEditorMenuItem
-            // 
-            templateEditorMenuItem.Name = "templateEditorMenuItem";
-            templateEditorMenuItem.Size = new Size(180, 26);
-            templateEditorMenuItem.Text = "模板编辑器(&E)";
-            templateEditorMenuItem.ToolTipText = "打开模板编辑器";
-            templateEditorMenuItem.Click += TemplateEditorMenuItem_Click;
-            // 
-            // settingsMenuItem
-            // 
-            settingsMenuItem.Name = "settingsMenuItem";
-            settingsMenuItem.Size = new Size(180, 26);
-            settingsMenuItem.Text = "设置(&S)";
-            settingsMenuItem.ToolTipText = "打开应用程序设置";
-            settingsMenuItem.Click += SettingsMenuItem_Click;
-            // 
-            // toolsMenu
-            // 
-            toolsMenu.DropDownItems.AddRange(new ToolStripItem[] { templateEditorMenuItem, performanceMonitorMenuItem, testRunnerMenuItem, new ToolStripSeparator(), settingsMenuItem });
-            toolsMenu.Name = "toolsMenu";
-            toolsMenu.Size = new Size(58, 28);
-            toolsMenu.Text = "工具(&T)";
-            // 
-            // performanceMonitorMenuItem
-            // 
-            performanceMonitorMenuItem.Name = "performanceMonitorMenuItem";
-            performanceMonitorMenuItem.Size = new Size(180, 26);
-            performanceMonitorMenuItem.Text = "性能监控(&P)";
-            performanceMonitorMenuItem.ToolTipText = "查看模板渲染性能和缓存统计";
-            performanceMonitorMenuItem.Click += PerformanceMonitorMenuItem_Click;
-            // 
-            // testRunnerMenuItem
-            // 
-            testRunnerMenuItem.Name = "testRunnerMenuItem";
-            testRunnerMenuItem.Size = new Size(180, 26);
-            testRunnerMenuItem.Text = "系统测试(&T)";
-            testRunnerMenuItem.ToolTipText = "运行模板系统功能测试";
-            testRunnerMenuItem.Click += TestRunnerMenuItem_Click;
-            toolsMenu.Name = "toolsMenu";
-            toolsMenu.Size = new Size(58, 28);
-            toolsMenu.Text = "工具(&T)";
             // 
             // helpMenu
             // 
@@ -479,7 +431,6 @@
         private ToolStripMenuItem fileMenu;
         private ToolStripMenuItem editMenu;
         private ToolStripMenuItem viewMenu;
-        private ToolStripMenuItem toolsMenu;
         private ToolStripMenuItem helpMenu;
         
         // 主题菜单项
@@ -497,11 +448,6 @@
         // 编辑菜单项
         private ToolStripMenuItem clearLogMenuItem;
         
-        // 工具菜单项
-        private ToolStripMenuItem templateEditorMenuItem;
-        private ToolStripMenuItem settingsMenuItem;
-        private ToolStripMenuItem performanceMonitorMenuItem;
-        private ToolStripMenuItem testRunnerMenuItem;
         
         // 帮助菜单项
         private ToolStripMenuItem aboutMenuItem;
