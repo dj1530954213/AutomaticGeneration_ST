@@ -6,62 +6,21 @@ using WinFormsApp1.Utils;
 
 namespace WinFormsApp1.Generators
 {
-    //TODO: 重复代码(ID:DUP-001) - [点位生成器：Generate方法逻辑高度相似] 
-    //TODO: 建议重构为抽象基类BasePointGenerator，提取公共生成流程 优先级:高
     /// <summary>
-    /// AI点位代码生成器
+    /// AI点位代码生成器 - 重构后版本
     /// </summary>
     /// <remarks>
-    /// 状态: @duplicate
-    /// 优先级: P2 (中风险)
-    /// 重复度: 85%
-    /// 重复位置: AoGenerator.cs, DiGenerator.cs, DoGenerator.cs
-    /// 建议: 重构为抽象基类BasePointGenerator，提取公共的Generate流程
-    /// 风险级别: 中风险 - 需要分析调用关系后重构
-    /// 分析时间: 2025-08-15
-    /// 重复方法: Generate, ValidateRequiredFields, PreprocessData, GetTemplatePath
+    /// 重构状态: ✅ 已完成 - 继承BasePointGenerator
+    /// 重构前: 181行，包含大量重复逻辑
+    /// 重构后: 显著简化，仅保留AI特定的差异化逻辑
+    /// 重构收益: 消除DUP-001和DUP-007重复代码问题
+    /// 创建时间: 2025-08-15
     /// </remarks>
-    public class AiGenerator : IPointGenerator
+    public class AiGenerator : BasePointGenerator
     {
-        private static readonly LogService logger = LogService.Instance;
+        public override string PointType => "AI";
         
-        public string PointType => "AI";
-        
-        public bool CanGenerate(Dictionary<string, object> row)
-        {
-            return row.TryGetValue("模块类型", out var type) && 
-                   string.Equals(type?.ToString()?.Trim(), "AI", StringComparison.OrdinalIgnoreCase);
-        }
-        
-        public string Generate(Dictionary<string, object> row)
-        {
-            try
-            {
-                logger.LogDebug($"开始生成AI点位代码: {GetVariableName(row)}");
-                
-                // 验证必要字段
-                ValidateRequiredFields(row);
-                
-                // 获取模板路径
-                var templatePath = GetTemplatePath();
-                
-                // 预处理数据
-                var processedData = PreprocessData(row);
-                
-                // 渲染模板
-                var result = TemplateRenderer.Render(templatePath, processedData);
-                
-                logger.LogDebug($"AI点位代码生成完成: {GetVariableName(row)}");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"生成AI点位代码失败: {ex.Message}");
-                throw;
-            }
-        }
-        
-        private void ValidateRequiredFields(Dictionary<string, object> row)
+        protected override void ValidateRequiredFields(Dictionary<string, object> row)
         {
             // 检查变量名称，更宽松的验证
             var variableName = GetStringValue(row, "变量名称（HMI）");
@@ -91,45 +50,10 @@ namespace WinFormsApp1.Generators
             }
         }
         
-        private string GetTemplatePath()
+        protected override Dictionary<string, object> PreprocessData(Dictionary<string, object> row)
         {
-            var basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            var templatePath = Path.Combine(basePath!, "Templates", "AI", "default.scriban");
-            
-            if (!File.Exists(templatePath))
-            {
-                throw new FileNotFoundException($"AI模板文件不存在: {templatePath}");
-            }
-            
-            return templatePath;
-        }
-        
-        //TODO: 重复代码(ID:DUP-002) - [数据预处理：硬点通道号转换逻辑重复] 
-        //TODO: 建议重构为共享工具类ChannelDataProcessor 优先级:高
-        private Dictionary<string, object> PreprocessData(Dictionary<string, object> row)
-        {
-            var processedData = new Dictionary<string, object>(row);
-            
-            // 处理硬点通道号转换
-            var channelPosition = GetStringValue(processedData, "通道位号");
-            if (!string.IsNullOrWhiteSpace(channelPosition))
-            {
-                var hardChannel = ChannelConverter.ConvertToHardChannel(channelPosition);
-                processedData["硬点通道号"] = hardChannel;
-            }
-            else
-            {
-                // 如果没有通道位号，尝试直接使用输入通道
-                var inputChannel = GetStringValue(processedData, "输入通道");
-                if (!string.IsNullOrWhiteSpace(inputChannel))
-                {
-                    processedData["硬点通道号"] = inputChannel;
-                }
-                else
-                {
-                    processedData["硬点通道号"] = "DPIO_2_1_2_1"; // 默认值
-                }
-            }
+            // 使用基类的通用通道处理逻辑（输入通道）
+            var processedData = ProcessChannelData(row, "输入通道");
             
             // 设置量程默认值
             SetDefaultIfEmpty(processedData, "量程低限", 0.0);
@@ -142,41 +66,6 @@ namespace WinFormsApp1.Generators
             SetDefaultIfEmpty(processedData, "低低限", 0.0);
             
             return processedData;
-        }
-        
-        private void SetDefaultIfEmpty(Dictionary<string, object> data, string key, object defaultValue)
-        {
-            if (!data.TryGetValue(key, out var value) || 
-                string.IsNullOrWhiteSpace(value?.ToString()) ||
-                (double.TryParse(value?.ToString(), out var numValue) && numValue == 0))
-            {
-                data[key] = defaultValue;
-            }
-        }
-        
-        //TODO: 重复代码(ID:DUP-007) - [数据提取：GetStringValue方法在多个生成器中重复实现] 
-        //TODO: 建议重构为通用的DataValueExtractor工具类 优先级:中等
-        /// <summary>
-        /// 从字典中获取字符串值 - 重复实现方法
-        /// </summary>
-        /// <remarks>
-        /// 状态: @duplicate
-        /// 优先级: P2 (中风险)
-        /// 重复度: 95%
-        /// 重复位置: AoGenerator.cs, DiGenerator.cs, DoGenerator.cs
-        /// 建议: 重构为共享的DataValueExtractor工具类
-        /// 风险级别: 中风险 - 需要分析调用关系后重构
-        /// 分析时间: 2025-08-15
-        /// 影响: 每个生成器都有相同的数据提取逻辑
-        /// </remarks>
-        private string GetStringValue(Dictionary<string, object> data, string key)
-        {
-            return data.TryGetValue(key, out var value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;
-        }
-        
-        private string GetVariableName(Dictionary<string, object> row)
-        {
-            return GetStringValue(row, "变量名称（HMI）");
         }
     }
 }
