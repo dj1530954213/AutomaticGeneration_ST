@@ -1,18 +1,17 @@
 程序名称:TCP_ANALOG
 变量类型:DATA_CONVERT_BY_BYTE
-(*TCP模拟量数据采集:{{point.hmi_tag_name}}*)
+(*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
 DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
-{{~ if point.IN1 != null ~}}
-    IN1:={{point.IN1 }},
-{{~ end ~}}
-{{~ if point.IN2 != null ~}}
-    IN2:={{point.IN2 }},
-{{~ end ~}}
-{{~ if point.IN3 != null ~}}
-    IN3:={{point.IN3 }},
-{{~ end ~}}
-{{~ if point.IN4 != null ~}}
-    IN4:={{point.IN4 }},
+{{~ switch point.DATA_TYPE ~}}
+  {{~ case "REAL" ~}}
+    IN1:={{ point.CHANNEL }},
+    IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
+  {{~ case "INT" ~}}
+    IN1:={{ point.CHANNEL }},
+  {{~ case "DINT" ~}}
+    IN1:={{ point.CHANNEL }},
+    IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
+  {{~ default ~}}
 {{~ end ~}}
 {{~ if point.BYTE_ORDER != null ~}}
     BYTE_ORDER:={{point.BYTE_ORDER }},
@@ -26,17 +25,62 @@ DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 {{~ if point.TYPE_NUMBER != null ~}}
     TYPE_NUMBER:={{point.TYPE_NUMBER }},
 {{~ end ~}}
-{{~ switch point.TYPE_NUMBER ~}}
-  {{~ case 1 ~}}
-    RESULT_REAL=>{{point.hmi_tag_name}}
-  {{~ case 2 ~}}
-    RESULT_INT=>{{point.hmi_tag_name}}
-  {{~ case 3 ~}}
-    RESULT_DINT=>{{point.hmi_tag_name}}
+{{~ switch point.DATA_TYPE ~}}
+  {{~ case "REAL" ~}}
+    RESULT_REAL=>{{point.hmi_tag_name}_MID}
+  {{~ case "INT" ~}}
+    RESULT_INT=>{{point.hmi_tag_name}_MID}
+  {{~ case "DINT" ~}}
+    RESULT_DINT=>{{point.hmi_tag_name}_MID}
   {{~ default ~}}
 {{~ end ~}}
 );
-{{*数值缩放*}}
+
+(*TCP模拟量数据缩放:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
 {{~ if point.SCALE != null ~}}
     {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.SCALE }};
 {{~ end ~}}
+
+(*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
+AI_ALARM_COMMUNICATION_{{ point.hmi_tag_name }}(
+    IN:={{ point.hmi_tag_name }}_MID,
+{{~ # 只有当存在任意报警限值时才生成MAIN_EN和MAIN_V ~}}
+{{~ if point.sll_value != null && point.sll_value != "" || point.sl_value != null && point.sl_value != "" || point.sh_value != null && point.sh_value != "" || point.shh_value != null && point.shh_value != "" ~}}
+    MAIN_EN:={{ point.hmi_tag_name }}_WHZZT,
+    MAIN_V:={{ point.hmi_tag_name }}_WHZ,
+{{~ end ~}}
+{{~ # HH报警级别：只有当shh_value有值时才生成 ~}}
+{{~ if point.shh_value != null && point.shh_value != "" ~}}
+    HH_A_EN:=TRUE,
+    HH_LIMIT:={{ point.shh_value }},
+{{~ end ~}}
+{{~ # H报警级别：只有当sh_value有值时才生成 ~}}
+{{~ if point.sh_value != null && point.sh_value != "" ~}}
+    H_A_EN:=TRUE,
+    H_LIMIT:={{ point.sh_value }},
+{{~ end ~}}
+{{~ # L报警级别：只有当sl_value有值时才生成 ~}}
+{{~ if point.sl_value != null && point.sl_value != "" ~}}
+    L_A_EN:=TRUE,
+    L_LIMIT:={{ point.sl_value }},
+{{~ end ~}}
+{{~ # LL报警级别：只有当sll_value有值时才生成 ~}}
+{{~ if point.sll_value != null && point.sll_value != "" ~}}
+    LL_A_EN:=TRUE,
+    LL_LIMIT:={{ point.sll_value }},
+{{~ end ~}}
+    OUT=>{{ point.hmi_tag_name }},
+{{~ # 报警输出：只有对应的报警级别存在时才生成 ~}}
+{{~ if point.shh_value != null && point.shh_value != "" ~}}
+    HH_ALARM=>{{ point.hmi_tag_name }}_HH{{ if (point.sh_value != null && point.sh_value != "") || (point.sl_value != null && point.sl_value != "") || (point.sll_value != null && point.sll_value != "") }},{{ end }}
+{{~ end ~}}
+{{~ if point.sh_value != null && point.sh_value != "" ~}}
+    H_ALARM=>{{ point.hmi_tag_name }}_H{{ if (point.sl_value != null && point.sl_value != "") || (point.sll_value != null && point.sll_value != "") }},{{ end }}
+{{~ end ~}}
+{{~ if point.sl_value != null && point.sl_value != "" ~}}
+    L_ALARM=>{{ point.hmi_tag_name }}_L{{ if point.sll_value != null && point.sll_value != "" }},{{ end }}
+{{~ end ~}}
+{{~ if point.sll_value != null && point.sll_value != "" ~}}
+    LL_ALARM=>{{ point.hmi_tag_name }}_LL
+{{~ end ~}}
+);

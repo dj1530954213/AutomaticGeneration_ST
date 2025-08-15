@@ -9,6 +9,14 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 测试严重级别
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// </remarks>
     public enum TestSeverity
     {
         Normal,     // 普通
@@ -19,6 +27,15 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 测试运行器
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// 说明: 提供测试执行框架，支持异步测试运行和结果收集
+    /// </remarks>
     public class TestRunner
     {
         public event Action<TestResult>? TestCompleted;
@@ -324,6 +341,14 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 测试结果
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// </remarks>
     public class TestResult
     {
         public string TestSuite { get; set; } = "";
@@ -344,6 +369,14 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// TestResult列表的扩展方法
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// </remarks>
     public static class TestResultExtensions
     {
         /// <summary>

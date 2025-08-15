@@ -10,6 +10,14 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 验证结果
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// </remarks>
     public class ValidationResult
     {
         public bool IsValid { get; set; }
@@ -21,6 +29,15 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 基础验证器
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// 说明: 提供数据验证功能，包括Excel数据、模板语法、ST代码验证等
+    /// </remarks>
     public static class BasicValidator
     {
         /// <summary>

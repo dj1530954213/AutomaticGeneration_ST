@@ -8,6 +8,19 @@ namespace WinFormsApp1.Excel
 {
     //TODO: 重复代码(ID:DUP-003) - [Excel解析：工作表解析逻辑分散在多个类中] 
     //TODO: 建议重构为统一的WorksheetParsingEngine，提取公共解析流程 优先级:中等
+    /// <summary>
+    /// Excel文件读取器
+    /// </summary>
+    /// <remarks>
+    /// 状态: @duplicate
+    /// 优先级: P2 (中风险)
+    /// 重复度: 70%
+    /// 重复位置: ExcelWorkbookParser.cs
+    /// 建议: 重构为统一的WorksheetParsingEngine，提取公共的单元格读取和数据转换逻辑
+    /// 风险级别: 中风险 - 需要分析调用关系后重构
+    /// 分析时间: 2025-08-15
+    /// 重复方法: GetCellValue, ParseHeaderRow, ProcessDataRow, ReadWorksheet
+    /// </remarks>
     public class ExcelReader
     {
         private LogService logger = LogService.Instance;

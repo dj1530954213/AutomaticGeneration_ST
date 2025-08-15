@@ -8,6 +8,19 @@ namespace WinFormsApp1.Generators
 {
     //TODO: 重复代码(ID:DUP-001) - [点位生成器：Generate方法逻辑高度相似] 
     //TODO: 建议重构为抽象基类BasePointGenerator，提取公共生成流程 优先级:高
+    /// <summary>
+    /// AI点位代码生成器
+    /// </summary>
+    /// <remarks>
+    /// 状态: @duplicate
+    /// 优先级: P2 (中风险)
+    /// 重复度: 85%
+    /// 重复位置: AoGenerator.cs, DiGenerator.cs, DoGenerator.cs
+    /// 建议: 重构为抽象基类BasePointGenerator，提取公共的Generate流程
+    /// 风险级别: 中风险 - 需要分析调用关系后重构
+    /// 分析时间: 2025-08-15
+    /// 重复方法: Generate, ValidateRequiredFields, PreprocessData, GetTemplatePath
+    /// </remarks>
     public class AiGenerator : IPointGenerator
     {
         private static readonly LogService logger = LogService.Instance;
@@ -143,6 +156,19 @@ namespace WinFormsApp1.Generators
         
         //TODO: 重复代码(ID:DUP-007) - [数据提取：GetStringValue方法在多个生成器中重复实现] 
         //TODO: 建议重构为通用的DataValueExtractor工具类 优先级:中等
+        /// <summary>
+        /// 从字典中获取字符串值 - 重复实现方法
+        /// </summary>
+        /// <remarks>
+        /// 状态: @duplicate
+        /// 优先级: P2 (中风险)
+        /// 重复度: 95%
+        /// 重复位置: AoGenerator.cs, DiGenerator.cs, DoGenerator.cs
+        /// 建议: 重构为共享的DataValueExtractor工具类
+        /// 风险级别: 中风险 - 需要分析调用关系后重构
+        /// 分析时间: 2025-08-15
+        /// 影响: 每个生成器都有相同的数据提取逻辑
+        /// </remarks>
         private string GetStringValue(Dictionary<string, object> data, string key)
         {
             return data.TryGetValue(key, out var value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;

@@ -12,6 +12,16 @@ namespace AutomaticGeneration_ST.Services.Implementations
     /// <summary>
     /// Excel工作簿解析器实现类
     /// </summary>
+    /// <remarks>
+    /// 状态: @duplicate
+    /// 优先级: P2 (中风险)
+    /// 重复度: 70%
+    /// 重复位置: ExcelReader.cs
+    /// 建议: 重构为统一的WorksheetParsingEngine，提取公共的单元格读取和数据转换逻辑
+    /// 风险级别: 中风险 - 需要分析调用关系后重构
+    /// 分析时间: 2025-08-15
+    /// 重复方法: GetCellValue, ParseHeaderRow, ProcessDataRow, ReadWorksheet
+    /// </remarks>
     public class ExcelWorkbookParser : IExcelWorkbookParser
     {
         static ExcelWorkbookParser()

@@ -11,6 +11,15 @@ namespace AutomaticGeneration_ST.Tests
     /// <summary>
     /// 测试从设备分类表创建完整设备对象的功能
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// 说明: 测试设备对象创建功能，使用真实Excel数据进行验证
+    /// </remarks>
     public class DeviceObjectCreationTest
     {
         private readonly ExcelDataService _dataService;

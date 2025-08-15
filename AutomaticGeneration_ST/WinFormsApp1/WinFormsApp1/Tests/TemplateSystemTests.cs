@@ -8,6 +8,15 @@ namespace WinFormsApp1.Tests
     /// <summary>
     /// 模板系统测试类
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// 说明: 测试模板系统功能，包括加载、渲染和验证
+    /// </remarks>
     public class TemplateSystemTests
     {
         /// <summary>

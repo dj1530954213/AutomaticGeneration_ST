@@ -12,6 +12,15 @@ namespace AutomaticGeneration_ST.Tests
     /// 阀门模板功能测试类
     /// 验证阀门模板的发现、数据绑定和代码生成功能
     /// </summary>
+    /// <remarks>
+    /// 状态: @test-code-mixed
+    /// 优先级: P1 (低风险)
+    /// 建议: 应移至独立的测试项目
+    /// 风险级别: 低风险
+    /// 分析时间: 2025-08-15
+    /// 影响范围: 仅开发阶段，不影响生产功能
+    /// 说明: 专门测试阀门模板的各项功能，包括发现、绑定和生成
+    /// </remarks>
     public class ValveTemplateTest
     {
         private readonly LogService _logger = LogService.Instance;

@@ -8,6 +8,19 @@ namespace WinFormsApp1.Generators
 {
     //TODO: 重复代码(ID:DUP-001) - [点位生成器：Generate方法逻辑高度相似] 
     //TODO: 建议重构为抽象基类BasePointGenerator，提取公共生成流程 优先级:高
+    /// <summary>
+    /// DO点位代码生成器
+    /// </summary>
+    /// <remarks>
+    /// 状态: @duplicate
+    /// 优先级: P2 (中风险)
+    /// 重复度: 85%
+    /// 重复位置: AiGenerator.cs, AoGenerator.cs, DiGenerator.cs
+    /// 建议: 重构为抽象基类BasePointGenerator，提取公共的Generate流程
+    /// 风险级别: 中风险 - 需要分析调用关系后重构
+    /// 分析时间: 2025-08-15
+    /// 重复方法: Generate, ValidateRequiredFields, PreprocessData, GetTemplatePath
+    /// </remarks>
     public class DoGenerator : IPointGenerator
     {
         public string PointType => "DO";
