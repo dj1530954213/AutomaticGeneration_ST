@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using WinFormsApp1;
+using WinFormsApp1.Excel;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
@@ -69,10 +70,10 @@ namespace AutomaticGeneration_ST.Services.Implementations
             var result = new ClassificationRowResult();
 
             // 提取关键字段
-            var hmiTagName = GetValue<string>(row, "变量名称（HMI）");
-            var pointType = GetValue<string>(row, "点位类型（硬点、软点、通讯点）");
-            var deviceTag = GetValue<string>(row, "设备位号");
-            var templateName = GetValue<string>(row, "模板名称");
+            var hmiTagName = DataExtractorHelper.GetValue<string>(row, "变量名称（HMI）");
+            var pointType = DataExtractorHelper.GetValue<string>(row, "点位类型（硬点、软点、通讯点）");
+            var deviceTag = DataExtractorHelper.GetValue<string>(row, "设备位号");
+            var templateName = DataExtractorHelper.GetValue<string>(row, "模板名称");
 
             // 验证必需字段
             if (string.IsNullOrWhiteSpace(hmiTagName))
@@ -186,30 +187,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
             }
         }
 
-        private T GetValue<T>(Dictionary<string, object> data, string key)
-        {
-            if (data == null || string.IsNullOrWhiteSpace(key))
-                return default(T);
-
-            if (!data.TryGetValue(key, out var value) || value == null)
-                return default(T);
-
-            try
-            {
-                if (typeof(T) == typeof(string))
-                {
-                    return (T)(object)value.ToString();
-                }
-                else
-                {
-                    return (T)value;
-                }
-            }
-            catch
-            {
-                return default(T);
-            }
-        }
+        // 已重构：GetValue<T>方法已移至DataExtractorHelper工具类，消除DUP-007重复代码
 
         private class ClassificationStatistics
         {

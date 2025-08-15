@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using WinFormsApp1.Excel;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
@@ -164,7 +165,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                         foreach (var row in tableData)
                         {
-                            var hmiTagName = GetValue<string>(row, "变量名称（HMI）");
+                            var hmiTagName = DataExtractorHelper.GetValue<string>(row, "变量名称（HMI）");
                             if (!string.IsNullOrWhiteSpace(hmiTagName))
                             {
                                 if (allPoints.TryGetValue(hmiTagName, out var existingPoint))
@@ -288,29 +289,6 @@ namespace AutomaticGeneration_ST.Services.Implementations
             result.Statistics.CommunicationPoints = result.CommunicationPoints.Count;
         }
 
-        private T GetValue<T>(Dictionary<string, object> data, string key)
-        {
-            if (data == null || string.IsNullOrWhiteSpace(key))
-                return default(T);
-
-            if (!data.TryGetValue(key, out var value) || value == null)
-                return default(T);
-
-            try
-            {
-                if (typeof(T) == typeof(string))
-                {
-                    return (T)(object)value.ToString();
-                }
-                else
-                {
-                    return (T)value;
-                }
-            }
-            catch
-            {
-                return default(T);
-            }
-        }
+        // 已重构：GetValue<T>方法已移至DataExtractorHelper工具类，消除DUP-007重复代码
     }
 }
