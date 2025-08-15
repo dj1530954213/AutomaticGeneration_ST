@@ -6,8 +6,7 @@ using System.IO;
 
 namespace WinFormsApp1.Excel
 {
-    //TODO: 重复代码(ID:DUP-003) - [Excel解析：工作表解析逻辑分散在多个类中] 
-    //TODO: 建议重构为统一的WorksheetParsingEngine，提取公共解析流程 优先级:中等
+    // 已重构：使用ExcelCellHelper工具类统一Excel解析逻辑，消除了DUP-003和DUP-006重复代码
     /// <summary>
     /// Excel文件读取器
     /// </summary>
@@ -71,7 +70,7 @@ namespace WinFormsApp1.Excel
                 for (int cellIndex = 0; cellIndex < headerRow.LastCellNum; cellIndex++)
                 {
                     var cell = headerRow.GetCell(cellIndex);
-                    var columnName = GetCellValue(cell)?.ToString()?.Trim() ?? $"列{cellIndex + 1}";
+                    var columnName = ExcelCellHelper.GetCellValue(cell)?.ToString()?.Trim() ?? $"列{cellIndex + 1}";
                     columnNames.Add(columnName);
                 }
                 
@@ -84,23 +83,9 @@ namespace WinFormsApp1.Excel
                     var row = sheet.GetRow(rowIndex);
                     if (row == null) continue;
                     
-                    var rowData = new Dictionary<string, object>();
-                    bool hasData = false;
+                    var rowData = ExcelCellHelper.ExtractRowData(row, columnNames);
                     
-                    for (int cellIndex = 0; cellIndex < columnNames.Count; cellIndex++)
-                    {
-                        var cell = row.GetCell(cellIndex);
-                        var cellValue = GetCellValue(cell);
-                        
-                        if (cellValue != null && !string.IsNullOrWhiteSpace(cellValue.ToString()))
-                        {
-                            hasData = true;
-                        }
-                        
-                        rowData[columnNames[cellIndex]] = cellValue ?? string.Empty;
-                    }
-                    
-                    if (hasData)
+                    if (ExcelCellHelper.HasValidData(rowData))
                     {
                         result.Add(rowData);
                         dataRowCount++;
@@ -117,71 +102,25 @@ namespace WinFormsApp1.Excel
             }
         }
         
-        //TODO: 重复代码(ID:DUP-006) - [单元格值获取：GetCellValue逻辑重复] 
-        //TODO: 建议重构为共享的CellValueExtractor工具类 优先级:中等
-        private object? GetCellValue(ICell? cell)
-        {
-            if (cell == null) return null;
-            
-            return cell.CellType switch
-            {
-                CellType.String => cell.StringCellValue,
-                CellType.Numeric => DateUtil.IsCellDateFormatted(cell) 
-                    ? cell.DateCellValue.ToString()
-                    : cell.NumericCellValue,
-                CellType.Boolean => cell.BooleanCellValue,
-                CellType.Formula => GetFormulaValue(cell),
-                CellType.Blank => null,
-                _ => cell.ToString()
-            };
-        }
+        // 已重构：原有的GetCellValue和GetFormulaValue方法已移至ExcelCellHelper工具类
+        // 消除了DUP-006重复代码，现在使用统一的ExcelCellHelper.GetCellValue()方法
         
-        private object? GetFormulaValue(ICell cell)
-        {
-            try
-            {
-                return cell.CellType switch
-                {
-                    CellType.String => cell.StringCellValue,
-                    CellType.Numeric => cell.NumericCellValue,
-                    CellType.Boolean => cell.BooleanCellValue,
-                    _ => cell.ToString()
-                };
-            }
-            catch
-            {
-                return cell.CellFormula;
-            }
-        }
-        
-        //TODO: 重复代码(ID:DUP-007) - [数据提取：GetCellValueAs*方法在多个类中重复实现] 
-        //TODO: 建议重构为通用的DataValueExtractor工具类 优先级:中等
+        // 已重构：原有的GetCellValueAs*方法已移至ExcelCellHelper工具类
+        // 消除了DUP-007重复代码，现在使用统一的ExcelCellHelper类的方法
+        // 保持向后兼容的方法委托
         public string GetCellValueAsString(Dictionary<string, object> row, string columnName)
         {
-            return row.TryGetValue(columnName, out var value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;
+            return ExcelCellHelper.GetCellValueAsString(row, columnName);
         }
         
         public double GetCellValueAsDouble(Dictionary<string, object> row, string columnName, double defaultValue = 0.0)
         {
-            if (row.TryGetValue(columnName, out var value) && 
-                double.TryParse(value?.ToString(), out var doubleValue))
-            {
-                return doubleValue;
-            }
-            return defaultValue;
+            return ExcelCellHelper.GetCellValueAsDouble(row, columnName, defaultValue);
         }
         
         public bool GetCellValueAsBool(Dictionary<string, object> row, string columnName, bool defaultValue = false)
         {
-            if (row.TryGetValue(columnName, out var value))
-            {
-                var stringValue = value?.ToString()?.Trim().ToUpper();
-                if (stringValue == "TRUE" || stringValue == "1" || stringValue == "是")
-                    return true;
-                if (stringValue == "FALSE" || stringValue == "0" || stringValue == "否")
-                    return false;
-            }
-            return defaultValue;
+            return ExcelCellHelper.GetCellValueAsBool(row, columnName, defaultValue);
         }
         
         private List<Dictionary<string, object>> ReadCsvFile(string filePath)

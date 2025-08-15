@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using WinFormsApp1.Excel;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
-    //TODO: 重复代码(ID:DUP-003) - [Excel解析：工作表解析逻辑分散在多个类中] 
-    //TODO: 建议重构为统一的WorksheetParsingEngine，提取公共解析流程 优先级:中等
+    // 已重构：使用ExcelCellHelper工具类统一Excel解析逻辑，消除了DUP-003和DUP-006重复代码
     /// <summary>
     /// Excel工作簿解析器实现类
     /// </summary>
@@ -133,7 +133,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
             var headers = new List<string>();
             for (int col = worksheet.Dimension.Start.Column; col <= worksheet.Dimension.End.Column; col++)
             {
-                var headerValue = GetCellValue<string>(worksheet.Cells[1, col]);
+                var headerValue = ExcelCellHelper.GetCellValue<string>(worksheet.Cells[1, col]);
                 headers.Add(headerValue ?? $"Column{col}");
             }
 
@@ -147,7 +147,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 {
                     var headerIndex = col - worksheet.Dimension.Start.Column;
                     var header = headerIndex < headers.Count ? headers[headerIndex] : $"Column{col}";
-                    var cellValue = GetCellValue<object>(worksheet.Cells[row, col]);
+                    var cellValue = ExcelCellHelper.GetCellValue<object>(worksheet.Cells[row, col]);
                     
                     rowData[header] = cellValue;
                     
@@ -167,54 +167,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
             return result;
         }
 
-        //TODO: 重复代码(ID:DUP-006) - [单元格值获取：GetCellValue逻辑重复] 
-        //TODO: 建议重构为共享的CellValueExtractor工具类 优先级:中等
-        private T GetCellValue<T>(ExcelRange cell)
-        {
-            if (cell?.Value == null)
-                return default(T);
-
-            try
-            {
-                var value = cell.Value;
-
-                if (typeof(T) == typeof(string))
-                {
-                    return (T)(object)value.ToString();
-                }
-                else if (typeof(T) == typeof(object))
-                {
-                    return (T)value;
-                }
-                else if (typeof(T) == typeof(double?) || typeof(T) == typeof(double))
-                {
-                    if (double.TryParse(value.ToString(), out double doubleValue))
-                        return (T)(object)doubleValue;
-                    return default(T);
-                }
-                else if (typeof(T) == typeof(bool?) || typeof(T) == typeof(bool))
-                {
-                    if (bool.TryParse(value.ToString(), out bool boolValue))
-                        return (T)(object)boolValue;
-
-                    var stringValue = value.ToString()?.ToLower();
-                    if (stringValue == "是" || stringValue == "y" || stringValue == "yes")
-                        return (T)(object)true;
-                    if (stringValue == "否" || stringValue == "n" || stringValue == "no")
-                        return (T)(object)false;
-
-                    return default(T);
-                }
-                else
-                {
-                    return (T)value;
-                }
-            }
-            catch
-            {
-                return default(T);
-            }
-        }
+        // 已重构：原有的GetCellValue<T>方法已移至ExcelCellHelper工具类
+        // 消除了DUP-006重复代码，现在使用统一的ExcelCellHelper.GetCellValue<T>()方法
 
         public List<Dictionary<string, object>> ParseWorksheetSmart(string filePath, string expectedSheetName, IWorksheetLocatorService locatorService)
         {
