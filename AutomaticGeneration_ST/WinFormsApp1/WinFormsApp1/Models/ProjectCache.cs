@@ -41,6 +41,11 @@ namespace AutomaticGeneration_ST.Models
         public List<string> IOMappingScripts { get; init; } = new();
 
         /// <summary>
+        /// TCP通讯程序生成结果
+        /// </summary>
+        public List<string> TcpCommunicationPrograms { get; init; } = new();
+
+        /// <summary>
         /// 生成统计信息
         /// </summary>
         public ProjectStatistics Statistics { get; init; } = new();

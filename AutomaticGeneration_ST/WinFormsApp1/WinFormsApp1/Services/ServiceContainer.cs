@@ -1,5 +1,7 @@
 using AutomaticGeneration_ST.Services.Implementations;
 using AutomaticGeneration_ST.Services.Interfaces;
+using AutomaticGeneration_ST.Services.Generation.Implementations;
+using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,13 +54,20 @@ namespace AutomaticGeneration_ST.Services
             RegisterTransient<IWorksheetLocatorService>(() => 
                 new WorksheetLocatorService(GetService<IExcelWorkbookParser>()));
 
+            // 注册TCP数据服务
+            RegisterTransient<ITcpDataService>(() => 
+                new TcpDataService(
+                    GetService<IExcelWorkbookParser>(),
+                    GetService<IWorksheetLocatorService>()));
+
             RegisterTransient<IDataProcessingOrchestrator>(() => 
                 new DataProcessingOrchestrator(
                     GetService<IExcelWorkbookParser>(),
                     GetService<IPointFactory>(),
                     GetService<IDeviceClassificationService>(),
                     GetService<ITemplateRegistry>(),
-                    GetService<IWorksheetLocatorService>()));
+                    GetService<IWorksheetLocatorService>(),
+                    GetService<ITcpDataService>()));
 
             // 兼容现有系统的IDataService
             RegisterTransient<IDataService>(() => 
@@ -68,6 +77,44 @@ namespace AutomaticGeneration_ST.Services
             RegisterSingleton<IScriptClassifier>(() => new ScriptClassificationService());
             RegisterTransient<ICategorizedExportService>(() => 
                 new CategorizedFileExportService(GetService<IScriptClassifier>()));
+                
+            // 注册通讯相关服务
+            RegisterTransient<IModbusTcpConfigGenerator>(() => new PlaceholderCommunicationGenerator());
+            RegisterTransient<IModbusRtuConfigGenerator>(() => new PlaceholderCommunicationGenerator());
+            
+            // 注册TCP代码生成器（需要编译的模板字典）
+            RegisterSingleton<WinFormsApp1.Generators.TcpCodeGenerator>(() => 
+            {
+                var compiledTemplates = new Dictionary<string, Scriban.Template>();
+                
+                // 直接从模板目录读取TCP模板文件
+                var tcpTemplateDir = Path.Combine(_templateDirectory, "TCP通讯");
+                var templateMappings = new Dictionary<string, string>
+                {
+                    ["TCP_ANALOG"] = Path.Combine(tcpTemplateDir, "ANALOG.scriban"),
+                    ["TCP_DIGITAL"] = Path.Combine(tcpTemplateDir, "DIGITAL.scriban"),
+                    //["ANALOG"] = Path.Combine(tcpTemplateDir, "ANALOG.scriban"),
+                    //["DIGITAL"] = Path.Combine(tcpTemplateDir, "DIGITAL.scriban")
+                };
+                
+                foreach (var mapping in templateMappings)
+                {
+                    if (File.Exists(mapping.Value))
+                    {
+                        try
+                        {
+                            var templateContent = File.ReadAllText(mapping.Value);
+                            compiledTemplates[mapping.Key] = Scriban.Template.Parse(templateContent);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ TCP模板 {mapping.Key} 编译失败: {ex.Message}");
+                        }
+                    }
+                }
+                
+                return new WinFormsApp1.Generators.TcpCodeGenerator(compiledTemplates);
+            });
         }
 
         /// <summary>

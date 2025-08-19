@@ -47,6 +47,21 @@ namespace AutomaticGeneration_ST.Services.Interfaces
         public List<Models.Point> CommunicationPoints { get; set; } = new List<Models.Point>();
 
         /// <summary>
+        /// TCP通讯点位集合（所有TCP点位）
+        /// </summary>
+        public List<WinFormsApp1.Models.TcpCommunicationPoint> TcpPoints { get; set; } = new List<WinFormsApp1.Models.TcpCommunicationPoint>();
+
+        /// <summary>
+        /// TCP模拟量点位集合
+        /// </summary>
+        public List<WinFormsApp1.Models.TcpAnalogPoint> TcpAnalogPoints { get; set; } = new List<WinFormsApp1.Models.TcpAnalogPoint>();
+
+        /// <summary>
+        /// TCP数字量点位集合
+        /// </summary>
+        public List<WinFormsApp1.Models.TcpDigitalPoint> TcpDigitalPoints { get; set; } = new List<WinFormsApp1.Models.TcpDigitalPoint>();
+
+        /// <summary>
         /// 全部点位主列表
         /// </summary>
         public Dictionary<string, Models.Point> AllPointsMaster { get; set; } = new Dictionary<string, Models.Point>();

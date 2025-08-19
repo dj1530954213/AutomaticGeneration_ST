@@ -2,19 +2,14 @@
 变量类型:DATA_CONVERT_BY_BYTE
 (*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
 DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
-{{~ switch point.DATA_TYPE ~}}
-  {{~ case "REAL" ~}}
+{{~ if point.DATA_TYPE == "REAL" ~}}
     IN1:={{ point.CHANNEL }},
     IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
-  {{~ case "INT" ~}}
+{{~ else if point.DATA_TYPE == "INT" ~}}
     IN1:={{ point.CHANNEL }},
-  {{~ case "DINT" ~}}
+{{~ else if point.DATA_TYPE == "DINT" ~}}
     IN1:={{ point.CHANNEL }},
     IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
-  {{~ default ~}}
-{{~ end ~}}
-{{~ if point.BYTE_ORDER != null ~}}
-    BYTE_ORDER:={{point.BYTE_ORDER }},
 {{~ end ~}}
 {{~ if point.BYTE_ORDER != null ~}}
     BYTE_ORDER:={{point.BYTE_ORDER }},
@@ -22,17 +17,12 @@ DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 {{~ if point.TYPE_NUMBER != null ~}}
     TYPE_NUMBER:={{point.TYPE_NUMBER }},
 {{~ end ~}}
-{{~ if point.TYPE_NUMBER != null ~}}
-    TYPE_NUMBER:={{point.TYPE_NUMBER }},
-{{~ end ~}}
-{{~ switch point.DATA_TYPE ~}}
-  {{~ case "REAL" ~}}
-    RESULT_REAL=>{{point.hmi_tag_name}_MID}
-  {{~ case "INT" ~}}
-    RESULT_INT=>{{point.hmi_tag_name}_MID}
-  {{~ case "DINT" ~}}
-    RESULT_DINT=>{{point.hmi_tag_name}_MID}
-  {{~ default ~}}
+{{~ if point.DATA_TYPE == "REAL" ~}}
+    RESULT_REAL=>{{point.hmi_tag_name}}_MID
+{{~ else if point.DATA_TYPE == "INT" ~}}
+    RESULT_INT=>{{point.hmi_tag_name}}_MID
+{{~ else if point.DATA_TYPE == "DINT" ~}}
+    RESULT_DINT=>{{point.hmi_tag_name}}_MID
 {{~ end ~}}
 );
 

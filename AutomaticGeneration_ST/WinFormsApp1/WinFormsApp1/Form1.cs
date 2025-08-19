@@ -528,6 +528,19 @@ namespace WinFormsApp1
             };
             templateTab.Controls.Add(templateTextBox);
             previewTabControl.TabPages.Add(templateTab);
+            
+            // 添加TCP通讯ST程序选项卡
+            var tcpCommTab = new TabPage("🌐 TCP通讯ST程序");
+            var tcpCommTextBox = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 10F),
+                ReadOnly = true,
+                BackColor = ThemeManager.GetSurfaceColor(),
+                Name = "tcpCommTextBox"
+            };
+            tcpCommTab.Controls.Add(tcpCommTextBox);
+            previewTabControl.TabPages.Add(tcpCommTab);
         }
 
         private void InitializeContextMenus()
@@ -1242,6 +1255,13 @@ namespace WinFormsApp1
                     generatedScripts.AddRange(devicePrograms);
                 }
                 
+                // 添加TCP通讯程序
+                if (projectCache.TcpCommunicationPrograms?.Any() == true)
+                {
+                    generatedScripts.AddRange(projectCache.TcpCommunicationPrograms);
+                    logger.LogInfo($"📡 已添加 {projectCache.TcpCommunicationPrograms.Count} 个TCP通讯程序到显示列表");
+                }
+                
                 // 刷新预览区域（从缓存读取）
                 UpdatePreviewArea();
                 
@@ -1620,6 +1640,14 @@ namespace WinFormsApp1
                     var templateInfo = GenerateTemplateInfo();
                     templateTextBox.Text = templateInfo;
                 }
+                
+                // 更新TCP通讯ST程序标签页
+                var tcpCommTextBox = previewTabControl.TabPages[5].Controls["tcpCommTextBox"] as RichTextBox;
+                if (tcpCommTextBox != null)
+                {
+                    var tcpCommContent = GenerateTcpCommPreview();
+                    tcpCommTextBox.Text = tcpCommContent;
+                }
             }
             catch (Exception ex)
             {
@@ -1727,6 +1755,126 @@ namespace WinFormsApp1
             
             sb.AppendLine("🎯 模板版本: 默认版本 (v1.0)");
             sb.AppendLine("📅 更新时间: 2025-01-28");
+            
+            return sb.ToString();
+        }
+        
+        private string GenerateTcpCommPreview()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("🌐 TCP通讯ST程序");
+            sb.AppendLine("=" + new string('=', 50));
+            sb.AppendLine();
+            
+            try
+            {
+                // 添加调试信息
+                logger.LogInfo($"[DEBUG] 检查TCP通讯数据: currentProjectCache={currentProjectCache != null}");
+                if (currentProjectCache != null)
+                {
+                    logger.LogInfo($"[DEBUG] TcpCommunicationPrograms={currentProjectCache.TcpCommunicationPrograms != null}, Count={currentProjectCache.TcpCommunicationPrograms?.Count ?? -1}");
+                }
+                
+                // 检查是否有项目缓存数据
+                if (currentProjectCache?.TcpCommunicationPrograms == null || !currentProjectCache.TcpCommunicationPrograms.Any())
+                {
+                    sb.AppendLine("⚠️ 当前项目中未检测到TCP通讯点位数据");
+                    sb.AppendLine();
+                    sb.AppendLine("支持的TCP通讯点位类型:");
+                    sb.AppendLine("  • TCP模拟量点位 (REAL, INT, DINT)");
+                    sb.AppendLine("  • TCP数字量点位 (BOOL)");
+                    sb.AppendLine();
+                    sb.AppendLine("请确保Excel点表文件中包含以下字段:");
+                    sb.AppendLine("  • 数据类型: REAL/INT/DINT/BOOL");
+                    sb.AppendLine("  • 起始TCP通道名称: 如 MW_100, DB1_100等");
+                    sb.AppendLine("  • 变量名称（HMI）: 如 TEMP_001_PV");
+                    sb.AppendLine("  • 变量描述: 如 温度传感器1");
+                    sb.AppendLine();
+                    sb.AppendLine("模拟量点位额外支持:");
+                    sb.AppendLine("  • 缩放倍数: 数值缩放");
+                    sb.AppendLine("  • 报警限值: SHH值, SH值, SL值, SLL值");
+                    sb.AppendLine("  • 字节序: BYTE_ORDER");
+                    sb.AppendLine("  • 数据类型编号: TYPE_NUMBER");
+                    
+                    return sb.ToString();
+                }
+                
+                // 统计TCP通讯点位
+                var tcpPrograms = currentProjectCache.TcpCommunicationPrograms;
+                sb.AppendLine($"📊 TCP通讯程序统计: 共 {tcpPrograms.Count} 个程序段");
+                sb.AppendLine();
+                
+                // 分类显示TCP程序
+                var analogPrograms = tcpPrograms.Where(p => p.Contains("DATA_CONVERT_BY_BYTE")).ToList();
+                var digitalPrograms = tcpPrograms.Where(p => !p.Contains("DATA_CONVERT_BY_BYTE")).ToList();
+                
+                if (analogPrograms.Any())
+                {
+                    sb.AppendLine($"🔄 TCP模拟量程序段 ({analogPrograms.Count} 个):");
+                    sb.AppendLine("─" + new string('─', 45));
+                    
+                    foreach (var program in analogPrograms.Take(3)) // 只显示前3个作为预览
+                    {
+                        var lines = program.Split('\n');
+                        var programName = lines.FirstOrDefault(l => l.Contains("TCP模拟量数据采集"))?.Trim() ?? "未知程序";
+                        sb.AppendLine($"  • {programName}");
+                        
+                        // 显示部分代码预览
+                        var codeLines = lines.Take(8).Select(l => "    " + l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l));
+                        foreach (var line in codeLines)
+                        {
+                            sb.AppendLine(line);
+                        }
+                        sb.AppendLine("    ...");
+                        sb.AppendLine();
+                    }
+                    
+                    if (analogPrograms.Count > 3)
+                    {
+                        sb.AppendLine($"  ... 还有 {analogPrograms.Count - 3} 个模拟量程序段");
+                        sb.AppendLine();
+                    }
+                }
+                
+                if (digitalPrograms.Any())
+                {
+                    sb.AppendLine($"💡 TCP数字量程序段 ({digitalPrograms.Count} 个):");
+                    sb.AppendLine("─" + new string('─', 45));
+                    
+                    foreach (var program in digitalPrograms.Take(3)) // 只显示前3个作为预览
+                    {
+                        var lines = program.Split('\n');
+                        var programName = lines.FirstOrDefault(l => l.Contains("TCP状态量数据采集"))?.Trim() ?? "未知程序";
+                        sb.AppendLine($"  • {programName}");
+                        
+                        // 显示部分代码预览
+                        var codeLines = lines.Take(5).Select(l => "    " + l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l));
+                        foreach (var line in codeLines)
+                        {
+                            sb.AppendLine(line);
+                        }
+                        sb.AppendLine();
+                    }
+                    
+                    if (digitalPrograms.Count > 3)
+                    {
+                        sb.AppendLine($"  ... 还有 {digitalPrograms.Count - 3} 个数字量程序段");
+                        sb.AppendLine();
+                    }
+                }
+                
+                sb.AppendLine("📝 使用的模板:");
+                sb.AppendLine("  • TCP模拟量: Templates/TCP通讯/ANALOG.scriban");
+                sb.AppendLine("  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban");
+                sb.AppendLine();
+                
+                sb.AppendLine("💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取");
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"❌ 生成TCP通讯预览时出错: {ex.Message}");
+                logger.LogError($"生成TCP通讯预览失败: {ex.Message}");
+            }
             
             return sb.ToString();
         }

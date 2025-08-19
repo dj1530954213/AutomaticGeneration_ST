@@ -84,11 +84,40 @@ namespace AutomaticGeneration_ST.Services
                     _logger.LogSuccess($"[{operationId}] ✅ 设备ST生成完成 - 模板数:{deviceSTPrograms.Count}, 文件数:{totalSTFiles}");
                 }
 
-                // =================== 第4步: 构建统计信息 ===================
-                _logger.LogInfo($"[{operationId}] 📊 步骤4: 生成统计信息...");
-                var statistics = BuildStatistics(dataContext, deviceSTPrograms, ioMappingScripts, startTime);
+                // =================== 第4步: 处理TCP通讯数据 ===================
+                _logger.LogInfo($"[{operationId}] 🌐 步骤4: 处理TCP通讯数据...");
+                var tcpCommunicationPrograms = new List<string>();
+                try
+                {
+                    // 从DataContext.Metadata中读取TCP代码（由ExcelDataService生成）
+                    if (dataContext.Metadata != null && dataContext.Metadata.ContainsKey("TcpCommunicationPrograms"))
+                    {
+                        var tcpPrograms = dataContext.Metadata["TcpCommunicationPrograms"] as List<string>;
+                        if (tcpPrograms != null && tcpPrograms.Any())
+                        {
+                            tcpCommunicationPrograms.AddRange(tcpPrograms);
+                            _logger.LogSuccess($"[{operationId}] ✅ 从ExcelDataService获取TCP程序 - {tcpCommunicationPrograms.Count} 个程序段");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[{operationId}] DataContext.Metadata中的TCP程序列表为空");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[{operationId}] DataContext.Metadata中未找到TCP程序数据");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[{operationId}] TCP通讯处理失败: {ex.Message}");
+                }
 
-                // =================== 第5步: 构建完整缓存 ===================
+                // =================== 第5步: 构建统计信息 ===================
+                _logger.LogInfo($"[{operationId}] 📊 步骤5: 生成统计信息...");
+                var statistics = BuildStatistics(dataContext, deviceSTPrograms, ioMappingScripts, tcpCommunicationPrograms, startTime);
+
+                // =================== 第6步: 构建完整缓存 ===================
                 var fileInfo = new FileInfo(excelFilePath);
                 var projectCache = new ProjectCache
                 {
@@ -98,6 +127,7 @@ namespace AutomaticGeneration_ST.Services
                     DataContext = dataContext,
                     DeviceSTPrograms = deviceSTPrograms,
                     IOMappingScripts = ioMappingScripts,
+                    TcpCommunicationPrograms = tcpCommunicationPrograms,
                     Statistics = statistics,
                     Metadata = new Dictionary<string, object>
                     {
@@ -105,7 +135,8 @@ namespace AutomaticGeneration_ST.Services
                         ["ProcessingDuration"] = DateTime.Now - startTime,
                         ["ToolVersion"] = "2.0",
                         ["ImportedBy"] = Environment.UserName,
-                        ["ImportedAt"] = DateTime.Now
+                        ["ImportedAt"] = DateTime.Now,
+                        ["TcpProgramsGenerated"] = tcpCommunicationPrograms.Count
                     }
                 };
 
@@ -133,6 +164,7 @@ namespace AutomaticGeneration_ST.Services
             DataContext dataContext, 
             Dictionary<string, List<string>> deviceSTPrograms,
             List<string> ioMappingScripts,
+            List<string> tcpCommunicationPrograms,
             DateTime startTime)
         {
             var statistics = new ProjectStatistics
@@ -145,6 +177,9 @@ namespace AutomaticGeneration_ST.Services
                 GeneratedSTFiles = deviceSTPrograms.Values.Sum(list => list.Count),
                 GeneratedIOMappingFiles = ioMappingScripts.Count
             };
+            
+            // TCP通讯程序统计信息存储在Metadata中
+            statistics.DevicesByTemplate["TCP通讯程序"] = tcpCommunicationPrograms.Count;
 
             // 按模板分组设备统计
             if (dataContext.Devices?.Any() == true)

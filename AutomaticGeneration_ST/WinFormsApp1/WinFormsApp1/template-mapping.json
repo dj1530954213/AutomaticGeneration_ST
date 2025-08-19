@@ -10,4 +10,8 @@
   "DI_MAPPING": "DI/default.scriban",
   "DO_MAPPING": "DO/default.scriban",
 
+  "_comment2": "--- TCP Communication Templates ---",
+  "TCP_ANALOG": "TCP通讯/ANALOG.scriban",
+  "TCP_DIGITAL": "TCP通讯/DIGITAL.scriban"
+
 }

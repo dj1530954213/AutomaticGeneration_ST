@@ -18,19 +18,22 @@ namespace AutomaticGeneration_ST.Services.Implementations
         private readonly IDeviceClassificationService _deviceClassificationService;
         private readonly ITemplateRegistry _templateRegistry;
         private readonly IWorksheetLocatorService _worksheetLocator;
+        private readonly ITcpDataService _tcpDataService;
 
         public DataProcessingOrchestrator(
             IExcelWorkbookParser excelParser,
             IPointFactory pointFactory,
             IDeviceClassificationService deviceClassificationService,
             ITemplateRegistry templateRegistry,
-            IWorksheetLocatorService worksheetLocator)
+            IWorksheetLocatorService worksheetLocator,
+            ITcpDataService tcpDataService = null)
         {
             _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
             _pointFactory = pointFactory ?? throw new ArgumentNullException(nameof(pointFactory));
             _deviceClassificationService = deviceClassificationService ?? throw new ArgumentNullException(nameof(deviceClassificationService));
             _templateRegistry = templateRegistry ?? throw new ArgumentNullException(nameof(templateRegistry));
             _worksheetLocator = worksheetLocator ?? throw new ArgumentNullException(nameof(worksheetLocator));
+            _tcpDataService = tcpDataService; // 可选依赖，向后兼容
         }
 
         public ProcessingResult ProcessData(string excelFilePath)
@@ -64,6 +67,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                 // 步骤5: 验证模板配置
                 ValidateTemplateConfiguration(devices, result.Statistics);
+
+                // 步骤6: 处理TCP通讯表（新增功能）
+                ProcessTcpCommunicationTable(excelFilePath, result);
 
                 // 更新最终统计信息
                 UpdateFinalStatistics(result);
@@ -278,6 +284,64 @@ namespace AutomaticGeneration_ST.Services.Implementations
             else
             {
                 Console.WriteLine("[INFO] 所有设备模板配置验证通过");
+            }
+        }
+
+        /// <summary>
+        /// 处理TCP通讯表
+        /// </summary>
+        private void ProcessTcpCommunicationTable(string excelFilePath, ProcessingResult result)
+        {
+            Console.WriteLine($"[DEBUG] ProcessTcpCommunicationTable被调用 - 文件: {Path.GetFileName(excelFilePath)}");
+            Console.WriteLine($"[DEBUG] TCP数据服务状态: {(_tcpDataService == null ? "未配置" : "已配置")}");
+            
+            if (_tcpDataService == null)
+            {
+                Console.WriteLine("[WARNING] ❌ TCP数据服务未配置，跳过TCP通讯处理");
+                Console.WriteLine("[WARNING] 请检查ServiceContainer是否正确注册了ITcpDataService");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine("[INFO] 步骤6: 处理TCP通讯表...");
+                
+                var tcpPoints = _tcpDataService.ProcessTcpCommunicationTable(excelFilePath);
+                if (tcpPoints?.Any() == true)
+                {
+                    result.TcpPoints.AddRange(tcpPoints);
+                    result.TcpAnalogPoints.AddRange(_tcpDataService.GetAnalogPoints(tcpPoints));
+                    result.TcpDigitalPoints.AddRange(_tcpDataService.GetDigitalPoints(tcpPoints));
+
+                    Console.WriteLine($"[INFO] TCP通讯处理完成: " +
+                                    $"总计 {tcpPoints.Count} 个TCP点位 " +
+                                    $"(模拟量: {result.TcpAnalogPoints.Count}, " +
+                                    $"数字量: {result.TcpDigitalPoints.Count})");
+
+                    // 验证TCP点位
+                    var validation = _tcpDataService.ValidateTcpPoints(tcpPoints);
+                    if (!validation.IsValid)
+                    {
+                        foreach (var error in validation.Errors)
+                        {
+                            result.Statistics.Warnings.Add($"TCP验证错误: {error}");
+                        }
+                    }
+                    foreach (var warning in validation.Warnings)
+                    {
+                        result.Statistics.Warnings.Add($"TCP验证警告: {warning}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[INFO] 未找到TCP通讯表或表为空");
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Statistics.Warnings.Add($"TCP通讯处理失败: {ex.Message}");
+                Console.WriteLine($"[WARNING] TCP通讯处理失败: {ex.Message}");
+                // 不中断主流程，继续处理
             }
         }
 

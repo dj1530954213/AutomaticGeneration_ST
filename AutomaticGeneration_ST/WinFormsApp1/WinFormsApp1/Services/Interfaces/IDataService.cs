@@ -24,5 +24,10 @@ namespace AutomaticGeneration_ST.Services.Interfaces
         public List<Device> Devices { get; set; } = new List<Device>();
         public List<Models.Point> StandalonePoints { get; set; } = new List<Models.Point>();
         public Dictionary<string, Models.Point> AllPointsMasterList { get; set; } = new Dictionary<string, Models.Point>();
+        
+        /// <summary>
+        /// 元数据字典，用于存储额外信息如TCP通讯数据
+        /// </summary>
+        public Dictionary<string, object>? Metadata { get; set; }
     }
 }

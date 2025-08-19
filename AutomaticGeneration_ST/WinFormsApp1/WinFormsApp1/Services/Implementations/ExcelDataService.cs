@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
+using AutomaticGeneration_ST.Services;
 using OfficeOpenXml; // 引入EPPlus的命名空间
 using WinFormsApp1;
 
@@ -133,6 +134,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
                         }
                     }
                 }
+
+                // --- 步骤 5: 处理TCP通讯表（新增功能）---
+                ProcessTcpCommunicationTableInLegacyService(excelFilePath, context);
 
                 _logger.LogSuccess($"🎉 Excel数据加载完成！");
                 _logger.LogInfo($"📈 数据统计汇总:");
@@ -737,6 +741,189 @@ namespace AutomaticGeneration_ST.Services.Implementations
             normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[\(\)\[\]\-_、，（）【】]", "");
             
             return normalized.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// 在传统ExcelDataService中处理TCP通讯表 - 安全集成方案
+        /// </summary>
+        private void ProcessTcpCommunicationTableInLegacyService(string excelFilePath, DataContext context)
+        {
+            try
+            {
+                _logger.LogInfo("🌐 步骤5: 开始处理TCP通讯表...");
+                
+                // 创建临时的服务容器来获取TCP服务
+                var templateDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
+                var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template-mapping.json");
+                
+                // 检查配置文件是否存在
+                if (!File.Exists(configPath))
+                {
+                    _logger.LogWarning($"⚠️ TCP处理配置文件不存在: {configPath}，跳过TCP通讯处理");
+                    return;
+                }
+                
+                var serviceContainer = ServiceContainer.CreateDefault(templateDirectory, configPath);
+                var tcpService = serviceContainer.GetService<ITcpDataService>();
+                
+                if (tcpService == null)
+                {
+                    _logger.LogWarning("⚠️ TCP数据服务未配置，跳过TCP通讯处理");
+                    return;
+                }
+
+                // 处理TCP通讯表
+                var tcpPoints = tcpService.ProcessTcpCommunicationTable(excelFilePath);
+                if (tcpPoints?.Any() == true)
+                {
+                    // 将TCP点位数据存储到context的元数据中
+                    // 这样不会破坏现有的DataContext结构
+                    if (context.Metadata == null)
+                    {
+                        context.Metadata = new Dictionary<string, object>();
+                    }
+
+                    var analogPoints = tcpService.GetAnalogPoints(tcpPoints);
+                    var digitalPoints = tcpService.GetDigitalPoints(tcpPoints);
+
+                    context.Metadata["TcpPoints"] = tcpPoints;
+                    context.Metadata["TcpAnalogPoints"] = analogPoints;
+                    context.Metadata["TcpDigitalPoints"] = digitalPoints;
+                    context.Metadata["TcpProcessingEnabled"] = true;
+
+                    _logger.LogSuccess($"✅ TCP通讯处理完成: 总计 {tcpPoints.Count} 个TCP点位 " +
+                                     $"(模拟量: {analogPoints.Count}, 数字量: {digitalPoints.Count})");
+
+                    // 验证TCP点位
+                    var validation = tcpService.ValidateTcpPoints(tcpPoints);
+                    if (!validation.IsValid)
+                    {
+                        foreach (var error in validation.Errors)
+                        {
+                            _logger.LogWarning($"TCP验证错误: {error}");
+                        }
+                    }
+                    foreach (var warning in validation.Warnings)
+                    {
+                        _logger.LogWarning($"TCP验证警告: {warning}");
+                    }
+
+                    // --- 步骤 5a: 生成TCP通讯ST代码 ---
+                    GenerateTcpCode(serviceContainer, tcpPoints, analogPoints, digitalPoints, context);
+                }
+                else
+                {
+                    _logger.LogInfo("📋 未找到TCP通讯表或表为空");
+                    if (context.Metadata == null)
+                    {
+                        context.Metadata = new Dictionary<string, object>();
+                    }
+                    context.Metadata["TcpProcessingEnabled"] = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"⚠️ TCP通讯处理失败: {ex.Message}");
+                // 确保即使TCP处理失败，也不会影响主流程
+                if (context.Metadata == null)
+                {
+                    context.Metadata = new Dictionary<string, object>();
+                }
+                context.Metadata["TcpProcessingEnabled"] = false;
+                context.Metadata["TcpProcessingError"] = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// 生成TCP通讯ST代码
+        /// </summary>
+        private void GenerateTcpCode(ServiceContainer serviceContainer, 
+            List<WinFormsApp1.Models.TcpCommunicationPoint> tcpPoints,
+            List<WinFormsApp1.Models.TcpAnalogPoint> analogPoints,
+            List<WinFormsApp1.Models.TcpDigitalPoint> digitalPoints,
+            DataContext context)
+        {
+            try
+            {
+                _logger.LogInfo("📝 开始生成TCP通讯ST代码...");
+
+                // 获取TCP代码生成器
+                var tcpGenerator = serviceContainer.GetService<WinFormsApp1.Generators.TcpCodeGenerator>();
+                if (tcpGenerator == null)
+                {
+                    _logger.LogWarning("⚠️ TCP代码生成器未注册，跳过TCP代码生成");
+                    return;
+                }
+
+                var generatedCode = new List<string>();
+
+                // 生成模拟量代码
+                if (analogPoints.Any())
+                {
+                    _logger.LogInfo($"📊 生成 {analogPoints.Count} 个TCP模拟量ST代码...");
+                    try
+                    {
+                        var analogCode = tcpGenerator.GenerateCode(analogPoints);
+                        if (!string.IsNullOrWhiteSpace(analogCode))
+                        {
+                            generatedCode.Add("// TCP模拟量代码");
+                            generatedCode.Add(analogCode);
+                            generatedCode.Add(""); // 空行分隔
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"⚠️ TCP模拟量代码生成失败: {ex.Message}");
+                    }
+                }
+
+                // 生成数字量代码
+                if (digitalPoints.Any())
+                {
+                    _logger.LogInfo($"🔲 生成 {digitalPoints.Count} 个TCP数字量ST代码...");
+                    try
+                    {
+                        var digitalCode = tcpGenerator.GenerateCode(digitalPoints);
+                        if (!string.IsNullOrWhiteSpace(digitalCode))
+                        {
+                            generatedCode.Add("// TCP数字量代码");
+                            generatedCode.Add(digitalCode);
+                            generatedCode.Add(""); // 空行分隔
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"⚠️ TCP数字量代码生成失败: {ex.Message}");
+                    }
+                }
+
+                // 如果生成了代码，保存到DataContext.Metadata
+                if (generatedCode.Any())
+                {
+                    var finalCode = string.Join(Environment.NewLine, generatedCode);
+                    _logger.LogInfo($"📄 TCP ST代码生成完成，共 {generatedCode.Count(s => !string.IsNullOrWhiteSpace(s))} 行代码");
+                    
+                    // 为了演示，先输出代码预览
+                    var preview = finalCode.Length > 200 ? finalCode.Substring(0, 200) + "..." : finalCode;
+                    _logger.LogInfo($"📋 TCP代码预览:\n{preview}");
+                    
+                    // 将TCP代码保存到DataContext.Metadata中
+                    if (context.Metadata == null)
+                    {
+                        context.Metadata = new Dictionary<string, object>();
+                    }
+                    context.Metadata["TcpCommunicationPrograms"] = generatedCode.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+                    _logger.LogInfo($"✅ TCP代码已保存到DataContext.Metadata，共 {((List<string>)context.Metadata["TcpCommunicationPrograms"]).Count} 个程序段");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ 未生成任何TCP ST代码");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"⚠️ TCP代码生成失败: {ex.Message}");
+            }
         }
     }
 }
