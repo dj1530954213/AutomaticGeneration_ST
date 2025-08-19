@@ -1804,34 +1804,91 @@ namespace WinFormsApp1
                 sb.AppendLine($"📊 TCP通讯程序统计: 共 {tcpPrograms.Count} 个程序段");
                 sb.AppendLine();
                 
-                // 分类显示TCP程序
-                var analogPrograms = tcpPrograms.Where(p => p.Contains("DATA_CONVERT_BY_BYTE")).ToList();
-                var digitalPrograms = tcpPrograms.Where(p => !p.Contains("DATA_CONVERT_BY_BYTE")).ToList();
+                // 重新设计TCP程序分类逻辑 - 精确分类
+                var analogPrograms = new List<string>();
+                var digitalPrograms = new List<string>();
+                
+                logger.LogInfo($"[DEBUG] 开始分类TCP程序, 总数: {tcpPrograms.Count}");
+                
+                foreach (var program in tcpPrograms)
+                {
+                    if (string.IsNullOrWhiteSpace(program))
+                    {
+                        logger.LogInfo("[DEBUG] 跳过空程序");
+                        continue;
+                    }
+                    
+                    logger.LogInfo($"[DEBUG] 分析程序: {program.Substring(0, Math.Min(50, program.Length))}...");
+                    
+                    // 第一步：检查明确的模拟量标识
+                    bool hasAnalogMarkers = program.Contains("DATA_CONVERT_BY_BYTE") || 
+                                           program.Contains("AI_ALARM_COMMUNICATION") ||
+                                           program.Contains("TCP模拟量数据采集") ||
+                                           program.Contains("TCP模拟量数据缩放") ||
+                                           program.Contains("RESULT_REAL") ||
+                                           program.Contains("RESULT_INT") ||
+                                           program.Contains("RESULT_DINT");
+                    
+                    // 第二步：检查明确的数字量标识
+                    bool hasDigitalMarkers = program.Contains("TCP状态量数据采集") ||
+                                            (program.Contains(":=") && !hasAnalogMarkers && 
+                                             program.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Length <= 8);
+                    
+                    if (hasAnalogMarkers)
+                    {
+                        analogPrograms.Add(program);
+                        logger.LogInfo($"[DEBUG] 分类为模拟量: 包含模拟量标识");
+                    }
+                    else if (hasDigitalMarkers)
+                    {
+                        digitalPrograms.Add(program);
+                        logger.LogInfo($"[DEBUG] 分类为数字量: 包含数字量标识");
+                    }
+                    else
+                    {
+                        // 如果都不明确，根据程序复杂度判断
+                        var lines = program.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (lines.Length <= 5 && program.Contains(":=") && !program.Contains("("))
+                        {
+                            digitalPrograms.Add(program);
+                            logger.LogInfo($"[DEBUG] 分类为数字量: 简单赋值语句");
+                        }
+                        else
+                        {
+                            analogPrograms.Add(program);
+                            logger.LogInfo($"[DEBUG] 默认分类为模拟量: 复杂程序");
+                        }
+                    }
+                }
+                
+                logger.LogInfo($"[DEBUG] 分类结果: 模拟量={analogPrograms.Count}, 数字量={digitalPrograms.Count}");
                 
                 if (analogPrograms.Any())
                 {
                     sb.AppendLine($"🔄 TCP模拟量程序段 ({analogPrograms.Count} 个):");
                     sb.AppendLine("─" + new string('─', 45));
                     
-                    foreach (var program in analogPrograms.Take(3)) // 只显示前3个作为预览
+                    foreach (var program in analogPrograms) // 显示所有模拟量程序
                     {
-                        var lines = program.Split('\n');
-                        var programName = lines.FirstOrDefault(l => l.Contains("TCP模拟量数据采集"))?.Trim() ?? "未知程序";
-                        sb.AppendLine($"  • {programName}");
+                        var lines = program.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                         
-                        // 显示部分代码预览
-                        var codeLines = lines.Take(8).Select(l => "    " + l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l));
-                        foreach (var line in codeLines)
+                        // 改进的程序名称提取
+                        var programName = ExtractTcpProgramName(lines, "模拟量");
+                        sb.AppendLine($"  • {programName}");
+                        sb.AppendLine("    " + new string('-', 40));
+                        
+                        // 显示完整ST程序内容
+                        var cleanLines = program.Split('\n');
+                        foreach (var line in cleanLines)
                         {
-                            sb.AppendLine(line);
+                            var trimmedLine = line.Trim();
+                            if (!string.IsNullOrEmpty(trimmedLine) && 
+                                !trimmedLine.StartsWith("程序名称:") && 
+                                !trimmedLine.StartsWith("变量类型:"))
+                            {
+                                sb.AppendLine($"    {trimmedLine}");
+                            }
                         }
-                        sb.AppendLine("    ...");
-                        sb.AppendLine();
-                    }
-                    
-                    if (analogPrograms.Count > 3)
-                    {
-                        sb.AppendLine($"  ... 还有 {analogPrograms.Count - 3} 个模拟量程序段");
                         sb.AppendLine();
                     }
                 }
@@ -1841,24 +1898,27 @@ namespace WinFormsApp1
                     sb.AppendLine($"💡 TCP数字量程序段 ({digitalPrograms.Count} 个):");
                     sb.AppendLine("─" + new string('─', 45));
                     
-                    foreach (var program in digitalPrograms.Take(3)) // 只显示前3个作为预览
+                    foreach (var program in digitalPrograms) // 显示所有数字量程序
                     {
-                        var lines = program.Split('\n');
-                        var programName = lines.FirstOrDefault(l => l.Contains("TCP状态量数据采集"))?.Trim() ?? "未知程序";
-                        sb.AppendLine($"  • {programName}");
+                        var lines = program.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                         
-                        // 显示部分代码预览
-                        var codeLines = lines.Take(5).Select(l => "    " + l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l));
-                        foreach (var line in codeLines)
+                        // 改进的程序名称提取
+                        var programName = ExtractTcpProgramName(lines, "数字量");
+                        sb.AppendLine($"  • {programName}");
+                        sb.AppendLine("    " + new string('-', 40));
+                        
+                        // 显示完整ST程序内容
+                        var cleanLines = program.Split('\n');
+                        foreach (var line in cleanLines)
                         {
-                            sb.AppendLine(line);
+                            var trimmedLine = line.Trim();
+                            if (!string.IsNullOrEmpty(trimmedLine) && 
+                                !trimmedLine.StartsWith("程序名称:") && 
+                                !trimmedLine.StartsWith("变量类型:"))
+                            {
+                                sb.AppendLine($"    {trimmedLine}");
+                            }
                         }
-                        sb.AppendLine();
-                    }
-                    
-                    if (digitalPrograms.Count > 3)
-                    {
-                        sb.AppendLine($"  ... 还有 {digitalPrograms.Count - 3} 个数字量程序段");
                         sb.AppendLine();
                     }
                 }
@@ -1877,6 +1937,98 @@ namespace WinFormsApp1
             }
             
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// 提取TCP程序名称
+        /// </summary>
+        private string ExtractTcpProgramName(string[] lines, string programType)
+        {
+            if (lines == null || !lines.Any()) return $"未知{programType}程序";
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                
+                // 尝试从注释中提取程序名称
+                if (trimmedLine.StartsWith("(*") && trimmedLine.EndsWith("*)"))
+                {
+                    // 移除注释标记
+                    var comment = trimmedLine.Substring(2, trimmedLine.Length - 4).Trim();
+                    
+                    // 如果包含TCP数据采集关键词，提取变量名
+                    if (comment.Contains("TCP模拟量数据采集:") || comment.Contains("TCP状态量数据采集:"))
+                    {
+                        var parts = comment.Split(new[] { ":", "->" }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            var variableName = parts[1].Trim();
+                            var description = parts.Length > 2 ? parts[2].Trim() : "";
+                            return string.IsNullOrEmpty(description) ? variableName : $"{variableName} ({description})";
+                        }
+                    }
+                    
+                    // 返回完整注释作为程序名
+                    if (!string.IsNullOrEmpty(comment))
+                    {
+                        return comment.Length > 50 ? comment.Substring(0, 47) + "..." : comment;
+                    }
+                }
+                
+                // 尝试从函数调用中提取变量名（如DATA_CONVERT_BY_BYTE_XXX）
+                if (trimmedLine.Contains("DATA_CONVERT_BY_BYTE_"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(trimmedLine, @"DATA_CONVERT_BY_BYTE_(\w+)");
+                    if (match.Success)
+                    {
+                        return $"TCP模拟量转换: {match.Groups[1].Value}";
+                    }
+                }
+                
+                // 尝试从简单赋值中提取变量名（数字量程序）
+                if (trimmedLine.Contains(":=") && programType == "数字量")
+                {
+                    var parts = trimmedLine.Split(":=");
+                    if (parts.Length >= 2)
+                    {
+                        var variableName = parts[0].Trim();
+                        var value = parts[1].Trim().TrimEnd(';');
+                        return $"TCP数字量: {variableName} := {value}";
+                    }
+                }
+            }
+            
+            return $"TCP{programType}程序";
+        }
+
+        /// <summary>
+        /// 获取TCP程序的关键代码预览
+        /// </summary>
+        private List<string> GetTcpProgramPreview(string[] lines, int maxLines)
+        {
+            var previewLines = new List<string>();
+            int addedLines = 0;
+            
+            foreach (var line in lines)
+            {
+                if (addedLines >= maxLines) break;
+                
+                var trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+                
+                // 跳过空行和某些不重要的行
+                if (trimmedLine.StartsWith("程序名称:") || 
+                    trimmedLine.StartsWith("变量类型:"))
+                {
+                    continue;
+                }
+                
+                // 添加重要的代码行
+                previewLines.Add(trimmedLine);
+                addedLines++;
+            }
+            
+            return previewLines;
         }
 
         private async void button_export_Click(object sender, EventArgs e)
