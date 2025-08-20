@@ -108,6 +108,8 @@ namespace WinFormsApp1.Generators
                 try
                 {
                     string pointCode = template.Render(templateData);
+                    Console.WriteLine($"[DEBUG] 模拟量点位 {p.HmiTagName} 渲染结果长度: {pointCode.Length} 字符");
+                    Console.WriteLine($"[DEBUG] 渲染内容预览: {pointCode.Substring(0, Math.Min(200, pointCode.Length))}...");
                     generatedCodes.Add(pointCode);
                 }
                 catch (Exception ex)
@@ -170,6 +172,8 @@ namespace WinFormsApp1.Generators
                 try
                 {
                     string pointCode = template.Render(templateData);
+                    Console.WriteLine($"[DEBUG] 数字量点位 {p.HmiTagName} 渲染结果长度: {pointCode.Length} 字符");
+                    Console.WriteLine($"[DEBUG] 渲染内容预览: {pointCode.Substring(0, Math.Min(200, pointCode.Length))}...");
                     generatedCodes.Add(pointCode);
                 }
                 catch (Exception ex)

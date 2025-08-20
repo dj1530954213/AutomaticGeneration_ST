@@ -1,0 +1,467 @@
+﻿[2025-08-19 23:26:01] [信息] 📡 已添加 4 个TCP通讯程序到显示列表
+[2025-08-19 23:26:01] [信息] 📋 使用现有项目缓存: 新业FAT_TEST.xlsx
+[2025-08-19 23:26:01] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:26:01] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:26:01] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:26:01] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:26:01] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:01] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:26:01] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:01] [信息] 📊 UI更新完成 - 显示数据来自ProjectCache
+[2025-08-19 23:26:01] [信息] 项目状态已更新
+[2025-08-19 23:26:01] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:26:01] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:26:01] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:26:01] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:26:01] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:01] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:26:01] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:01] [信息] 项目状态已更新
+[2025-08-19 23:26:01] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:26:01] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:26:01] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:26:01] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:01] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:26:01] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:26:01] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:01] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:26:02] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:26:02] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:02] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:26:02] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:02] [信息] 项目状态已更新
+[2025-08-19 23:26:02] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:26:02] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:26:02] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:26:02] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:26:02] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:02] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:26:02] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:26:02] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:26:02] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:26:02] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:26:02] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:26:02] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:26:02] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:02] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:26:02] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:26:02] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:26:02] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:26:02] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:02] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:26:02] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:26:02] [信息] 项目状态已更新
+[2025-08-19 23:26:02] [成功] ✅ Excel文件处理完成 - 设备数:3, 点位数:68, ST文件数:3
+[2025-08-19 23:26:41] [信息] 开始导出ST脚本...
+[2025-08-19 23:26:41] [信息] 正在执行导出前验证...
+[2025-08-19 23:26:41] [错误] 导出前验证失败: 验证失败，25个错误，232个警告
+[2025-08-19 23:27:02] [信息] 正在从ProjectCache导出ST脚本到: C:\Users\DELL\Desktop\ST自动测试软件测试程序
+[2025-08-19 23:27:02] [信息] 创建输出文件夹: ST_Scripts_20250819_232702
+[2025-08-19 23:27:02] [信息] 开始分类导出IO映射脚本，共4个脚本
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 开始分析 4 个IO映射脚本
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 AI_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 AO_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 DI_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 DO_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 完成分析，识别出模板类型: AI_CONVERT, AO_CONVERT, DI_CONVERT, DO_CONVERT
+[2025-08-19 23:27:02] [信息] 导出AI_CONVERT通道IO映射脚本: AI_CONVERT.txt (1个脚本)
+[2025-08-19 23:27:02] [信息] 导出AO_CONVERT通道IO映射脚本: AO_CONVERT.txt (1个脚本)
+[2025-08-19 23:27:02] [信息] 导出DI_CONVERT通道IO映射脚本: DI_MAPPING.txt (1个脚本)
+[2025-08-19 23:27:02] [信息] 导出DO_CONVERT通道IO映射脚本: DO_MAPPING.txt (1个脚本)
+[2025-08-19 23:27:02] [成功] IO映射脚本分类导出完成，共生成4个文件
+[2025-08-19 23:27:02] [信息] 导出XV_CTRL设备ST程序: Device_XV_CTRL.txt (3个设备)
+[2025-08-19 23:27:02] [信息] === 开始尝试生成变量表Excel文件 ===
+[2025-08-19 23:27:02] [信息] 调用GenerateVariableTable方法...
+[2025-08-19 23:27:02] [信息] >>> 进入GenerateVariableTable方法
+[2025-08-19 23:27:02] [信息] >>> 输出目录: C:\Users\DELL\Desktop\ST自动测试软件测试程序\ST_Scripts_20250819_232702
+[2025-08-19 23:27:02] [信息] >>> 检查前置条件...
+[2025-08-19 23:27:02] [信息] >>> currentProjectCache 是否为null: False
+[2025-08-19 23:27:02] [信息] >>> DeviceSTPrograms 是否为null: False
+[2025-08-19 23:27:02] [信息] >>> DeviceSTPrograms 数量: 1
+[2025-08-19 23:27:02] [信息] >>> DeviceSTPrograms 详细信息:
+[2025-08-19 23:27:02] [信息] >>>   模板: XV_CTRL, ST代码数量: 3
+[2025-08-19 23:27:02] [信息] >>> 开始生成变量表...
+[2025-08-19 23:27:02] [信息] >>> 步骤1: 解析模板元数据
+[2025-08-19 23:27:02] [信息] >>> 模板目录路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates
+[2025-08-19 23:27:02] [信息] >>> 模板目录是否存在: True
+[2025-08-19 23:27:02] [信息] >>> 创建TemplateMetadataParser完成
+[2025-08-19 23:27:02] [信息] >>> 调用ParseAllTemplates...
+[2025-08-19 23:27:02] [信息] >>> ParseAllTemplates返回结果数量: 9
+[2025-08-19 23:27:02] [信息] >>> 解析到 9 个模板的元数据:
+[2025-08-19 23:27:02] [信息] >>>   模板Key: AI_CONVERT
+[2025-08-19 23:27:02] [信息] >>>     程序名称: AI_CONVERT
+[2025-08-19 23:27:02] [信息] >>>     变量类型: AI_ALARM
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\AI\AI_ALARM.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: default
+[2025-08-19 23:27:02] [信息] >>>     程序名称: AI_CONVERT
+[2025-08-19 23:27:02] [信息] >>>     变量类型: AI_ALARM
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\AI\AI_ALARM.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: AO_CONVERT
+[2025-08-19 23:27:02] [信息] >>>     程序名称: AO_CONVERT
+[2025-08-19 23:27:02] [信息] >>>     变量类型: ENGIN_HEX
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\AO\ENGIN_HEX.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: TCP_ANALOG
+[2025-08-19 23:27:02] [信息] >>>     程序名称: TCP_ANALOG
+[2025-08-19 23:27:02] [信息] >>>     变量类型: DATA_CONVERT_BY_BYTE
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\TCP通讯\DATA_CONVERT_BY_BYTE.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: ANALOG
+[2025-08-19 23:27:02] [信息] >>>     程序名称: TCP_ANALOG
+[2025-08-19 23:27:02] [信息] >>>     变量类型: DATA_CONVERT_BY_BYTE
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\TCP通讯\DATA_CONVERT_BY_BYTE.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: ESDV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     程序名称: ESDV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     变量类型: ESDV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\阀门\ESDV_CTRL.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: PV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     程序名称: PV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     变量类型: PV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\阀门\PV_CTRL.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: MOV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     程序名称: MOV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     变量类型: XV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\阀门\XV_CTRL.TXT
+[2025-08-19 23:27:02] [信息] >>>   模板Key: XV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     程序名称: MOV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     变量类型: XV_CTRL
+[2025-08-19 23:27:02] [信息] >>>     有TXT文件: True
+[2025-08-19 23:27:02] [信息] >>>     TXT文件路径: C:\Program Files\Git\code\AutomaticGeneration_ST\AutomaticGeneration_ST\WinFormsApp1\WinFormsApp1\bin\Debug\net9.0-windows\Templates\阀门\XV_CTRL.TXT
+[2025-08-19 23:27:02] [信息] 开始分析ST代码...
+[2025-08-19 23:27:02] [信息] 当前缓存中的设备ST程序类型: XV_CTRL
+[2025-08-19 23:27:02] [信息] 当前缓存中的IO映射脚本数量: 4
+[2025-08-19 23:27:02] [信息] >>> 步骤2.1: 分析IO映射脚本
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 开始分析 4 个IO映射脚本
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 AI_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 AO_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 DI_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 识别脚本为 DO_CONVERT 类型
+[2025-08-19 23:27:02] [信息] [ConvertIOMappingScriptsToTemplateGroups] 完成分析，识别出模板类型: AI_CONVERT, AO_CONVERT, DI_CONVERT, DO_CONVERT
+[2025-08-19 23:27:02] [信息] >>> 从IO映射脚本中识别出 4 个模板类型
+[2025-08-19 23:27:02] [信息] >>> 步骤2.2: 合并分析结果
+[2025-08-19 23:27:02] [信息] >>> 新增模板 AI_CONVERT: 16 个IO变量
+[2025-08-19 23:27:02] [信息] >>> 新增模板 AO_CONVERT: 4 个IO变量
+[2025-08-19 23:27:02] [信息] 提取到 3 个模板的变量信息
+[2025-08-19 23:27:02] [信息] 模板 XV_CTRL: 3 个变量
+[2025-08-19 23:27:02] [信息] 模板 AI_CONVERT: 16 个变量
+[2025-08-19 23:27:02] [信息] 模板 AO_CONVERT: 4 个变量
+[2025-08-19 23:27:03] [成功] 变量表生成成功: Variables_Table.xls
+[2025-08-19 23:27:03] [信息] 变量表统计:
+变量表生成统计:
+生成时间: 2025-08-19 23:27:03
+模板数量: 3
+  - XV_CTRL: 3个变量
+  - AI_CONVERT: 16个变量
+  - AO_CONVERT: 4个变量
+变量总数: 23
+
+[2025-08-19 23:27:03] [信息] GenerateVariableTable方法返回结果: True
+[2025-08-19 23:27:03] [成功] 变量表生成成功并添加到导出文件列表
+[2025-08-19 23:27:03] [信息] === 变量表生成流程结束 ===
+[2025-08-19 23:27:03] [成功] ProjectCache导出完成，共生成7个文件
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新
+[2025-08-19 23:27:05] [信息] [DEBUG] 检查TCP通讯数据: currentProjectCache=True
+[2025-08-19 23:27:05] [信息] [DEBUG] TcpCommunicationPrograms=True, Count=4
+[2025-08-19 23:27:05] [信息] [DEBUG] 开始分类TCP程序, 总数: 4
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #1: 长度=11, 预览=// TCP模拟量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #2: 长度=1196, 预览=程序名称:TCP_ANALOG
+ 变量类型:DATA_CONVERT_BY_BYTE
+ (*TCP模拟量数据采集:TEST_REAL_ABCD -> *)
+ D...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为模拟量: 包含模拟量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #3: 长度=11, 预览=// TCP数字量代码...
+[2025-08-19 23:27:05] [信息] [DEBUG] 默认分类为模拟量: 复杂程序
+[2025-08-19 23:27:05] [信息] [DEBUG] 分析程序 #4: 长度=168, 预览=程序名称:TCP_DIGITAL
+ 变量类型:
+ (*TCP状态量数据采集:TEST_REAL_BOOL_1 : *)
+ TEST_REAL_BOOL_1:=;...
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类为数字量: 包含数字量标识
+[2025-08-19 23:27:05] [信息] [DEBUG] 分类结果: 模拟量=3, 数字量=1
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TEST_REAL_ABCD: 显示了 36 行代码, 原始程序长度=1196
+[2025-08-19 23:27:05] [信息] [DEBUG] 模拟量程序 TCP模拟量程序: 显示了 1 行代码, 原始程序长度=11
+[2025-08-19 23:27:05] [信息] [DEBUG] 数字量程序 TEST_REAL_BOOL_1: 显示了 4 行代码, 原始程序长度=168
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览生成完成: 总长度=1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容最后100字符: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] [DEBUG] TCP预览内容长度: 1912 字符
+[2025-08-19 23:27:05] [信息] [DEBUG] 内容结尾: ALOG.scriban
+  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban
+
+💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取
+
+[2025-08-19 23:27:05] [信息] 项目状态已更新

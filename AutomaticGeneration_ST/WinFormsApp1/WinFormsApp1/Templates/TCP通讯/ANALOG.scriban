@@ -59,7 +59,7 @@ AI_ALARM_COMMUNICATION_{{ point.hmi_tag_name }}(
     LL_A_EN:=TRUE,
     LL_LIMIT:={{ point.sll_value }},
 {{~ end ~}}
-    OUT=>{{ point.hmi_tag_name }},
+    OUT=>{{ point.hmi_tag_name }}{{ if point.shh_value != null && point.shh_value != "" || point.sh_value != null && point.sh_value != "" || point.sl_value != null && point.sl_value != "" || point.sll_value != null && point.sll_value != "" }},{{ end }}
 {{~ # 报警输出：只有对应的报警级别存在时才生成 ~}}
 {{~ if point.shh_value != null && point.shh_value != "" ~}}
     HH_ALARM=>{{ point.hmi_tag_name }}_HH{{ if (point.sh_value != null && point.sh_value != "") || (point.sl_value != null && point.sl_value != "") || (point.sll_value != null && point.sll_value != "") }},{{ end }}

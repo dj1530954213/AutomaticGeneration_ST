@@ -1646,6 +1646,13 @@ namespace WinFormsApp1
                 if (tcpCommTextBox != null)
                 {
                     var tcpCommContent = GenerateTcpCommPreview();
+                    
+                    // 检查内容长度和完整性
+                    logger.LogInfo($"[DEBUG] TCP预览内容长度: {tcpCommContent.Length} 字符");
+                    logger.LogInfo($"[DEBUG] 内容结尾: {tcpCommContent.Substring(Math.Max(0, tcpCommContent.Length - 100))}");
+                    
+                    // 设置RichTextBox最大长度以避免截断
+                    tcpCommTextBox.MaxLength = int.MaxValue;
                     tcpCommTextBox.Text = tcpCommContent;
                 }
             }
@@ -1810,15 +1817,31 @@ namespace WinFormsApp1
                 
                 logger.LogInfo($"[DEBUG] 开始分类TCP程序, 总数: {tcpPrograms.Count}");
                 
-                foreach (var program in tcpPrograms)
+                for (int i = 0; i < tcpPrograms.Count; i++)
                 {
+                    var program = tcpPrograms[i];
                     if (string.IsNullOrWhiteSpace(program))
                     {
-                        logger.LogInfo("[DEBUG] 跳过空程序");
+                        logger.LogInfo($"[DEBUG] 跳过空程序 #{i + 1}");
                         continue;
                     }
                     
-                    logger.LogInfo($"[DEBUG] 分析程序: {program.Substring(0, Math.Min(50, program.Length))}...");
+                    // 跳过无意义的注释程序 - 改进过滤条件
+                    var trimmedProgram = program.Trim();
+                    if ((trimmedProgram.StartsWith("// TCP") || trimmedProgram.StartsWith("//TCP")) && program.Length < 50)
+                    {
+                        logger.LogInfo($"[DEBUG] 跳过注释程序 #{i + 1}: {trimmedProgram}");
+                        continue;
+                    }
+                    
+                    // 额外过滤：跳过长度很短且只包含注释的程序
+                    if (program.Length < 30 && (trimmedProgram.StartsWith("//") || trimmedProgram.StartsWith("(*")))
+                    {
+                        logger.LogInfo($"[DEBUG] 跳过短注释程序 #{i + 1}: {trimmedProgram}");
+                        continue;
+                    }
+                    
+                    logger.LogInfo($"[DEBUG] 分析程序 #{i + 1}: 长度={program.Length}, 预览={program.Substring(0, Math.Min(80, program.Length)).Replace('\n', ' ')}...");
                     
                     // 第一步：检查明确的模拟量标识
                     bool hasAnalogMarkers = program.Contains("DATA_CONVERT_BY_BYTE") || 
@@ -1879,6 +1902,7 @@ namespace WinFormsApp1
                         
                         // 显示完整ST程序内容
                         var cleanLines = program.Split('\n');
+                        int lineCount = 0;
                         foreach (var line in cleanLines)
                         {
                             var trimmedLine = line.Trim();
@@ -1887,8 +1911,10 @@ namespace WinFormsApp1
                                 !trimmedLine.StartsWith("变量类型:"))
                             {
                                 sb.AppendLine($"    {trimmedLine}");
+                                lineCount++;
                             }
                         }
+                        logger.LogInfo($"[DEBUG] 模拟量程序 {programName}: 显示了 {lineCount} 行代码, 原始程序长度={program.Length}");
                         sb.AppendLine();
                     }
                 }
@@ -1909,6 +1935,7 @@ namespace WinFormsApp1
                         
                         // 显示完整ST程序内容
                         var cleanLines = program.Split('\n');
+                        int lineCount = 0;
                         foreach (var line in cleanLines)
                         {
                             var trimmedLine = line.Trim();
@@ -1917,8 +1944,10 @@ namespace WinFormsApp1
                                 !trimmedLine.StartsWith("变量类型:"))
                             {
                                 sb.AppendLine($"    {trimmedLine}");
+                                lineCount++;
                             }
                         }
+                        logger.LogInfo($"[DEBUG] 数字量程序 {programName}: 显示了 {lineCount} 行代码, 原始程序长度={program.Length}");
                         sb.AppendLine();
                     }
                 }
@@ -1926,17 +1955,20 @@ namespace WinFormsApp1
                 sb.AppendLine("📝 使用的模板:");
                 sb.AppendLine("  • TCP模拟量: Templates/TCP通讯/ANALOG.scriban");
                 sb.AppendLine("  • TCP数字量: Templates/TCP通讯/DIGITAL.scriban");
-                sb.AppendLine();
                 
-                sb.AppendLine("💡 提示: 完整的TCP通讯ST程序可通过 [💾 导出结果] 功能获取");
+                // 最终内容检查
+                var finalContent = sb.ToString();
+                logger.LogInfo($"[DEBUG] TCP预览生成完成: 总长度={finalContent.Length} 字符");
+                logger.LogInfo($"[DEBUG] 内容最后100字符: {finalContent.Substring(Math.Max(0, finalContent.Length - 100))}");
+                return finalContent;
             }
             catch (Exception ex)
             {
                 sb.AppendLine($"❌ 生成TCP通讯预览时出错: {ex.Message}");
                 logger.LogError($"生成TCP通讯预览失败: {ex.Message}");
+                logger.LogError($"异常详情: {ex}");
+                return sb.ToString();
             }
-            
-            return sb.ToString();
         }
 
         /// <summary>
