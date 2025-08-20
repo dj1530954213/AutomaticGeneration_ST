@@ -108,7 +108,8 @@ namespace AutomaticGeneration_ST.Services
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"⚠️ TCP模板 {mapping.Key} 编译失败: {ex.Message}");
+                            // 编译失败时立即抛出异常，避免后续降级导致渲染不完整
+                            throw new InvalidOperationException($"TCP模板 {mapping.Key} 编译失败: {ex.Message}", ex);
                         }
                     }
                 }
