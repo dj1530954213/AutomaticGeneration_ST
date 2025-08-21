@@ -174,7 +174,9 @@ namespace WinFormsApp1.Generators
                     {
                         hmi_tag_name = p.HmiTagName,
                         DESCRIBE = p.Description,
+                        describe = p.Description,
                         CHANNEL = p.Channel,
+                        channel = p.Channel,
                         InitialState = p.InitialState,
                         BitAddress = p.BitAddress
                     }
