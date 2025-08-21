@@ -1,5 +1,5 @@
 程序名称:DI_MAPPING
-变量类型:
+子程序变量:
 {{~ for point in points ~}}
 (* DI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
 {{ point.hmi_tag_name }} := {{ get_address point }};

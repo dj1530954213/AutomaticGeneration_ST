@@ -1,5 +1,5 @@
 程序名称:DO_MAPPING
-变量类型:
+子程序变量:
 {{~ for point in points ~}}
 (* DO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
 {{ get_address point }} := {{ point.hmi_tag_name }};

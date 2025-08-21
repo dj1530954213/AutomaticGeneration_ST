@@ -1,5 +1,5 @@
 程序名称:AI_CONVERT
-变量类型:AI_ALARM
+子程序变量:AI_VARIABLE
 {{~ for point in points ~}}
 (* AI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
 AI_ALARM_{{ point.hmi_tag_name }}(

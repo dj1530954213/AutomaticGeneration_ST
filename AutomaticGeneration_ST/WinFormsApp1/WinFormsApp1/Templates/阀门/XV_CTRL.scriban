@@ -1,5 +1,5 @@
 程序名称:MOV_CTRL
-变量类型:XV_CTRL
+子程序变量:XV_CTRL_VARIABLE
 (*电动阀门:{{device_tag}}控制块调用*)
 XV_CTRL_{{device_tag}}(
 CS:=CS01,

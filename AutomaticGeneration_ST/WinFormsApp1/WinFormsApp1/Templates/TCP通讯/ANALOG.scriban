@@ -1,5 +1,5 @@
 程序名称:TCP_ANALOG
-变量类型:DATA_CONVERT_BY_BYTE
+子程序变量:ANALOG_VARIABLE
 (*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.describe}}*)
 DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 {{~ if point.data_type == "REAL" ~}}
