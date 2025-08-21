@@ -179,7 +179,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
             // 设置通用属性
             tcpPoint.TcpAddress = GetValue<string>(row, "TCP地址") ?? GetValue<string>(row, "地址");
-            tcpPoint.ByteOrder = GetValue<int?>(row, "BYTE_ORDER");
+            var boRaw = GetValue<string>(row, "字节序") ?? GetValue<string>(row, "字节序");
+            tcpPoint.ByteOrder = boRaw?.Trim().ToUpper();
             tcpPoint.TypeNumber = GetValue<int?>(row, "TYPE_NUMBER");
 
             return tcpPoint;
@@ -317,7 +318,8 @@ private TcpAnalogPoint CreateTcpAnalogPoint(Dictionary<string, object> row, stri
                 DataType = dataType,
                 Description = description ?? "",
                 Channel = channel ?? "",
-                Scale = GetValue<double?>(row, "SCALE") ?? GetValue<double?>(row, "缩放因子"),
+                // 尝试解析为 double，但先读取字符串以兼容文本格式
+                Scale = double.TryParse((GetValue<string>(row, "缩放倍数") ?? GetValue<string>(row, "缩放因子"))?.Trim(), out var s) ? s : null,
                 // Unit = GetValue<string>(row, "单位") ?? "",
                 // RangeMin = GetValue<double?>(row, "量程低") ?? GetValue<double?>(row, "最小值"),
                 // RangeMax = GetValue<double?>(row, "量程高") ?? GetValue<double?>(row, "最大值"),

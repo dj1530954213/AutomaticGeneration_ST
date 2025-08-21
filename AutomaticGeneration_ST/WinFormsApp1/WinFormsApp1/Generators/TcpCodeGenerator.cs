@@ -92,6 +92,13 @@ namespace WinFormsApp1.Generators
                         BYTE_ORDER = p.ByteOrder,
                         TYPE_NUMBER = p.TypeNumber,
                         SCALE = p.Scale,
+
+                        // snake_case aliases for Scriban default renamer
+                        data_type = p.DataType?.Trim().ToUpper(),
+                        channel = p.Channel,
+                        byte_order = p.ByteOrder,
+                        type_number = p.TypeNumber,
+                        scale = p.Scale,
                         
                         // 报警相关字段
                         shh_value = p.ShhValue?.ToString() ?? "",
@@ -226,7 +233,7 @@ namespace WinFormsApp1.Generators
                 ShValue = GetValue<double?>(row, "SH值") ?? GetValue<double?>(row, "sh_value"),
                 SlValue = GetValue<double?>(row, "SL值") ?? GetValue<double?>(row, "sl_value"),
                 SllValue = GetValue<double?>(row, "SLL值") ?? GetValue<double?>(row, "sll_value"),
-                ByteOrder = GetValue<int?>(row, "BYTE_ORDER"),
+                ByteOrder = GetValue<string>(row, "BYTE_ORDER"),
                 TypeNumber = GetValue<int?>(row, "TYPE_NUMBER")
             };
         }

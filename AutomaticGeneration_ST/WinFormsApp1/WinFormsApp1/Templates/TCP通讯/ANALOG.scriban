@@ -1,37 +1,46 @@
 程序名称:TCP_ANALOG
 变量类型:DATA_CONVERT_BY_BYTE
-(*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
+(*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.describe}}*)
 DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
-{{~ if point.DATA_TYPE == "REAL" ~}}
-    IN1:={{ point.CHANNEL }},
-    IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
-{{~ else if point.DATA_TYPE == "INT" ~}}
-    IN1:={{ point.CHANNEL }},
-{{~ else if point.DATA_TYPE == "DINT" ~}}
-    IN1:={{ point.CHANNEL }},
-    IN2:={{ string.join (array.concat (array.slice (string.split point.CHANNEL "_" 0 (array.count (string.split point.CHANNEL "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.CHANNEL "_"))) + 1))) "_") }},
+{{# DEBUG }}data_type='{{point.data_type}}'{{/DEBUG}}
+{{~ if point.data_type == "REAL" ~}}
+    IN1:={{ point.channel }},
+    IN2:={{ string.join (array.concat (array.slice (string.split point.channel "_" 0 (array.count (string.split point.channel "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.channel "_"))) + 1))) "_") }},
+{{~ else if point.data_type == "INT" ~}}
+    IN1:={{ point.channel }},
+{{~ else if point.data_type == "DINT" ~}}
+    IN1:={{ point.channel }},
+    IN2:={{ string.join (array.concat (array.slice (string.split point.channel "_" 0 (array.count (string.split point.channel "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.channel "_"))) + 1))) "_") }},
 {{~ end ~}}
-{{~ if point.BYTE_ORDER != null ~}}
-    BYTE_ORDER:={{point.BYTE_ORDER }},
+{{~ if point.byte_order != null ~}}
+    {{~ if point.byte_order == "ABCD" ~}}
+        byte_order:=1234,
+    {{~ else if point.byte_order == "DCBA" ~}}
+        byte_order:=4321,
+    {{~ else if point.byte_order == "BADC" ~}}
+        byte_order:=2143,
+    {{~ else if point.byte_order == "CDAB" ~}}
+        byte_order:=3412,
+    {{~ end ~}}
 {{~ end ~}}
-{{~ if point.TYPE_NUMBER != null ~}}
-    TYPE_NUMBER:={{point.TYPE_NUMBER }},
-{{~ end ~}}
-{{~ if point.DATA_TYPE == "REAL" ~}}
+{{~ if point.data_type == "REAL" ~}}
+    TYPE_NUMBER:=1,
     RESULT_REAL=>{{point.hmi_tag_name}}_MID
-{{~ else if point.DATA_TYPE == "INT" ~}}
+{{~ else if point.data_type == "INT" ~}}
+    TYPE_NUMBER:=2,
     RESULT_INT=>{{point.hmi_tag_name}}_MID
-{{~ else if point.DATA_TYPE == "DINT" ~}}
+{{~ else if point.data_type == "DINT" ~}}
+    TYPE_NUMBER:=3,
     RESULT_DINT=>{{point.hmi_tag_name}}_MID
 {{~ end ~}}
 );
 
-(*TCP模拟量数据缩放:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
+(*TCP模拟量数据缩放:{{point.hmi_tag_name}} -> {{point.describe}}*)
 {{~ if point.SCALE != null ~}}
     {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.SCALE }};
 {{~ end ~}}
 
-(*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
+(*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.describe}}*)
 AI_ALARM_COMMUNICATION_{{ point.hmi_tag_name }}(
     IN:={{ point.hmi_tag_name }}_MID,
 {{~ # 只有当存在任意报警限值时才生成MAIN_EN和MAIN_V ~}}

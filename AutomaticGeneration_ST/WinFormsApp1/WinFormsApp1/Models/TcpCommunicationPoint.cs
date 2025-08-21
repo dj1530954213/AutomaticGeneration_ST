@@ -40,7 +40,10 @@ namespace WinFormsApp1.Models
         /// <summary>
         /// 字节序 (用于数据转换)
         /// </summary>
-        public int? ByteOrder { get; set; }
+        /// <summary>
+        /// 字节顺序，如 "ABCD"、"DCBA" 等；保持原始字符串
+        /// </summary>
+        public string ByteOrder { get; set; } = "";
 
         /// <summary>
         /// 类型编号
