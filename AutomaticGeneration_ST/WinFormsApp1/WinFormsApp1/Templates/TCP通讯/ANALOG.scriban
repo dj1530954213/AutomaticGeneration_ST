@@ -13,13 +13,13 @@ DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 {{~ end ~}}
 {{~ if point.byte_order != null ~}}
 {{~ if point.byte_order == "ABCD" ~}}
-    byte_order:=1234,
+    BYTE_ORDER:=1234,
 {{~ else if point.byte_order == "DCBA" ~}}
-    byte_order:=4321,
+    BYTE_ORDER:=4321,
 {{~ else if point.byte_order == "BADC" ~}}
-    byte_order:=2143,
+    BYTE_ORDER:=2143,
 {{~ else if point.byte_order == "CDAB" ~}}
-    byte_order:=3412,
+    BYTE_ORDER:=3412,
 {{~ end ~}}
 {{~ end ~}}
 {{~ if point.data_type == "REAL" ~}}

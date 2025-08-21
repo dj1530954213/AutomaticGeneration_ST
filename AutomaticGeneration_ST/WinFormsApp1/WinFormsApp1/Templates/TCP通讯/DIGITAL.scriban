@@ -1,5 +1,5 @@
 程序名称:TCP_DIGITAL
 变量类型:DI_DEBOUNCE_EDGE
-(*TCP数字量数据采集:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
-{{point.hmi_tag_name}}_RAW := {{point.CHANNEL}};
+(*TCP数字量数据采集:{{point.hmi_tag_name}} -> {{point.describe}}*)
+{{point.hmi_tag_name}}_RAW := {{point.channel}};
 

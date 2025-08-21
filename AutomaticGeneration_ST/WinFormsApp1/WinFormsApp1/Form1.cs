@@ -2270,7 +2270,57 @@ namespace WinFormsApp1
                     }
                 }
                 
-                // 3. 生成变量表Excel文件
+                // 3. 导出TCP通讯脚本
+                if (currentProjectCache.TcpCommunicationPrograms?.Any() == true)
+                {
+                    var analogPrograms = new List<string>();
+                    var digitalPrograms = new List<string>();
+
+                    foreach (var program in currentProjectCache.TcpCommunicationPrograms)
+                    {
+                        var hasAnalogMarkers = program.Contains("DATA_CONVERT_BY_BYTE") ||
+                                                program.Contains("AI_ALARM_COMMUNICATION") ||
+                                                program.Contains("TCP模拟量数据采集") ||
+                                                program.Contains("TCP模拟量数据缩放") ||
+                                                program.Contains("RESULT_REAL") ||
+                                                program.Contains("RESULT_INT") ||
+                                                program.Contains("RESULT_DINT");
+
+                        var hasDigitalMarkers = !hasAnalogMarkers && (program.Contains("TCP状态量数据采集") ||
+                                                 (program.Contains(":=") && program.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries).Length <= 8));
+
+                        if (hasAnalogMarkers)
+                            analogPrograms.Add(program);
+                        else if (hasDigitalMarkers)
+                            digitalPrograms.Add(program);
+                    }
+
+                    if (analogPrograms.Any())
+                    {
+                        var fileName = "TCP_ANALOG.txt";
+                        var filePath = Path.Combine(outputDirectory, fileName);
+                        var content = GenerateFileHeader("TCP模拟量脚本") + string.Join("\n\n", analogPrograms);
+                        var filteredContent = FilterMetadataLines(content);
+                        File.WriteAllText(filePath, filteredContent, Encoding.UTF8);
+                        totalFiles++;
+                        exportedFiles.Add($"TCP模拟量: {fileName} ({analogPrograms.Count}个脚本)");
+                        logger.LogInfo($"导出TCP模拟量脚本: {fileName} ({analogPrograms.Count}个脚本)");
+                    }
+
+                    if (digitalPrograms.Any())
+                    {
+                        var fileName = "TCP_DIGITAL.txt";
+                        var filePath = Path.Combine(outputDirectory, fileName);
+                        var content = GenerateFileHeader("TCP状态量脚本") + string.Join("\n\n", digitalPrograms);
+                        var filteredContent = FilterMetadataLines(content);
+                        File.WriteAllText(filePath, filteredContent, Encoding.UTF8);
+                        totalFiles++;
+                        exportedFiles.Add($"TCP状态量: {fileName} ({digitalPrograms.Count}个脚本)");
+                        logger.LogInfo($"导出TCP状态量脚本: {fileName} ({digitalPrograms.Count}个脚本)");
+                    }
+                }
+
+                // 4. 生成变量表Excel文件
                 logger.LogInfo("=== 开始尝试生成变量表Excel文件 ===");
                 try
                 {
