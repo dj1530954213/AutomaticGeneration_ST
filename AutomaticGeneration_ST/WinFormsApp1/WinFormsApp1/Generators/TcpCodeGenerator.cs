@@ -93,12 +93,16 @@ namespace WinFormsApp1.Generators
                         TYPE_NUMBER = p.TypeNumber,
                         SCALE = p.Scale,
 
-                        // snake_case aliases for Scriban default renamer
+                        // snake_case aliases for Scriban default renamer (plus SecondChannel)
                         data_type = p.DataType?.Trim().ToUpper(),
                         channel = p.Channel,
                         byte_order = p.ByteOrder,
                         type_number = p.TypeNumber,
                         scale = p.Scale,
+
+                        // second channel for REAL/DINT types
+                        SecondChannel = p.SecondChannel,
+                        second_channel = p.SecondChannel,
                         
                         // 报警相关字段
                         shh_value = p.ShhValue?.ToString() ?? "",

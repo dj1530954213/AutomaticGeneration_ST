@@ -76,6 +76,11 @@ namespace WinFormsApp1.Models
         public string MaintenanceValueTag { get; set; } = "";
 
         /// <summary>
+        /// 第二个通道地址，供模板直接使用
+        /// </summary>
+        public string SecondChannel => GetSecondChannel();
+
+        /// <summary>
         /// 是否有报警配置
         /// </summary>
         public bool HasAlarmConfiguration => 
@@ -86,10 +91,10 @@ namespace WinFormsApp1.Models
         /// </summary>
         public int GetRequiredChannelCount()
         {
-            return DataType?.ToUpper() switch
+            return DataType?.Trim().ToUpper() switch
             {
                 "REAL" => 2,
-                "DINT" => 2, 
+                "DINT" => 2,
                 "INT" => 1,
                 _ => 1
             };

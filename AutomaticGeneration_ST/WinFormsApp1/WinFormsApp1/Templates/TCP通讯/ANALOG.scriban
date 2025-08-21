@@ -2,26 +2,25 @@
 变量类型:DATA_CONVERT_BY_BYTE
 (*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.describe}}*)
 DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
-{{# DEBUG }}data_type='{{point.data_type}}'{{/DEBUG}}
 {{~ if point.data_type == "REAL" ~}}
     IN1:={{ point.channel }},
-    IN2:={{ string.join (array.concat (array.slice (string.split point.channel "_" 0 (array.count (string.split point.channel "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.channel "_"))) + 1))) "_") }},
+    IN2:={{ point.second_channel }},
 {{~ else if point.data_type == "INT" ~}}
     IN1:={{ point.channel }},
 {{~ else if point.data_type == "DINT" ~}}
     IN1:={{ point.channel }},
-    IN2:={{ string.join (array.concat (array.slice (string.split point.channel "_" 0 (array.count (string.split point.channel "_") - 1)) (string.format "{}" ((int.parse (array.last (string.split point.channel "_"))) + 1))) "_") }},
+    IN2:={{ point.second_channel }},
 {{~ end ~}}
 {{~ if point.byte_order != null ~}}
-    {{~ if point.byte_order == "ABCD" ~}}
-        byte_order:=1234,
-    {{~ else if point.byte_order == "DCBA" ~}}
-        byte_order:=4321,
-    {{~ else if point.byte_order == "BADC" ~}}
-        byte_order:=2143,
-    {{~ else if point.byte_order == "CDAB" ~}}
-        byte_order:=3412,
-    {{~ end ~}}
+{{~ if point.byte_order == "ABCD" ~}}
+    byte_order:=1234,
+{{~ else if point.byte_order == "DCBA" ~}}
+    byte_order:=4321,
+{{~ else if point.byte_order == "BADC" ~}}
+    byte_order:=2143,
+{{~ else if point.byte_order == "CDAB" ~}}
+    byte_order:=3412,
+{{~ end ~}}
 {{~ end ~}}
 {{~ if point.data_type == "REAL" ~}}
     TYPE_NUMBER:=1,
@@ -36,8 +35,8 @@ DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 );
 
 (*TCP模拟量数据缩放:{{point.hmi_tag_name}} -> {{point.describe}}*)
-{{~ if point.SCALE != null ~}}
-    {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.SCALE }};
+{{~ if point.scale != null ~}}
+    {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.scale }};
 {{~ end ~}}
 
 (*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.describe}}*)
