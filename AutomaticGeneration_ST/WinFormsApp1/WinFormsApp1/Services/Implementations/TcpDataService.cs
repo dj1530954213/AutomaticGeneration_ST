@@ -83,6 +83,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 }
             }
 
+            // 逐行到其他工作表查找并补全字段（以 TCP 通讯表为主表）
+            EnrichTcpPointsFromOtherSheets(excelFilePath, tcpPoints);
+
             Console.WriteLine($"[INFO] TCP通讯表处理完成: 成功 {successCount} 个，错误 {errorCount} 个");
             return tcpPoints;
         }
@@ -200,7 +203,112 @@ namespace AutomaticGeneration_ST.Services.Implementations
             };
         }
 
-        private TcpAnalogPoint CreateTcpAnalogPoint(Dictionary<string, object> row, string hmiTagName, 
+        #region 跨表字段补全辅助
+
+/// <summary>
+/// 构建跨表索引：以其他工作表中的 "变量名称" 或 "变量名称（HMI）" 为键，不包含 IO点表 / 设备分类表 / TCP通讯表
+/// </summary>
+private Dictionary<string, Dictionary<string, object>> BuildHmiLookup(string excelFilePath)
+{
+    var lookup = new Dictionary<string, Dictionary<string, object>>(StringComparer.OrdinalIgnoreCase);
+    var sheetNames = _excelParser.GetWorksheetNames(excelFilePath);
+    foreach (var sheet in sheetNames)
+    {
+        var lower = sheet.ToLower();
+        if (lower.Contains("tcp通讯表") || lower.Contains("io点表") || lower.Contains("设备分类表"))
+            continue;
+        var rows = _excelParser.ParseWorksheet(excelFilePath, sheet);
+        foreach (var row in rows)
+        {
+            var keysToTry = new[] { "变量名称", "变量名称（HMI）" };
+            string key = keysToTry.Select(k => row.TryGetValue(k, out var o) ? o?.ToString() : null)
+                                   .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                lookup[key] = row;
+            }
+        }
+    }
+    Console.WriteLine($"[INFO] 跨表索引构建完成，共 {lookup.Count} 条记录");
+    return lookup;
+}
+
+/// <summary>
+/// 使用 lookup 数据补全 TCP 点位的描述及报警限值等字段
+/// </summary>
+private void EnrichTcpPointsFromLookup(List<TcpCommunicationPoint> points, Dictionary<string, Dictionary<string, object>> lookup)
+{
+    foreach (var p in points)
+    {
+        if (!lookup.TryGetValue(p.HmiTagName, out var row)) continue;
+        var description = GetValue<string>(row, "变量描述") ?? GetValue<string>(row, "描述");
+        if (!string.IsNullOrWhiteSpace(description)) p.Description = description;
+
+        if (p is TcpAnalogPoint analog)
+        {
+            analog.ShhValue ??= GetValue<double?>(row, "SHH设定值") ?? GetValue<double?>(row, "SHH值");
+            analog.ShValue  ??= GetValue<double?>(row, "SH设定值")  ?? GetValue<double?>(row, "SH值");
+            analog.SlValue  ??= GetValue<double?>(row, "SL设定值")  ?? GetValue<double?>(row, "SL值");
+            analog.SllValue ??= GetValue<double?>(row, "SLL设定值") ?? GetValue<double?>(row, "SLL值");
+        }
+    }
+}
+
+#endregion
+
+        /// <summary>
+        /// 逐行遍历其它工作表，为 TCP 点位补全描述、报警限值等辅助字段。
+        /// </summary>
+        private void EnrichTcpPointsFromOtherSheets(string excelFilePath, List<TcpCommunicationPoint> points)
+        {
+            if (points == null || points.Count == 0) return;
+
+            var sheetNames = _excelParser.GetWorksheetNames(excelFilePath);
+            // 预解析所有可能用到的工作表，避免每个点位都重新解析
+            var sheetRowsCache = new Dictionary<string, List<Dictionary<string, object>>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sheet in sheetNames)
+            {
+                var lower = sheet.ToLower();
+                if (lower.Contains("tcp通讯表") || lower.Contains("io点表") || lower.Contains("设备分类表"))
+                    continue;
+                sheetRowsCache[sheet] = _excelParser.ParseWorksheet(excelFilePath, sheet);
+            }
+
+            foreach (var p in points)
+            {
+                bool found = false;
+                foreach (var kvp in sheetRowsCache)
+                {
+                    var rows = kvp.Value;
+                    var matchedRow = rows.FirstOrDefault(r =>
+                        (r.TryGetValue("变量名称", out var v1) && string.Equals(v1?.ToString(), p.HmiTagName, StringComparison.OrdinalIgnoreCase)) ||
+                        (r.TryGetValue("变量名称（HMI）", out var v2) && string.Equals(v2?.ToString(), p.HmiTagName, StringComparison.OrdinalIgnoreCase)));
+                    if (matchedRow != null)
+                    {
+                        // 描述
+                        var description = GetValue<string>(matchedRow, "变量描述") ?? GetValue<string>(matchedRow, "描述");
+                        if (!string.IsNullOrWhiteSpace(description)) p.Description = description;
+
+                        if (p is TcpAnalogPoint analog)
+                        {
+                            analog.ShhValue ??= GetValue<double?>(matchedRow, "SHH设定值") ?? GetValue<double?>(matchedRow, "SHH值");
+                            analog.ShValue  ??= GetValue<double?>(matchedRow, "SH设定值")  ?? GetValue<double?>(matchedRow, "SH值");
+                            analog.SlValue  ??= GetValue<double?>(matchedRow, "SL设定值")  ?? GetValue<double?>(matchedRow, "SL值");
+                            analog.SllValue ??= GetValue<double?>(matchedRow, "SLL设定值") ?? GetValue<double?>(matchedRow, "SLL值");
+                        }
+                        found = true;
+                        break; // 已找到匹配行，无需继续其它表
+                    }
+                }
+                if (!found)
+                {
+                    Console.WriteLine($"[DEBUG] 未在其它表找到变量 {p.HmiTagName}");
+                }
+            }
+        }
+
+
+private TcpAnalogPoint CreateTcpAnalogPoint(Dictionary<string, object> row, string hmiTagName, 
             string dataType, string description, string channel)
         {
             return new TcpAnalogPoint
@@ -217,12 +325,12 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 ShValue = GetValue<double?>(row, "SH设定值") ?? GetValue<double?>(row, "sh_value"),
                 SlValue = GetValue<double?>(row, "SL设定值") ?? GetValue<double?>(row, "sl_value"),
                 SllValue = GetValue<double?>(row, "SLL设定值") ?? GetValue<double?>(row, "sll_value"),
-                ShhPoint = GetValue<string>(row, "SHH点"),
-                ShPoint = GetValue<string>(row, "SH点"),
-                SlPoint = GetValue<string>(row, "SL点"),
-                SllPoint = GetValue<string>(row, "SLL点"),
-                MaintenanceStatusTag = GetValue<string>(row, "维护状态变量") ?? $"{hmiTagName}_WHZZT",
-                MaintenanceValueTag = GetValue<string>(row, "维护值变量") ?? $"{hmiTagName}_WHZ"
+                // ShhPoint = GetValue<string>(row, "SHH点"),
+                // ShPoint = GetValue<string>(row, "SH点"),
+                // SlPoint = GetValue<string>(row, "SL点"),
+                // SllPoint = GetValue<string>(row, "SLL点"),
+                // MaintenanceStatusTag = GetValue<string>(row, "维护状态变量") ?? $"{hmiTagName}_WHZZT",
+                // MaintenanceValueTag = GetValue<string>(row, "维护值变量") ?? $"{hmiTagName}_WHZ"
             };
         }
 

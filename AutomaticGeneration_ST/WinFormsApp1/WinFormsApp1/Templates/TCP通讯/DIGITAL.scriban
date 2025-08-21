@@ -3,27 +3,3 @@
 (*TCP数字量数据采集:{{point.hmi_tag_name}} -> {{point.DESCRIBE}}*)
 {{point.hmi_tag_name}}_RAW := {{point.CHANNEL}};
 
-(*信号取反：若InitialState为TRUE则取反*)
-{{~ if point.InitialState == true ~}}
-    {{point.hmi_tag_name}}_RAW := NOT {{point.hmi_tag_name}}_RAW;
-{{~ end ~}}
-
-(*消抖处理 50ms*)
-{{point.hmi_tag_name}}_Debounce(IN := {{point.hmi_tag_name}}_RAW, PT := T#50ms);
-{{point.hmi_tag_name}}_FLT := {{point.hmi_tag_name}}_Debounce.Q;
-
-(*边沿检测*)
-{{point.hmi_tag_name}}_Rise(CLK := {{point.hmi_tag_name}}_FLT);
-{{point.hmi_tag_name}}_R_EDGE := {{point.hmi_tag_name}}_Rise.Q;
-
-{{point.hmi_tag_name}}_Fall(CLK := {{point.hmi_tag_name}}_FLT);
-{{point.hmi_tag_name}}_F_EDGE := {{point.hmi_tag_name}}_Fall.Q;
-
-(*数字量报警处理*)
-DI_ALARM_COMMUNICATION_{{point.hmi_tag_name}}(
-    IN := {{point.hmi_tag_name}}_FLT,
-    R_EDGE := {{point.hmi_tag_name}}_R_EDGE,
-    F_EDGE := {{point.hmi_tag_name}}_F_EDGE,
-    OUT => {{point.hmi_tag_name}}
-);
-
