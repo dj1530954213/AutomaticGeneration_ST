@@ -2286,8 +2286,11 @@ namespace WinFormsApp1
                                                 program.Contains("RESULT_INT") ||
                                                 program.Contains("RESULT_DINT");
 
-                        var hasDigitalMarkers = !hasAnalogMarkers && (program.Contains("TCP状态量数据采集") ||
-                                                 (program.Contains(":=") && program.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries).Length <= 8));
+                        var hasDigitalMarkers = !hasAnalogMarkers && (
+                            program.Contains("TCP状态量数据采集") ||
+                            program.Contains("TCP数字量数据采集") ||
+                            program.Contains("DI_DEBOUNCE_EDGE") ||
+                            (program.Contains(":=") && program.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries).Length <= 12));
 
                         if (hasAnalogMarkers)
                             analogPrograms.Add(program);
