@@ -1,5 +1,5 @@
 程序名称:AO_CONVERT
-子程序变量:AO_VARIABLE
+子程序变量声明文件:AO_VARIABLE
 {{~ for point in points ~}}
 (* AO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
 ENGIN_HEX_{{ point.hmi_tag_name }}(

@@ -2,6 +2,7 @@ using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using AutomaticGeneration_ST.Services.Interfaces;
 using Scriban;
+using AutomaticGeneration_ST.Services.VariableBlocks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

@@ -1,5 +1,5 @@
 程序名称:PV_CTRL
-子程序变量:PV_CTRL_VARIABLE
+子程序变量声明文件:PV_CTRL_VARIABLE
 (*调节阀:{{device_tag}}控制块调用*)
 PV_{{device_tag}}(
 CS:=CS01,

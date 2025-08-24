@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace AutomaticGeneration_ST.Services
 {
@@ -56,20 +57,65 @@ namespace AutomaticGeneration_ST.Services
                     Console.WriteLine($"[TemplateMetadataParser] 未能提取程序名称，第1行格式不匹配");
                 }
 
-                // 解析第2行：变量类型
+                // 解析第2行：变量类型(旧格式) 或 子程序变量(新格式)
                 Console.WriteLine($"[TemplateMetadataParser] 第2行内容: {lines[1]}");
                 var variableTypeMatch = Regex.Match(lines[1], @"变量类型:\s*(.+)", RegexOptions.IgnoreCase);
+                var subVarMatch = Regex.Match(lines[1], @"子程序变量:\s*(.+)", RegexOptions.IgnoreCase);
                 if (variableTypeMatch.Success)
                 {
                     metadata.VariableType = variableTypeMatch.Groups[1].Value.Trim();
                     Console.WriteLine($"[TemplateMetadataParser] 提取到变量类型: {metadata.VariableType}");
                 }
+                else if (subVarMatch.Success)
+                {
+                    var subVarTplName = subVarMatch.Groups[1].Value.Trim();
+                    Console.WriteLine($"[TemplateMetadataParser] 发现子程序变量模板名: {subVarTplName}");
+                    // 尝试从子程序变量模板中解析变量类型和初始值
+                    var directory = Path.GetDirectoryName(scribanFilePath);
+                    var varTemplatePaths = new[]
+                    {
+                        Path.Combine(directory!, $"{subVarTplName}.scriban"),
+                        Path.Combine(directory!, $"{subVarTplName}_VARIABLE.scriban")
+                    };
+                    var existingVarTpl = varTemplatePaths.FirstOrDefault(File.Exists);
+                    if (existingVarTpl != null)
+                    {
+                        Console.WriteLine($"[TemplateMetadataParser] 找到变量模板: {existingVarTpl}");
+                        var varTplLines = File.ReadAllLines(existingVarTpl);
+                        // 提取"变量类型:"行
+                        var varTypeLine = varTplLines.FirstOrDefault(l => Regex.IsMatch(l, @"变量类型:\s*.+", RegexOptions.IgnoreCase));
+                        if (!string.IsNullOrWhiteSpace(varTypeLine))
+                        {
+                            var vtMatch = Regex.Match(varTypeLine, @"变量类型:\s*(.+)", RegexOptions.IgnoreCase);
+                            if (vtMatch.Success)
+                            {
+                                metadata.VariableType = vtMatch.Groups[1].Value.Trim();
+                                Console.WriteLine($"[TemplateMetadataParser] 从变量模板提取到变量类型: {metadata.VariableType}");
+                            }
+                        }
+                        // 提取"初始值:"行
+                        var initLine = varTplLines.FirstOrDefault(l => Regex.IsMatch(l, @"初始值:\s*.+", RegexOptions.IgnoreCase));
+                        if (!string.IsNullOrWhiteSpace(initLine))
+                        {
+                            var initMatch = Regex.Match(initLine, @"初始值:\s*(.+)", RegexOptions.IgnoreCase);
+                            if (initMatch.Success)
+                            {
+                                metadata.InitializationValue = initMatch.Groups[1].Value.Trim();
+                                Console.WriteLine($"[TemplateMetadataParser] 从变量模板提取到初始值: {metadata.InitializationValue}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[TemplateMetadataParser] 未找到对应的变量模板文件: {string.Join(";", varTemplatePaths)}");
+                    }
+                }
                 else
                 {
-                    Console.WriteLine($"[TemplateMetadataParser] 未能提取变量类型，第2行格式不匹配");
+                    Console.WriteLine($"[TemplateMetadataParser] 未能提取变量类型或子程序变量，第2行格式不匹配");
                 }
 
-                // 检查并读取与变量类型同名的.TXT文件
+                // 检查并读取与变量类型同名的.TXT文件（旧流程，仅作为兼容保留）
                 string txtFilePath = null;
                 if (!string.IsNullOrWhiteSpace(metadata.VariableType))
                 {
@@ -106,13 +152,11 @@ namespace AutomaticGeneration_ST.Services
 
                 // 只有同时满足以下条件的模板才需要生成点表：
                 // 1. 有非空的程序名称
-                // 2. 有非空的变量类型  
-                // 3. 存在对应的TXT文件
-                Console.WriteLine($"[TemplateMetadataParser] 检查条件 - 程序名称: '{metadata.ProgramName}', 变量类型: '{metadata.VariableType}', 有TXT文件: {metadata.HasTxtFile}");
+                // 2. 有非空的变量类型
+                Console.WriteLine($"[TemplateMetadataParser] 检查条件 - 程序名称: '{metadata.ProgramName}', 变量类型: '{metadata.VariableType}'");
                 
                 if (string.IsNullOrWhiteSpace(metadata.ProgramName) || 
-                    string.IsNullOrWhiteSpace(metadata.VariableType) || 
-                    !metadata.HasTxtFile)
+                    string.IsNullOrWhiteSpace(metadata.VariableType))
                 {
                     Console.WriteLine($"[TemplateMetadataParser] 模板不符合生成点表条件，跳过: {scribanFilePath}");
                     return null; // 不符合条件，不生成点表

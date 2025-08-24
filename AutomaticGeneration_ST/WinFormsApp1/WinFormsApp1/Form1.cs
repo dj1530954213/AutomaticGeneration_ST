@@ -2717,6 +2717,46 @@ namespace WinFormsApp1
                     }
                 }
 
+                // >>> 步骤2.3: 分析TCP通讯脚本
+                logger.LogInfo(">>> 步骤2.3: 分析TCP通讯脚本");
+                if (currentProjectCache.TcpCommunicationPrograms?.Any() == true)
+                {
+                    var tcpGroups = new Dictionary<string, List<string>>();
+
+                    foreach (var script in currentProjectCache.TcpCommunicationPrograms)
+                    {
+                        var isAnalog = script.Contains("DATA_CONVERT_BY_BYTE") ||
+                                       script.Contains("AI_ALARM_COMMUNICATION") ||
+                                       script.Contains("TCP模拟量数据采集") ||
+                                       script.Contains("RESULT_REAL") ||
+                                       script.Contains("RESULT_INT") ||
+                                       script.Contains("RESULT_DINT");
+                        var key = isAnalog ? "TCP_ANALOG" : "TCP_DIGITAL";
+
+                        if (!tcpGroups.ContainsKey(key))
+                            tcpGroups[key] = new List<string>();
+                        tcpGroups[key].Add(script);
+                    }
+
+                    var tcpVariableEntriesByTemplate = stCodeAnalyzer.AnalyzeMultipleSTCodes(
+                        tcpGroups,
+                        templateMetadataDict);
+
+                    foreach (var tcpTemplate in tcpVariableEntriesByTemplate)
+                    {
+                        if (variableEntriesByTemplate.ContainsKey(tcpTemplate.Key))
+                        {
+                            variableEntriesByTemplate[tcpTemplate.Key].AddRange(tcpTemplate.Value);
+                            logger.LogInfo($">>> 合并模板 {tcpTemplate.Key}: 添加了 {tcpTemplate.Value.Count} 个TCP变量");
+                        }
+                        else
+                        {
+                            variableEntriesByTemplate[tcpTemplate.Key] = tcpTemplate.Value;
+                            logger.LogInfo($">>> 新增模板 {tcpTemplate.Key}: {tcpTemplate.Value.Count} 个TCP变量");
+                        }
+                    }
+                }
+
                 if (!variableEntriesByTemplate.Any())
                 {
                     logger.LogWarning("未提取到变量信息");

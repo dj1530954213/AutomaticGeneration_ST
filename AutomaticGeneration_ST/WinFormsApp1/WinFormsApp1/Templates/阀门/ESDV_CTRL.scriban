@@ -1,5 +1,5 @@
 程序名称:ESDV_CTRL
-子程序变量:ESDV_CTRL_VARIABLE
+子程序变量声明文件:ESDV_CTRL_VARIABLE
 (*ESD阀门:{{device_tag}}控制块调用*)
 ESDV{{device_tag}}_CTRL(
 CS:=CS01,

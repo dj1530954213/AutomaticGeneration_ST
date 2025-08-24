@@ -1,19 +1,19 @@
 [
-±äÁ¿Ãû³Æ:DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}
-±äÁ¿ÀàÐÍ:DATA_CONVERT_BY_BYTE
-³õÊ¼Öµ:( IN1:=0, IN2:=0, IN3:=0, IN4:=0, BYTE_ORDER:=0, TYPE_NUMBER:=0, RESULT_REAL:=0, RESULT_INT:=0, RESULT_DINT:=0, ALL_BYTE:=8(0), i:=0, BYTE_COVT_REAL_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, SIGN:=0, EXPONENT:=0, MANTISSA:=0, MSW:=0, LSW:=0 ), BYTE_COVT_DINT_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, TEMP_DWORD:=0 ) )
+å˜é‡åç§°:DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}
+å˜é‡ç±»åž‹:DATA_CONVERT_BY_BYTE
+åˆå§‹å€¼:( IN1:=0, IN2:=0, IN3:=0, IN4:=0, BYTE_ORDER:=0, TYPE_NUMBER:=0, RESULT_REAL:=0, RESULT_INT:=0, RESULT_DINT:=0, ALL_BYTE:=8(0), i:=0, BYTE_COVT_REAL_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, SIGN:=0, EXPONENT:=0, MANTISSA:=0, MSW:=0, LSW:=0 ), BYTE_COVT_DINT_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, TEMP_DWORD:=0 ) )
 ]
 
 [
-±äÁ¿Ãû³Æ:{{point.hmi_tag_name}}_MID
+å˜é‡åç§°:{{point.hmi_tag_name}}_MID
 {{~ if point.data_type == "REAL" ~}}
-±äÁ¿ÀàÐÍ:REAL
-³õÊ¼Öµ:0
+å˜é‡ç±»åž‹:REAL
+åˆå§‹å€¼:0
 {{~ else if point.data_type == "INT" ~}}
-±äÁ¿ÀàÐÍ:INT
-³õÊ¼Öµ:0
+å˜é‡ç±»åž‹:INT
+åˆå§‹å€¼:0
 {{~ else if point.data_type == "DINT" ~}}
-±äÁ¿ÀàÐÍ:DINT
-³õÊ¼Öµ:0
+å˜é‡ç±»åž‹:DINT
+åˆå§‹å€¼:0
 {{~ end ~}}
 ]
