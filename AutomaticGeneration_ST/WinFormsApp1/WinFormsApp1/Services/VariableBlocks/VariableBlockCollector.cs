@@ -13,7 +13,7 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
     /// </summary>
     public static class VariableBlockCollector
     {
-        private static readonly Regex DeclRegex = new(@"子程序变量\s*[:：]\s*(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
+        private static readonly Regex DeclRegex = new(@"子程序变量(?:声明文件)?\s*[:：]\s*(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
 
         /// <summary>
         /// 收集变量块

@@ -60,7 +60,8 @@ namespace AutomaticGeneration_ST.Services
                 // 解析第2行：变量类型(旧格式) 或 子程序变量(新格式)
                 Console.WriteLine($"[TemplateMetadataParser] 第2行内容: {lines[1]}");
                 var variableTypeMatch = Regex.Match(lines[1], @"变量类型:\s*(.+)", RegexOptions.IgnoreCase);
-                var subVarMatch = Regex.Match(lines[1], @"子程序变量:\s*(.+)", RegexOptions.IgnoreCase);
+                // 支持“子程序变量声明文件:”或旧格式“子程序变量:”
+                var subVarMatch = Regex.Match(lines[1], @"子程序变量(?:声明文件)?\s*[:：]\s*(.+)", RegexOptions.IgnoreCase);
                 if (variableTypeMatch.Success)
                 {
                     metadata.VariableType = variableTypeMatch.Groups[1].Value.Trim();
