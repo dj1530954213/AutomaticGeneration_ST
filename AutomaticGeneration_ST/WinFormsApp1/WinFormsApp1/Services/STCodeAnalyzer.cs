@@ -32,16 +32,39 @@ namespace AutomaticGeneration_ST.Services
             {
                 Console.WriteLine($"[STCodeAnalyzer] ST代码长度: {stCode.Length} 字符");
                 
-                // 只有具有变量类型的模板才需要提取函数调用
+                // === 1. 优先尝试解析变量块 ([ ... ]) ===
+                var blockMatches = Regex.Matches(stCode, "\\[[^\\]]+\\]", RegexOptions.Singleline);
+                if (blockMatches.Count > 0)
+                {
+                    Console.WriteLine($"[STCodeAnalyzer] 检测到 {blockMatches.Count} 个变量块, 使用 VariableBlockParser 解析");
+                    var blockContents = blockMatches.Cast<Match>().Select(m => m.Value).ToList();
+                    try
+                    {
+                        var blockEntries = VariableBlocks.VariableBlockParser.Parse(blockContents);
+                        foreach (var be in blockEntries)
+                        {
+                            be.ProgramName = templateMetadata?.ProgramName ?? string.Empty;
+                            entries.Add(be);
+                        }
+                        Console.WriteLine($"[STCodeAnalyzer] 变量块解析得到 {blockEntries.Count} 条变量, 直接返回");
+                        return entries;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[STCodeAnalyzer] 解析变量块失败: {ex.Message}");
+                    }
+                }
+
+                // 只有具有变量类型的模板才需要继续正则匹配函数调用
                 if (string.IsNullOrWhiteSpace(templateMetadata.VariableType))
                 {
-                    Console.WriteLine($"[STCodeAnalyzer] 模板 {templateMetadata.ProgramName} 没有变量类型，跳过函数调用提取");
+                    Console.WriteLine($"[STCodeAnalyzer] 模板 {templateMetadata.ProgramName} 没有变量类型，且未检测到变量块，跳过处理");
                     return entries;
                 }
 
-                Console.WriteLine($"[STCodeAnalyzer] 正在从 ST代码中提取函数调用，模板: {templateMetadata.ProgramName}");
+                Console.WriteLine($"[STCodeAnalyzer] 未检测到变量块，改用正则提取函数调用，模板: {templateMetadata.ProgramName}");
                 
-                // 既要匹配函数调用，也要匹配 *_MID 变量
+                // === 2. 正则匹配函数调用和 *_MID 变量 ===
                 var functionCallPattern = @"^[\s]*([A-Za-z][A-Za-z0-9_]*)\s*\(";
                 var midPattern = @"\b([A-Za-z][A-Za-z0-9_]*?_MID)\b";
 

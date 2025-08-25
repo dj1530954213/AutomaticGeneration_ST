@@ -12,6 +12,8 @@ using System.Windows.Forms;
 using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
+using AutomaticGeneration_ST.Services.VariableBlocks;
+using System.Linq;
 
 namespace WinFormsApp1
 {
@@ -2615,6 +2617,13 @@ namespace WinFormsApp1
         private async Task<bool> GenerateVariableTable(string outputDirectory)
         {
             logger.LogInfo(">>> 进入GenerateVariableTable方法");
+
+            // 优先使用生成阶段收集的变量条目
+            Dictionary<string, List<VariableTableEntry>> variableEntriesByTemplate = VariableEntriesRegistry.DrainAll();
+            if (variableEntriesByTemplate.Any())
+            {
+                logger.LogInfo($">>> 从VariableEntriesRegistry获取到 {variableEntriesByTemplate.Sum(kv=>kv.Value.Count)} 条变量信息，共 {variableEntriesByTemplate.Count} 个模板");
+            }
             logger.LogInfo($">>> 输出目录: {outputDirectory}");
             
             try
@@ -2688,9 +2697,22 @@ namespace WinFormsApp1
                 
                 // 首先分析设备ST程序
                 var stCodeAnalyzer = new AutomaticGeneration_ST.Services.STCodeAnalyzer();
-                var variableEntriesByTemplate = stCodeAnalyzer.AnalyzeMultipleSTCodes(
-                    currentProjectCache.DeviceSTPrograms, 
+                var deviceVariableEntries = stCodeAnalyzer.AnalyzeMultipleSTCodes(
+                    currentProjectCache.DeviceSTPrograms,
                     templateMetadataDict);
+
+                // 合并已有的注册表变量条目与设备ST程序分析结果
+                foreach (var kv in deviceVariableEntries)
+                {
+                    if (variableEntriesByTemplate.ContainsKey(kv.Key))
+                    {
+                        variableEntriesByTemplate[kv.Key].AddRange(kv.Value);
+                    }
+                    else
+                    {
+                        variableEntriesByTemplate[kv.Key] = kv.Value;
+                    }
+                }
                 
                 // 然后分析IO映射脚本
                 logger.LogInfo(">>> 步骤2.1: 分析IO映射脚本");

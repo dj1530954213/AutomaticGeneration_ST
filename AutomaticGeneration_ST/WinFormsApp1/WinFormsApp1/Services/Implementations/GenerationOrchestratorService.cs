@@ -90,6 +90,27 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     try
                     {
                         var result = _deviceGenerator.Generate(device, template);
+
+                        // >>> Populate VariableEntries via VariableBlockCollector & VariableBlockParser
+                        if (result != null)
+                        {
+                            try
+                            {
+                                var varBlocks = VariableBlockCollector.Collect(Path.Combine(_templateDirectory, scribanFileName), device.Points.Values);
+                                var entries = VariableBlockParser.Parse(varBlocks);
+                                // 填充 ProgramName 方便后续生成变量表
+                                foreach (var entry in entries)
+                                {
+                                    entry.ProgramName = device.DeviceTag;
+                                }
+                                result.VariableEntries = entries;
+                                VariableEntriesRegistry.AddEntries(templateName, entries);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                _logger.LogWarning($"   ⚠️ 设备 [{device.DeviceTag}] 变量块解析失败: {ex.Message}");
+                            }
+                        }
                         if (result != null)
                         {
                             allResults.Add(result);

@@ -1,3 +1,5 @@
+using AutomaticGeneration_ST.Models;
+
 namespace AutomaticGeneration_ST.Services.Generation.Interfaces
 {
     /// <summary>
@@ -19,5 +21,10 @@ namespace AutomaticGeneration_ST.Services.Generation.Interfaces
         /// 文件类别 (Device, IO, Communication)
         /// </summary>
         public string Category { get; set; } = "";
+
+        /// <summary>
+        /// 解析得到的变量表条目，可为空
+        /// </summary>
+        public List<VariableTableEntry>? VariableEntries { get; set; }
     }
 }
