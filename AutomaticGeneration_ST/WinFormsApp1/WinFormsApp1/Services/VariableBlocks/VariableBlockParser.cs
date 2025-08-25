@@ -23,10 +23,16 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
 
         public static List<VariableTableEntry> Parse(IEnumerable<string> blockContents)
         {
-            var entries = new List<VariableTableEntry>();
-            foreach (var content in blockContents)
+                        var entries = new List<VariableTableEntry>();
+            var blocks = blockContents?.ToList() ?? new List<string>();
+            Console.WriteLine($"[VariableBlockParser] Parse called. total blocks: {blocks.Count}");
+
+            for (int b = 0; b < blocks.Count; b++)
             {
+                var content = blocks[b];
+                Console.WriteLine($"[VariableBlockParser] -> block {b}, length: {content?.Length}");
                 if (string.IsNullOrWhiteSpace(content)) continue;
+
                 foreach (Match blockMatch in BlockRegex.Matches(content))
                 {
                     var blockBody = blockMatch.Groups[1].Value;
@@ -61,8 +67,11 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
                         VariableDescription = string.Empty
                     };
                     entries.Add(entry);
+                    Console.WriteLine($"[VariableBlockParser]    + {entry.VariableName} ({entry.VariableType})");
                 }
             }
+
+            Console.WriteLine($"[VariableBlockParser] Total entries: {entries.Count}");
             return entries;
         }
     }
