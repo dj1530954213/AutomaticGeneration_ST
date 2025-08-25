@@ -5,6 +5,12 @@
 ]
 
 [
+变量名称:AI_ALARM_COMMUNICATION_{{point.hmi_tag_name}}
+变量类型:AI_ALARM_COMMUNICATION
+初始值:( IN1:=0, IN2:=0, IN3:=0, IN4:=0, BYTE_ORDER:=0, TYPE_NUMBER:=0, RESULT_REAL:=0, RESULT_INT:=0, RESULT_DINT:=0, ALL_BYTE:=8(0), i:=0, BYTE_COVT_REAL_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, SIGN:=0, EXPONENT:=0, MANTISSA:=0, MSW:=0, LSW:=0 ), BYTE_COVT_DINT_INS:=( BYTE_1:=0, BYTE_2:=0, BYTE_3:=0, BYTE_4:=0, ENABLE:=FALSE, BYTE_ORDER:=0, OUTPUT:=0, TEMP_DWORD:=0 ) )
+]
+
+[
 变量名称:{{point.hmi_tag_name}}_MID
 {{~ if point.data_type == "REAL" ~}}
 变量类型:REAL
