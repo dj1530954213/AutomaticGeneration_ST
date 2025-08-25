@@ -83,28 +83,60 @@ namespace AutomaticGeneration_ST.Services
                     {
                         Console.WriteLine($"[TemplateMetadataParser] 找到变量模板: {existingVarTpl}");
                         var varTplLines = File.ReadAllLines(existingVarTpl);
-                        // 提取"变量类型:"行
-                        var varTypeLine = varTplLines.FirstOrDefault(l => Regex.IsMatch(l, @"变量类型:\s*.+", RegexOptions.IgnoreCase));
-                        if (!string.IsNullOrWhiteSpace(varTypeLine))
+                        // 遍历变量模板，提取所有 [变量名称|变量类型|初始值] 块，填充 VariableMetaMap
+                        string currentName = null;
+                        string currentType = null;
+                        string currentInit = null;
+                        void Flush()
                         {
-                            var vtMatch = Regex.Match(varTypeLine, @"变量类型:\s*(.+)", RegexOptions.IgnoreCase);
-                            if (vtMatch.Success)
+                            if (string.IsNullOrWhiteSpace(currentName) || string.IsNullOrWhiteSpace(currentType)) return;
+                            // 取前缀部分（去掉 scriban 占位）
+                            var prefix = currentName;
+                            // 如果包含 "{{" 说明中间有占位符，取占位前静态部分
+                            var braceIndex = prefix.IndexOf("{{", StringComparison.Ordinal);
+                            if (braceIndex > 0)
+                                prefix = prefix.Substring(0, braceIndex).TrimEnd('_');
+                            // _MID 之类的占位在后缀
+                            if (prefix.StartsWith("{{"))
+                                prefix = "_MID"; // 特殊标识
+
+                            metadata.VariableMetaMap[prefix] = new VariableMeta { VariableType = currentType, InitialValue = currentInit ?? string.Empty };
+                            // 如果模板尚未设置顶层 VariableType，则采用首块
+                            if (string.IsNullOrWhiteSpace(metadata.VariableType))
                             {
-                                metadata.VariableType = vtMatch.Groups[1].Value.Trim();
-                                Console.WriteLine($"[TemplateMetadataParser] 从变量模板提取到变量类型: {metadata.VariableType}");
+                                metadata.VariableType = currentType;
+                                metadata.InitializationValue = currentInit ?? string.Empty;
+                            }
+                            currentName = currentType = currentInit = null;
+                        }
+
+                        foreach (var line in varTplLines)
+                        {
+                            var nameMatch = Regex.Match(line, @"变量名称:\s*(.+)");
+                            if (nameMatch.Success)
+                            {
+                                Flush();
+                                currentName = nameMatch.Groups[1].Value.Trim();
+                                continue;
+                            }
+                            var typeMatch2 = Regex.Match(line, @"变量类型:\s*(.+)");
+                            if (typeMatch2.Success)
+                            {
+                                currentType = typeMatch2.Groups[1].Value.Trim();
+                                continue;
+                            }
+                            var initMatch2 = Regex.Match(line, @"初始值:\s*(.+)");
+                            if (initMatch2.Success)
+                            {
+                                currentInit = initMatch2.Groups[1].Value.Trim();
+                                continue;
+                            }
+                            if (line.Trim() == "]")
+                            {
+                                Flush();
                             }
                         }
-                        // 提取"初始值:"行
-                        var initLine = varTplLines.FirstOrDefault(l => Regex.IsMatch(l, @"初始值:\s*.+", RegexOptions.IgnoreCase));
-                        if (!string.IsNullOrWhiteSpace(initLine))
-                        {
-                            var initMatch = Regex.Match(initLine, @"初始值:\s*(.+)", RegexOptions.IgnoreCase);
-                            if (initMatch.Success)
-                            {
-                                metadata.InitializationValue = initMatch.Groups[1].Value.Trim();
-                                Console.WriteLine($"[TemplateMetadataParser] 从变量模板提取到初始值: {metadata.InitializationValue}");
-                            }
-                        }
+                        Flush();
                     }
                     else
                     {

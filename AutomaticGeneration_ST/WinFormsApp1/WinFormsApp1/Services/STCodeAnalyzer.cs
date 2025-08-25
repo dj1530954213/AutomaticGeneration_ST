@@ -41,24 +41,28 @@ namespace AutomaticGeneration_ST.Services
 
                 Console.WriteLine($"[STCodeAnalyzer] 正在从 ST代码中提取函数调用，模板: {templateMetadata.ProgramName}");
                 
-                // 提取函数调用模式: 函数名(
-                // 更精确的模式，确保匹配真正的函数调用
+                // 既要匹配函数调用，也要匹配 *_MID 变量
                 var functionCallPattern = @"^[\s]*([A-Za-z][A-Za-z0-9_]*)\s*\(";
-                Console.WriteLine($"[STCodeAnalyzer] 使用正则表达式: {functionCallPattern}");
-                
-                var matches = Regex.Matches(stCode, functionCallPattern, RegexOptions.Multiline);
-                Console.WriteLine($"[STCodeAnalyzer] 在ST代码中找到 {matches.Count} 个潜在的函数调用");
+                var midPattern = @"\b([A-Za-z][A-Za-z0-9_]*?_MID)\b";
+
+                var funcMatches = Regex.Matches(stCode, functionCallPattern, RegexOptions.Multiline);
+                var midMatches = Regex.Matches(stCode, midPattern, RegexOptions.Multiline);
+
+                Console.WriteLine($"[STCodeAnalyzer] 函数调用匹配到 {funcMatches.Count} 个, _MID 匹配到 {midMatches.Count} 个");
+
+                var allNames = new HashSet<string>();
+                foreach (Match m in funcMatches) allNames.Add(m.Groups[1].Value.Trim());
+                foreach (Match m in midMatches) allNames.Add(m.Groups[1].Value.Trim());
 
                 int validCount = 0;
                 int invalidCount = 0;
-                
-                foreach (Match match in matches)
+
+                foreach (var functionName in allNames)
                 {
-                    var functionName = match.Groups[1].Value.Trim();
-                    Console.WriteLine($"[STCodeAnalyzer] 检查函数调用: {functionName} (位置: {match.Index})");
-                    
+                    Console.WriteLine($"[STCodeAnalyzer] 检查函数调用: {functionName}");
+
                     // 过滤掉不需要的函数调用（如注释中的内容）
-                    if (IsValidFunctionCall(functionName, stCode, match.Index))
+                    if (IsValidFunctionCall(functionName, stCode))
                     {
                         Console.WriteLine($"[STCodeAnalyzer] 找到有效函数调用: {functionName}");
                         validCount++;
@@ -69,8 +73,8 @@ namespace AutomaticGeneration_ST.Services
                             VariableName = functionName,
                             DirectAddress = string.Empty,
                             VariableDescription = string.Empty,
-                            VariableType = templateMetadata.VariableType,
-                            InitialValue = templateMetadata.InitializationValue,
+                            VariableType = GetVariableType(templateMetadata, functionName),
+                            InitialValue = GetInitialValue(templateMetadata, functionName),
                             PowerFailureProtection = "FALSE",
                             SOEEnable = "FALSE"
                         };
@@ -119,6 +123,37 @@ namespace AutomaticGeneration_ST.Services
         /// <param name="matchIndex">匹配位置</param>
         /// <returns>是否为有效函数调用</returns>
         private bool IsValidFunctionCall(string functionName, string stCode, int matchIndex)
+        {
+            return IsValidFunctionCallInternal(functionName, stCode, matchIndex);
+        }
+
+        private bool IsValidFunctionCall(string functionName, string stCode)
+        {
+            int idx = stCode.IndexOf(functionName, StringComparison.Ordinal);
+            return IsValidFunctionCallInternal(functionName, stCode, idx);
+        }
+
+        private string GetVariableType(TemplateMetadata metadata, string variableName)
+        {
+            foreach (var kv in metadata.VariableMetaMap)
+            {
+                if (variableName.StartsWith(kv.Key, StringComparison.OrdinalIgnoreCase))
+                    return kv.Value.VariableType;
+            }
+            return metadata.VariableType;
+        }
+
+        private string GetInitialValue(TemplateMetadata metadata, string variableName)
+        {
+            foreach (var kv in metadata.VariableMetaMap)
+            {
+                if (variableName.StartsWith(kv.Key, StringComparison.OrdinalIgnoreCase))
+                    return kv.Value.InitialValue;
+            }
+            return metadata.InitializationValue;
+        }
+
+        private bool IsValidFunctionCallInternal(string functionName, string stCode, int matchIndex)
         {
             // 排除常见的非函数调用情况
             if (string.IsNullOrWhiteSpace(functionName))

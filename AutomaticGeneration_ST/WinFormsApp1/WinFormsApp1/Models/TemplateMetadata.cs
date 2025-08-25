@@ -1,10 +1,17 @@
 using System;
+using System.Collections.Generic;
 
 namespace AutomaticGeneration_ST.Models
 {
     /// <summary>
     /// 模板元数据 - 存储从.scriban和.TXT文件中提取的模板信息
     /// </summary>
+    public class VariableMeta
+    {
+        public string VariableType { get; set; } = string.Empty;
+        public string InitialValue { get; set; } = string.Empty;
+    }
+
     public class TemplateMetadata
     {
         /// <summary>
@@ -16,6 +23,11 @@ namespace AutomaticGeneration_ST.Models
         /// 变量类型（从scriban文件第2行"变量类型:"后提取）
         /// </summary>
         public string VariableType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 变量前缀到元信息的映射（支持一个模板多种变量类型场景）
+        /// </summary>
+        public Dictionary<string, VariableMeta> VariableMetaMap { get; set; } = new();
 
         /// <summary>
         /// 初始化值（从同名.TXT文件读取）
