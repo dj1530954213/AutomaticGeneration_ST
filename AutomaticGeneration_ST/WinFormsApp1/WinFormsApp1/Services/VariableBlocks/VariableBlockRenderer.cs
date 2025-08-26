@@ -17,9 +17,10 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
         /// 渲染变量块模板。
         /// </summary>
         /// <param name="templatePath">*_VARIABLE.scriban 文件路径</param>
-        /// <param name="point">点位对象，模板中通过 {{ point.xxx }} 访问</param>
+        /// <param name="point">点位对象（可为 null）。模板中通过 {{ point.xxx }} 访问</param>
+        /// <param name="globals">额外注入的全局上下文（例如 device_tag 等可直接 {{ device_tag }} 访问）</param>
         /// <returns>渲染后的字符串（包含外层 [ ]）</returns>
-        public static string Render(string templatePath, object point)
+        public static string Render(string templatePath, object? point, IDictionary<string, object>? globals = null)
         {
             if (!File.Exists(templatePath))
                 throw new FileNotFoundException($"变量模板不存在: {templatePath}");
@@ -34,7 +35,17 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
 
             // 准备 Scriban 上下文
             var scriptObject = new ScriptObject();
-            scriptObject.Add("point", point);
+            if (point != null)
+            {
+                scriptObject.Add("point", point);
+            }
+            if (globals != null)
+            {
+                foreach (var kv in globals)
+                {
+                    scriptObject[kv.Key] = kv.Value;
+                }
+            }
 
             var context = new TemplateContext
             {

@@ -1,5 +1,6 @@
 {
   "MOV_CTRL": "阀门/XV_CTRL.scriban",
+  "XV_CTRL": "阀门/XV_CTRL.scriban",
   "ESDV_CTRL": "阀门/ESDV_CTRL.scriban",
   "PV_CTRL": "阀门/PV_CTRL.scriban",
   "PID": "AnalogControlValve_PID.scriban",

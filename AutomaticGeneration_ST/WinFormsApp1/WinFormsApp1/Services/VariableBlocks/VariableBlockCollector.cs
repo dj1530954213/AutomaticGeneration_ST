@@ -21,8 +21,10 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
         /// </summary>
         /// <param name="mainTemplatePath">主模板文件路径</param>
         /// <param name="points">传入的点位列表</param>
+        /// <param name="deviceTag">可选的设备位号（注入到变量模板中，名称为 device_tag）</param>
+        /// <param name="renderOnce">为 true 时，每个变量模板仅渲染一次（用于设备级模板）；为 false 时，对传入的每个点位渲染一次（用于IO/TCP场景）</param>
         /// <returns>渲染后的变量块字符串集合</returns>
-        public static List<string> Collect(string mainTemplatePath, IEnumerable<object> points)
+        public static List<string> Collect(string mainTemplatePath, IEnumerable<object> points, string? deviceTag = null, bool renderOnce = false)
         {
             if (!File.Exists(mainTemplatePath))
                 throw new FileNotFoundException($"主模板不存在: {mainTemplatePath}");
@@ -47,6 +49,13 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
                 return results;
             }
 
+            // 组装全局上下文
+            var globals = new Dictionary<string, object>();
+            if (!string.IsNullOrWhiteSpace(deviceTag))
+            {
+                globals["device_tag"] = deviceTag!;
+            }
+
             foreach (var tplName in varTemplateNames)
             {
                 // 文件命名规则: <name>.scriban 或 <name>_VARIABLE.scriban?
@@ -64,9 +73,21 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
                     throw new FileNotFoundException($"变量模板 '{tplName}' 未找到 (候选: {candidatesMsg})");
                 }
 
+                if (renderOnce)
+                {
+                    // 设备级：仅渲染一次，将 device_tag 注入全局
+                    var block = VariableBlockRenderer.Render(varTemplatePath, null, globals);
+                    if (!string.IsNullOrWhiteSpace(block))
+                    {
+                        results.Add(block);
+                        LogService.Instance.LogInfo($"[VariableBlockRendered] 模板 {tplName}:\n{block}\n----");
+                    }
+                    continue;
+                }
+
                 foreach (var point in points)
                 {
-                    var block = VariableBlockRenderer.Render(varTemplatePath, point);
+                    var block = VariableBlockRenderer.Render(varTemplatePath, point, globals);
                     if (!string.IsNullOrWhiteSpace(block))
                     {
                         results.Add(block);

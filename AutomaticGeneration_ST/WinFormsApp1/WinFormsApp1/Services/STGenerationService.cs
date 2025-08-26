@@ -622,6 +622,35 @@ namespace AutomaticGeneration_ST.Services
 
                             var finalCode = $"(* 设备: {device.DeviceTag} - 模板: {templateName} *)\n{deviceCode}";
                             generatedCodes.Add(finalCode);
+
+                            // === 设备级变量模板收集/渲染/解析（兼容旧路径） ===
+                            try
+                            {
+                                // 说明：与 GenerationOrchestratorService.GenerateForDevices() 对齐
+                                // 这里针对每个设备渲染一次变量模板（renderOnce=true），并注入 device_tag
+                                var mainTemplatePath = templateFilePath; // 已定位到当前模板路径
+                                var varBlocks = VariableBlockCollector.Collect(
+                                    mainTemplatePath,
+                                    device.Points.Values,
+                                    device.DeviceTag,
+                                    renderOnce: true);
+
+                                var entries = VariableBlockParser.Parse(varBlocks);
+                                foreach (var entry in entries)
+                                {
+                                    // 使用模板名作为 ProgramName（如 XV_CTRL），便于变量表归类
+                                    entry.ProgramName = templateName;
+                                }
+
+                                // 注册全局变量条目，供后续导出/汇总
+                                VariableEntriesRegistry.AddEntries(templateName, entries);
+                                LogInfo($"[{operationId}]   ⇢ 设备 [{device.DeviceTag}] 变量模板已注册: {entries.Count} 条 (模板: {templateName})");
+                            }
+                            catch (Exception ex)
+                            {
+                                // 不中断旧流程，但记录详细错误，便于定位
+                                LogError($"[{operationId}] 设备 [{device.DeviceTag}] 变量模板处理失败: {ex.Message}");
+                            }
                         }
                         catch (Exception ex)
                         {

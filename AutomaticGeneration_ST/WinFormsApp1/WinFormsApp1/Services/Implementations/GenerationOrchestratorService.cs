@@ -95,15 +95,22 @@ namespace AutomaticGeneration_ST.Services.Implementations
                         if (result != null)
                         {
                             // 严格模式：任何变量模板声明/解析错误都应中止该设备生成
-                            var varBlocks = VariableBlockCollector.Collect(Path.Combine(_templateDirectory, scribanFileName), device.Points.Values);
+                            var varBlocks = VariableBlockCollector.Collect(
+                                Path.Combine(_templateDirectory, scribanFileName),
+                                device.Points.Values,
+                                device.DeviceTag,
+                                renderOnce: true);
                             var entries = VariableBlockParser.Parse(varBlocks);
                             // 填充 ProgramName 方便后续生成变量表
                             foreach (var entry in entries)
                             {
-                                entry.ProgramName = device.DeviceTag;
+                                // 使用模板分组键作为 ProgramName，确保设备级变量按模板归类（如 XV_CTRL）
+                                // 如果需要与主模板声明的程序名一致，可在此处扩展解析主模板以获取 ProgramName
+                                entry.ProgramName = templateName;
                             }
                             result.VariableEntries = entries;
                             VariableEntriesRegistry.AddEntries(templateName, entries);
+                            _logger.LogInfo($"   ⇢ 已为模板 [{templateName}] 注册 {entries.Count} 条设备级变量");
                         }
                         if (result != null)
                         {
