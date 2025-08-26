@@ -79,7 +79,7 @@ namespace AutomaticGeneration_ST.Services
                 new CategorizedFileExportService(GetService<IScriptClassifier>()));
                 
             // 注册通讯相关服务
-            RegisterTransient<IModbusTcpConfigGenerator>(() => new PlaceholderCommunicationGenerator());
+            RegisterTransient<IModbusTcpConfigGenerator>(() => new TcpCommunicationGenerator(_templateDirectory, _configFilePath));
             RegisterTransient<IModbusRtuConfigGenerator>(() => new PlaceholderCommunicationGenerator());
             
             // 注册TCP代码生成器（需要编译的模板字典）

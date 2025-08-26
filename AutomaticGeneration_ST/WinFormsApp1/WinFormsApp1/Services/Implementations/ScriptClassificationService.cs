@@ -28,13 +28,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
         public ScriptClassificationService()
         {
             _logger = LogService.Instance;
-            _matchers = new List<IScriptCategoryMatcher>
-            {
-                new AiScriptMatcher(),
-                new AoScriptMatcher(),
-                new DiScriptMatcher(),
-                new DoScriptMatcher()
-            };
+            // 旧有基于正则的 ScriptMatcher 已废弃，使用空匹配器列表保留接口兼容性。
+            _matchers = new List<IScriptCategoryMatcher>();
             
             // 按优先级排序
             _matchers.Sort((a, b) => b.Priority.CompareTo(a.Priority));

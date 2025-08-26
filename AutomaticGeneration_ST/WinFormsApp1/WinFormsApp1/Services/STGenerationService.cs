@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using AutomaticGeneration_ST.Services.VariableBlocks;
 
 namespace AutomaticGeneration_ST.Services
 {
@@ -40,7 +41,7 @@ namespace AutomaticGeneration_ST.Services
         {
             // 使用新的服务容器架构
             var templateDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
-            var configPath = Path.Combine(templateDirectory, "template-mapping.json");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template-mapping.json");
             
             _serviceContainer = ServiceContainer.CreateDefault(templateDirectory, configPath);
             
@@ -50,7 +51,7 @@ namespace AutomaticGeneration_ST.Services
             _deviceGenerator = new ScribanDeviceGenerator();
             _ioGenerator = new ScribanIoMappingGenerator();
             _exportService = new FileSystemExportService();
-            _communicationGenerator = new PlaceholderCommunicationGenerator();
+            _communicationGenerator = _serviceContainer.GetService<IModbusTcpConfigGenerator>();
             _deviceTemplateBinder = new DeviceTemplateDataBinder();
         }
 
@@ -69,7 +70,7 @@ namespace AutomaticGeneration_ST.Services
             _deviceGenerator = new ScribanDeviceGenerator();
             _ioGenerator = new ScribanIoMappingGenerator();
             _exportService = new FileSystemExportService();
-            _communicationGenerator = new PlaceholderCommunicationGenerator();
+            _communicationGenerator = _serviceContainer.GetService<IModbusTcpConfigGenerator>();
             _deviceTemplateBinder = new DeviceTemplateDataBinder();
         }
 
@@ -625,7 +626,11 @@ namespace AutomaticGeneration_ST.Services
                                     if (!varTemplate.HasErrors)
                                     {
                                         var renderedVars = varTemplate.Render(dataContext);
-                                        deviceCode += "\n" + renderedVars; // 直接拼接
+                                        // 解析变量块并登记
+                                        var entries = VariableBlockParser.Parse(new[] { renderedVars });
+                                        foreach (var e in entries) e.ProgramName = templateName;
+                                        VariableEntriesRegistry.AddEntries(templateName, entries);
+                                        LogInfo($"[{operationId}] 变量模板 {varTplName} 渲染完成, 条目: {entries.Count}");
                                     }
                                     else
                                     {

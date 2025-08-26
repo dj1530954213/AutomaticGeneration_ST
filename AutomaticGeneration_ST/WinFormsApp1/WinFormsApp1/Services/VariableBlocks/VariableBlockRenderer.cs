@@ -19,7 +19,7 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
         /// <param name="templatePath">*_VARIABLE.scriban 文件路径</param>
         /// <param name="point">点位对象，模板中通过 {{ point.xxx }} 访问</param>
         /// <returns>渲染后的字符串（包含外层 [ ]）</returns>
-        public static string Render(string templatePath, Models.Point point)
+        public static string Render(string templatePath, object point)
         {
             if (!File.Exists(templatePath))
                 throw new FileNotFoundException($"变量模板不存在: {templatePath}");

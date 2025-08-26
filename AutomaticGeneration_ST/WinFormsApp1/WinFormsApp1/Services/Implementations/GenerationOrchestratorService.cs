@@ -247,6 +247,30 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                 // 步骤 6: 调用职责单一的渲染器，传入当前组的点位和专属模板
                 var singleResult = ioGenerator.Generate(moduleType, group.ToList(), template);
+
+                // === 追加变量模板处理，确保IO映射脚本的变量也被变量表捕获 ===
+                try
+                {
+                    var varBlocks = VariableBlockCollector.Collect(templatePath, group.ToList());
+                    var varEntries = VariableBlockParser.Parse(varBlocks);
+                    // 为每条条目设置 ProgramName，保持与模板声明一致，如 AI_CONVERT/DI_CONVERT 等
+                    var programName = $"{moduleType.ToUpper()}_CONVERT";
+                    foreach (var ve in varEntries)
+                    {
+                        ve.ProgramName = programName;
+                    }
+                    // 保存至结果对象以及全局注册表
+                    if (singleResult != null)
+                    {
+                        singleResult.VariableEntries = varEntries;
+                    }
+                    VariableEntriesRegistry.AddEntries(programName, varEntries);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"⚠️ IO映射模块 [{moduleType}] 变量块解析失败: {ex.Message}");
+                }
+
                 allIoResults.Add(singleResult);
             }
 
