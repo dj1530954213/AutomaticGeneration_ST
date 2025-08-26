@@ -8,6 +8,7 @@ using AutomaticGeneration_ST.Services.Interfaces;
 using AutomaticGeneration_ST.Services;
 using OfficeOpenXml; // 引入EPPlus的命名空间
 using WinFormsApp1;
+using AutomaticGeneration_ST.Services.VariableBlocks;
 
 namespace AutomaticGeneration_ST.Services.Implementations
 {
@@ -869,6 +870,43 @@ namespace AutomaticGeneration_ST.Services.Implementations
                             generatedCode.Add("// TCP模拟量代码");
                             generatedCode.Add(analogCode);
                             generatedCode.Add(""); // 空行分隔
+
+                            // 收集并注册 TCP 模拟量 变量模板条目
+                            try
+                            {
+                                var tplRegistry = serviceContainer.GetService<ITemplateRegistry>();
+                                string mainTemplatePath = null;
+
+                                if (tplRegistry != null)
+                                {
+                                    mainTemplatePath = tplRegistry.GetTemplateFile("TCP_ANALOG");
+                                    if (string.IsNullOrWhiteSpace(mainTemplatePath))
+                                    {
+                                        _logger.LogWarning("[TCP_ANALOG] 未能从模板注册表解析到模板文件路径，变量块收集将跳过");
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("[TCP_ANALOG] ITemplateRegistry 未注册，变量块收集将跳过");
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(mainTemplatePath) && File.Exists(mainTemplatePath))
+                                {
+                                    _logger.LogInfo($"[TCP_ANALOG] 开始变量块收集: {mainTemplatePath}");
+                                    var blocks = VariableBlockCollector.Collect(mainTemplatePath, analogPoints.Cast<object>());
+                                    var entries = VariableBlockParser.Parse(blocks);
+                                    foreach (var e in entries)
+                                    {
+                                        e.ProgramName = "TCP_ANALOG";
+                                    }
+                                    VariableEntriesRegistry.AddEntries("TCP_ANALOG", entries);
+                                    _logger.LogSuccess($"[TCP_ANALOG] 变量条目已注册: {entries.Count} 条");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning($"[TCP_ANALOG] 变量块收集/解析失败: {ex.Message}");
+                            }
                         }
                     }
                     catch (Exception ex)

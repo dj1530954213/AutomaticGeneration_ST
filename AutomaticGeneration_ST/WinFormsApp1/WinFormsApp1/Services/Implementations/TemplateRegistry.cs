@@ -71,20 +71,42 @@ namespace AutomaticGeneration_ST.Services.Implementations
             try
             {
                 var jsonContent = File.ReadAllText(configPath);
-                var configData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonContent);
-
-                if (configData != null && configData.TryGetValue("Mappings", out var mappingsObj))
+                var options = new JsonSerializerOptions
                 {
-                    if (mappingsObj is JsonElement mappingsElement && mappingsElement.ValueKind == JsonValueKind.Object)
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                };
+
+                // 兼容两种格式：
+                // 1) 扁平键值对: { "MOV_CTRL": "阀门/XV_CTRL.scriban", ... }
+                // 2) 带 Mappings 包裹: { "Mappings": { ... } }
+                var asFlat = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonContent, options);
+                if (asFlat != null && asFlat.Count > 0 && !asFlat.ContainsKey("Mappings"))
+                {
+                    foreach (var kv in asFlat)
                     {
-                        foreach (var property in mappingsElement.EnumerateObject())
+                        if (!kv.Key.StartsWith("_") && !string.IsNullOrWhiteSpace(kv.Value))
                         {
-                            var templateName = property.Name;
-                            var templateFile = property.Value.GetString();
-                            
-                            if (!string.IsNullOrWhiteSpace(templateFile))
+                            RegisterTemplate(kv.Key, kv.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    var asWrapped = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonContent, options);
+                    if (asWrapped != null && asWrapped.TryGetValue("Mappings", out var mappingsObj))
+                    {
+                        if (mappingsObj is JsonElement mappingsElement && mappingsElement.ValueKind == JsonValueKind.Object)
+                        {
+                            foreach (var property in mappingsElement.EnumerateObject())
                             {
-                                RegisterTemplate(templateName, templateFile);
+                                var templateName = property.Name;
+                                var templateFile = property.Value.GetString();
+                                if (!string.IsNullOrWhiteSpace(templateFile))
+                                {
+                                    RegisterTemplate(templateName, templateFile);
+                                }
                             }
                         }
                     }

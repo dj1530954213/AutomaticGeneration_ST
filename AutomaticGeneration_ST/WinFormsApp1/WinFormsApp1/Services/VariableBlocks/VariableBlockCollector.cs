@@ -42,7 +42,8 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
 
             if (!varTemplateNames.Any())
             {
-                logger.LogWarning($"[VariableBlockCollector] 主模板 {Path.GetFileName(mainTemplatePath)} 未找到任何 子程序变量 声明行，跳过变量模板渲染");
+                // 未声明子程序变量模板 => 不需要变量渲染，按设计静默跳过
+                logger.LogInfo($"[VariableBlockCollector] 主模板 {Path.GetFileName(mainTemplatePath)} 未找到任何 子程序变量 声明行，跳过变量模板渲染");
                 return results;
             }
 
@@ -57,8 +58,10 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
                 var varTemplatePath = fileCandidates.FirstOrDefault(File.Exists);
                 if (varTemplatePath == null)
                 {
-                    logger.LogError($"[VariableBlockCollector] 变量模板 '{tplName}' 未找到 (路径: {string.Join(";", fileCandidates)})");
-                    continue;
+                    // 严格模式：当主模板声明了变量模板但找不到对应文件时，立即抛出错误
+                    var candidatesMsg = string.Join(";", fileCandidates);
+                    logger.LogError($"[VariableBlockCollector] 变量模板 '{tplName}' 未找到 (路径: {candidatesMsg})");
+                    throw new FileNotFoundException($"变量模板 '{tplName}' 未找到 (候选: {candidatesMsg})");
                 }
 
                 foreach (var point in points)
@@ -73,7 +76,11 @@ namespace AutomaticGeneration_ST.Services.VariableBlocks
             }
             if (results.Count == 0)
             {
-                logger.LogWarning($"[VariableBlockCollector] 模板 {Path.GetFileName(mainTemplatePath)} 的变量模板渲染结果为空 (points.Count={points.Count()})");
+                // 严格模式：声明了变量模板但渲染结果为空，直接报错，避免后续出现不一致的变量表
+                var fileName = Path.GetFileName(mainTemplatePath);
+                var msg = $"主模板 {fileName} 声明了变量模板，但渲染结果为空 (points.Count={points.Count()})";
+                logger.LogError($"[VariableBlockCollector] {msg}");
+                throw new InvalidOperationException(msg);
             }
             return results;
         }

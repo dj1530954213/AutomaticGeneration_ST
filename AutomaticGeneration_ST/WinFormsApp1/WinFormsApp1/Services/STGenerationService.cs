@@ -3,9 +3,11 @@ using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using AutomaticGeneration_ST.Services.Implementations;
 using AutomaticGeneration_ST.Services.Interfaces;
 using AutomaticGeneration_ST.Models;
+using PointModel = AutomaticGeneration_ST.Models.Point;
 using WinFormsApp1.Templates;
 using WinFormsApp1;
 using Scriban;
+using Scriban.Runtime;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -426,7 +428,7 @@ namespace AutomaticGeneration_ST.Services
             }
         }
 
-        private Dictionary<string, int> GetPointTypeBreakdown(IEnumerable<Models.Point> points)
+        private Dictionary<string, int> GetPointTypeBreakdown(IEnumerable<PointModel> points)
         {
             var breakdown = new Dictionary<string, int>();
             
@@ -569,117 +571,85 @@ namespace AutomaticGeneration_ST.Services
                     return _deviceCodeCache[cacheKey];
                 }
 
-                // 查找模板文件
-                var templateFilePath = FindDeviceTemplateFile(templateName);
-                if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
+                LogInfo($"[{operationId}] 开始生成设备ST程序（去重后），设备数量: {devices.Count}");
+                var result = new Dictionary<string, List<string>>();
+
+                try
                 {
-                    LogWarning($"[{operationId}] 未找到模板文件: {templateName}");
-                    return GenerateGenericDeviceCodesList(devices, operationId);
-                }
-
-                LogInfo($"[{operationId}] 找到模板文件: {templateFilePath}");
-
-                // 读取模板内容（只读取一次）
-                var templateContent = File.ReadAllText(templateFilePath);
-                var template = Template.Parse(templateContent);
-
-                if (template.HasErrors)
-                {
-                    var errors = string.Join(", ", template.Messages.Select(m => m.Message));
-                    LogError($"[{operationId}] 模板解析错误: {errors}");
-                    return GenerateGenericDeviceCodesList(devices, operationId);
-                }
-
-                var generatedCodes = new List<string>();
-                
-                // 为每个设备独立生成代码
-                LogInfo($"[{operationId}] 开始为 {devices.Count} 个设备独立生成代码...");
-                
-                foreach (var device in devices)
-                {
-                    try
+                    // 查找模板文件
+                    var templateFilePath = FindDeviceTemplateFile(templateName);
+                    if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
                     {
-                        // 使用设备模板数据绑定器生成数据上下文（现在有缓存机制）
-                        var dataContext = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
+                        LogWarning($"[{operationId}] 未找到模板文件: {templateName}");
+                        return GenerateGenericDeviceCodesList(devices, operationId);
+                    }
 
-                        // 渲染主模板
-                        var deviceCode = template.Render(dataContext);
+                    LogInfo($"[{operationId}] 找到模板文件: {templateFilePath}");
 
-                        // === 追加变量模板代码 ===
-                        var declMatch = VarDeclRegex.Match(templateContent);
-                        if (declMatch.Success)
+                    // 读取模板内容（只读取一次）
+                    var templateContent = File.ReadAllText(templateFilePath);
+                    var template = Template.Parse(templateContent);
+
+                    if (template.HasErrors)
+                    {
+                        var errors = string.Join(", ", template.Messages.Select(m => m.Message));
+                        LogError($"[{operationId}] 模板解析错误: {errors}");
+                        return GenerateGenericDeviceCodesList(devices, operationId);
+                    }
+
+                    var generatedCodes = new List<string>();
+                    
+                    // 为每个设备独立生成代码
+                    LogInfo($"[{operationId}] 开始为 {devices.Count} 个设备独立生成代码...");
+                    
+                    foreach (var device in devices)
+                    {
+                        try
                         {
-                            var varTplName = declMatch.Groups["name"].Value.Trim();
-                            var dir = Path.GetDirectoryName(templateFilePath);
-                            var candidates = new[]
-                            {
-                                Path.Combine(dir!, $"{varTplName}.scriban"),
-                                Path.Combine(dir!, $"{varTplName}_VARIABLE.scriban")
-                            };
-                            var varTplPath = candidates.FirstOrDefault(File.Exists);
-                            if (varTplPath != null)
-                            {
-                                try
-                                {
-                                    var varTplContent = File.ReadAllText(varTplPath);
-                                    var varTemplate = Template.Parse(varTplContent);
-                                    if (!varTemplate.HasErrors)
-                                    {
-                                        var renderedVars = varTemplate.Render(dataContext);
-                                        // 解析变量块并登记
-                                        var entries = VariableBlockParser.Parse(new[] { renderedVars });
-                                        foreach (var e in entries) e.ProgramName = templateName;
-                                        VariableEntriesRegistry.AddEntries(templateName, entries);
-                                        LogInfo($"[{operationId}] 变量模板 {varTplName} 渲染完成, 条目: {entries.Count}");
-                                    }
-                                    else
-                                    {
-                                        var errs = string.Join(", ", varTemplate.Messages.Select(m => m.Message));
-                                        LogWarning($"[{operationId}] 变量模板解析错误: {errs}");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    LogWarning($"[{operationId}] 渲染变量模板失败: {ex.Message}");
-                                }
-                            }
-                            else
-                            {
-                                LogWarning($"[{operationId}] 未找到变量模板文件: {string.Join(" | ", candidates)}");
-                            }
-                        }
-                        // 处理尖括号占位符，将未匹配的点位注释化
-                        deviceCode = ProcessAngleBracketPlaceholders(deviceCode);
-                        
-                        if (!string.IsNullOrWhiteSpace(deviceCode))
-                        {
+                            // 使用设备模板数据绑定器生成数据上下文（现在有缓存机制）
+                            var dataContext = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
+
+                            // 使用 Scriban 渲染设备代码
+                            var scriptObject = new ScriptObject();
+                            // 兼容当前 Scriban 版本：使用默认导入重载，将对象的成员全部注入到全局上下文
+                            scriptObject.Import(dataContext);
+                            var tplContext = new TemplateContext();
+                            tplContext.PushGlobal(scriptObject);
+                            var deviceCode = template.Render(tplContext);
+
+                            // 可选：处理未匹配的尖括号占位符，避免编译报错
+                            deviceCode = ProcessAngleBracketPlaceholders(deviceCode);
+
                             var finalCode = $"(* 设备: {device.DeviceTag} - 模板: {templateName} *)\n{deviceCode}";
                             generatedCodes.Add(finalCode);
                         }
+                        catch (Exception ex)
+                        {
+                            LogError($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成失败: {ex.Message}");
+                            // 添加错误注释
+                            generatedCodes.Add($"(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        LogError($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成失败: {ex.Message}");
-                        // 添加错误注释
-                        generatedCodes.Add($"(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
-                    }
-                }
-                
-                // 保存到缓存
-                _deviceCodeCache[cacheKey] = generatedCodes;
-                _lastGenerationTime[cacheKey] = DateTime.Now;
-                
-                LogInfo($"[{operationId}] 模板 {templateName} 独立处理完成，生成设备代码: {generatedCodes.Count} 个");
-                
-                // 定期清理缓存
-                CleanExpiredCache();
+                    
+                    // 保存到缓存
+                    _deviceCodeCache[cacheKey] = generatedCodes;
+                    _lastGenerationTime[cacheKey] = DateTime.Now;
+                    
+                    // 定期清理缓存
+                    CleanExpiredCache();
 
-                return generatedCodes;
+                    return generatedCodes;
+                }
+                catch (Exception ex)
+                {
+                    LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
+                    return new List<string>();
+                }
             }
             catch (Exception ex)
             {
-                LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
-                return new List<string>();
+                LogError($"[{operationId}] 设备ST程序生成失败: {ex.Message}");
+                throw new Exception($"设备ST程序生成失败: {ex.Message}", ex);
             }
         }
 
@@ -844,7 +814,7 @@ namespace AutomaticGeneration_ST.Services
         /// <summary>
         /// 根据点位信息推断ST数据类型
         /// </summary>
-        private string GetSTDataType(Models.Point point)
+        private string GetSTDataType(PointModel point)
         {
             if (point.DataType?.ToUpper().Contains("BOOL") == true)
                 return "BOOL";

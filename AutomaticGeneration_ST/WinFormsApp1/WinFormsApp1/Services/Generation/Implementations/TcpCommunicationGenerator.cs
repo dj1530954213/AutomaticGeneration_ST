@@ -108,21 +108,14 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
 
             var mainTemplatePath = Path.Combine(_templateDirectory, relPath);
             if (!File.Exists(mainTemplatePath))
-                return new List<VariableTableEntry>();
+                throw new FileNotFoundException($"TCP模板不存在: {mainTemplatePath}");
 
-            try
-            {
-                var varBlocks = VariableBlockCollector.Collect(mainTemplatePath, points);
-                var entries = VariableBlockParser.Parse(varBlocks);
-                foreach (var e in entries) e.ProgramName = templateKey;
-                VariableEntriesRegistry.AddEntries(templateKey, entries);
-                return entries;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[VariableParseError] 模板 {templateKey}: {ex.Message}");
-                return new List<VariableTableEntry>();
-            }
+            // 严格模式：让 VariableBlockCollector/Parser 的异常冒泡
+            var varBlocks = VariableBlockCollector.Collect(mainTemplatePath, points);
+            var entries = VariableBlockParser.Parse(varBlocks);
+            foreach (var e in entries) e.ProgramName = templateKey;
+            VariableEntriesRegistry.AddEntries(templateKey, entries);
+            return entries;
         }
     }
 }
