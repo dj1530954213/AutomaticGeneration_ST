@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace AutomaticGeneration_ST.Services
 {
@@ -26,6 +27,9 @@ namespace AutomaticGeneration_ST.Services
         private readonly ICommunicationGenerator _communicationGenerator;
         private readonly ServiceContainer _serviceContainer;
         private readonly DeviceTemplateDataBinder _deviceTemplateBinder;
+
+        // 用于从主模板提取变量模板声明
+        private static readonly Regex VarDeclRegex = new(@"子程序变量声明文件\s*[:：]\s*(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
         private readonly LogService _logger = LogService.Instance;
         
         // 添加生成过程的缓存和频率控制
@@ -597,9 +601,48 @@ namespace AutomaticGeneration_ST.Services
                         // 使用设备模板数据绑定器生成数据上下文（现在有缓存机制）
                         var dataContext = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
 
-                        // 渲染模板
+                        // 渲染主模板
                         var deviceCode = template.Render(dataContext);
-                        
+
+                        // === 追加变量模板代码 ===
+                        var declMatch = VarDeclRegex.Match(templateContent);
+                        if (declMatch.Success)
+                        {
+                            var varTplName = declMatch.Groups["name"].Value.Trim();
+                            var dir = Path.GetDirectoryName(templateFilePath);
+                            var candidates = new[]
+                            {
+                                Path.Combine(dir!, $"{varTplName}.scriban"),
+                                Path.Combine(dir!, $"{varTplName}_VARIABLE.scriban")
+                            };
+                            var varTplPath = candidates.FirstOrDefault(File.Exists);
+                            if (varTplPath != null)
+                            {
+                                try
+                                {
+                                    var varTplContent = File.ReadAllText(varTplPath);
+                                    var varTemplate = Template.Parse(varTplContent);
+                                    if (!varTemplate.HasErrors)
+                                    {
+                                        var renderedVars = varTemplate.Render(dataContext);
+                                        deviceCode += "\n" + renderedVars; // 直接拼接
+                                    }
+                                    else
+                                    {
+                                        var errs = string.Join(", ", varTemplate.Messages.Select(m => m.Message));
+                                        LogWarning($"[{operationId}] 变量模板解析错误: {errs}");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogWarning($"[{operationId}] 渲染变量模板失败: {ex.Message}");
+                                }
+                            }
+                            else
+                            {
+                                LogWarning($"[{operationId}] 未找到变量模板文件: {string.Join(" | ", candidates)}");
+                            }
+                        }
                         // 处理尖括号占位符，将未匹配的点位注释化
                         deviceCode = ProcessAngleBracketPlaceholders(deviceCode);
                         

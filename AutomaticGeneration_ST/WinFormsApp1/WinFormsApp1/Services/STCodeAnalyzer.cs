@@ -55,7 +55,11 @@ namespace AutomaticGeneration_ST.Services
                     }
                 }
 
-                // 只有具有变量类型的模板才需要继续正则匹配函数调用
+                // 🚫 按要求禁用正则回退逻辑，若未检测到变量块则返回空
+                Console.WriteLine($"[STCodeAnalyzer] 未检测到变量块，已禁用正则回退，返回空结果");
+                return entries;
+                /* 原先逻辑:
+                // 只有具有变量类型的模板才需要继续正则匹配函数调用 */
                 if (string.IsNullOrWhiteSpace(templateMetadata.VariableType))
                 {
                     Console.WriteLine($"[STCodeAnalyzer] 模板 {templateMetadata.ProgramName} 没有变量类型，且未检测到变量块，跳过处理");
