@@ -337,8 +337,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 
                 contentBuilder.AppendLine();
                 
-                // 脚本内容
-                contentBuilder.AppendLine(script.Content);
+                // 脚本内容（逐行过滤元数据标记，如“子程序变量声明文件:...”）
+                contentBuilder.AppendLine(FilterContent(script.Content));
             }
             
             // 文件尾部信息
@@ -347,6 +347,57 @@ namespace AutomaticGeneration_ST.Services.Implementations
             contentBuilder.AppendLine($"// 总计 {scripts.Count} 个脚本");
             
             return contentBuilder.ToString();
+        }
+
+        /// <summary>
+        /// 过滤内容中的元数据标记行（如“子程序变量声明文件:...”等）
+        /// </summary>
+        private static string FilterContent(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return content ?? string.Empty;
+
+            var lines = content.Split(new[] {"\r\n", "\n"}, StringSplitOptions.None);
+            var kept = new List<string>(lines.Length);
+            foreach (var line in lines)
+            {
+                if (ShouldFilterLine(line)) continue;
+                kept.Add(line);
+            }
+            return string.Join(Environment.NewLine, kept);
+        }
+
+        /// <summary>
+        /// 判断是否为应过滤的元数据/标记行
+        /// </summary>
+        private static bool ShouldFilterLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+
+            var trimmed = line.Trim();
+            var normalized = trimmed
+                .Replace('：', ':')
+                .TrimStart('/', '*', '(', ')', ';', '-', ' ')
+                .Trim();
+
+            string[] prefixes = new[]
+            {
+                "子程序变量声明文件:",
+                "变量声明文件:",
+                "子程序 变量声明文件:",
+            };
+
+            foreach (var p in prefixes)
+            {
+                if (normalized.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            if (normalized.IndexOf("变量声明文件", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            if (normalized.IndexOf("子程序变量声明", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return false;
         }
         
         /// <summary>

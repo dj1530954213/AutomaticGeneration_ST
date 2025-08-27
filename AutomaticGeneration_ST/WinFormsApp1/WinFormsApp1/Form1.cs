@@ -1910,7 +1910,7 @@ namespace WinFormsApp1
                             var trimmedLine = line.Trim();
                             if (!string.IsNullOrEmpty(trimmedLine) && 
                                 !trimmedLine.StartsWith("程序名称:") && 
-                                !trimmedLine.StartsWith("变量类型:"))
+                                !trimmedLine.StartsWith("子程序变量声明文件:"))
                             {
                                 sb.AppendLine($"    {trimmedLine}");
                                 lineCount++;
@@ -1943,7 +1943,7 @@ namespace WinFormsApp1
                             var trimmedLine = line.Trim();
                             if (!string.IsNullOrEmpty(trimmedLine) && 
                                 !trimmedLine.StartsWith("程序名称:") && 
-                                !trimmedLine.StartsWith("变量类型:"))
+                                !trimmedLine.StartsWith("子程序变量声明文件:"))
                             {
                                 sb.AppendLine($"    {trimmedLine}");
                                 lineCount++;
@@ -2052,7 +2052,7 @@ namespace WinFormsApp1
                 
                 // 跳过空行和某些不重要的行
                 if (trimmedLine.StartsWith("程序名称:") || 
-                    trimmedLine.StartsWith("变量类型:"))
+                    trimmedLine.StartsWith("子程序变量声明文件:"))
                 {
                     continue;
                 }
@@ -4551,7 +4551,7 @@ namespace WinFormsApp1
             var normalizedLine = line.Replace(" ", "").Replace("：", ":");
             
             return normalizedLine.StartsWith("程序名称:", StringComparison.OrdinalIgnoreCase) ||
-                   normalizedLine.StartsWith("变量类型:", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedLine.StartsWith("子程序变量声明文件:", StringComparison.OrdinalIgnoreCase) ||
                    normalizedLine.StartsWith("变量名称:", StringComparison.OrdinalIgnoreCase);
         }
 

@@ -17,6 +17,8 @@ namespace WinFormsApp1.Output
                 logger.LogInfo($"开始写入ST脚本到文件: {Path.GetFileName(filePath)}");
                 
                 var content = GenerateFileContent(codeSegments);
+                // 最终保险过滤一遍整份内容
+                content = FilterWholeContent(content);
                 
                 // 确保目录存在
                 var directory = Path.GetDirectoryName(filePath);
@@ -58,11 +60,19 @@ namespace WinFormsApp1.Output
             // 直接添加代码段，不添加程序声明和变量定义
             foreach (var segment in validSegments)
             {
-                content.AppendLine(segment.Trim());
+                var lines = segment.Trim().Split(new[] {"\r\n", "\n"}, StringSplitOptions.None);
+                foreach (var line in lines)
+                {
+                    if (ShouldFilterLine(line))
+                        continue;
+                    content.AppendLine(line);
+                }
                 content.AppendLine();
             }
             
-            return content.ToString();
+            var result = content.ToString();
+            // 返回前再次整体过滤，防止遗漏
+            return FilterWholeContent(result);
         }
         
         public static string GenerateSimpleFileContent(IEnumerable<string> codeSegments, string pointType)
@@ -87,11 +97,71 @@ namespace WinFormsApp1.Output
             // 直接添加代码段
             foreach (var segment in validSegments)
             {
-                content.AppendLine(segment.Trim());
+                var lines = segment.Trim().Split(new[] {"\r\n", "\n"}, StringSplitOptions.None);
+                foreach (var line in lines)
+                {
+                    if (ShouldFilterLine(line))
+                        continue;
+                    content.AppendLine(line);
+                }
                 content.AppendLine();
             }
             
             return content.ToString();
+        }
+
+        /// <summary>
+        /// 判断是否为应过滤的元数据/标记行，例如“子程序变量声明文件:XXX”。
+        /// 兼容我们命名调整前后的多种前缀。
+        /// </summary>
+        private static bool ShouldFilterLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+
+            var trimmed = line.Trim();
+            // 统一中英文冒号与常见注释前缀
+            var normalized = trimmed
+                .Replace('：', ':')
+                .TrimStart('/', '*', '(', ')', ';', '-', ' ')
+                .Trim();
+
+            // 典型需要过滤的标记行前缀集合
+            string[] prefixes = new[]
+            {
+                "子程序变量声明文件:",
+                "变量声明文件:",
+                "子程序 变量声明文件:",
+            };
+
+            foreach (var p in prefixes)
+            {
+                if (normalized.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            // 若任意位置包含关键短语（适配内联/变体），亦过滤
+            if (normalized.IndexOf("变量声明文件", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            if (normalized.IndexOf("子程序变量声明", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// 对整份内容进行逐行过滤的最终保险
+        /// </summary>
+        private static string FilterWholeContent(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return content ?? string.Empty;
+            var lines = content.Split(new[] {"\r\n", "\n"}, StringSplitOptions.None);
+            var sb = new StringBuilder();
+            foreach (var line in lines)
+            {
+                if (ShouldFilterLine(line)) continue;
+                sb.AppendLine(line);
+            }
+            return sb.ToString();
         }
         
         public static string WriteCategorizedFiles(List<string> scripts, List<Dictionary<string, object>> pointData, string selectedPath)

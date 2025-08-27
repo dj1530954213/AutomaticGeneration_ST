@@ -60,9 +60,61 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                     // 使用 File.WriteAllText 来写入文件。它会自动处理文件的创建、覆盖和关闭，非常方便。
                     // 这里使用了 UTF-8 编码，这是PLC编程（尤其是支持多语言注释时）的良好选择。
-                    File.WriteAllText(fullFilePath, result.Content, System.Text.Encoding.UTF8);
+                    var filtered = FilterContent(result.Content);
+                    File.WriteAllText(fullFilePath, filtered, System.Text.Encoding.UTF8);
                 }
             }
+        }
+
+        /// <summary>
+        /// 过滤内容中的元数据标记行（如“子程序变量声明文件:...”等）
+        /// </summary>
+        private static string FilterContent(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return content ?? string.Empty;
+
+            var lines = content.Split(new[] { "\r\n", "\n" }, System.StringSplitOptions.None);
+            var kept = new System.Collections.Generic.List<string>(lines.Length);
+            foreach (var line in lines)
+            {
+                if (ShouldFilterLine(line)) continue;
+                kept.Add(line);
+            }
+            return string.Join(System.Environment.NewLine, kept);
+        }
+
+        /// <summary>
+        /// 判断是否为应过滤的元数据/标记行
+        /// </summary>
+        private static bool ShouldFilterLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+
+            var trimmed = line.Trim();
+            var normalized = trimmed
+                .Replace('：', ':')
+                .TrimStart('/', '*', '(', ')', ';', '-', ' ')
+                .Trim();
+
+            string[] prefixes = new[]
+            {
+                "子程序变量声明文件:",
+                "变量声明文件:",
+                "子程序 变量声明文件:",
+            };
+
+            foreach (var p in prefixes)
+            {
+                if (normalized.StartsWith(p, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            if (normalized.IndexOf("变量声明文件", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            if (normalized.IndexOf("子程序变量声明", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return false;
         }
     }
 }
