@@ -1,7 +1,7 @@
 程序名称:TCP_ANALOG
 子程序变量声明文件:ANALOG_VARIABLE
 (*TCP模拟量数据采集:{{point.hmi_tag_name}} -> {{point.describe}}*)
-DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
+DATA_CONVERT_{{point.hmi_tag_name}}(
 {{~ if point.data_type == "REAL" ~}}
     IN1:={{ point.channel }},
     IN2:={{ point.second_channel }},
@@ -40,7 +40,7 @@ DATA_CONVERT_BY_BYTE_{{point.hmi_tag_name}}(
 {{~ end ~}}
 
 (*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.describe}}*)
-AI_ALARM_COMMUNICATION_{{ point.hmi_tag_name }}(
+AI_ALARM_COM_{{ point.hmi_tag_name }}(
     IN:={{ point.hmi_tag_name }}_MID,
 {{~ # 只有当存在任意报警限值时才生成MAIN_EN和MAIN_V ~}}
 {{~ if point.sll_value != null && point.sll_value != "" || point.sl_value != null && point.sl_value != "" || point.sh_value != null && point.sh_value != "" || point.shh_value != null && point.shh_value != "" ~}}

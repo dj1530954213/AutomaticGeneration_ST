@@ -147,9 +147,13 @@ namespace AutomaticGeneration_ST.Services
                 var row0 = sheet.CreateRow(0);
                 var cell0 = row0.CreateCell(0);
                 var programName = entries.First().ProgramName;
-                cell0.SetCellValue(programName);
+                // 确保A1中展示名包含(PRG)，以便编程软件识别
+                var displayProgramName = programName.EndsWith("(PRG)", StringComparison.OrdinalIgnoreCase)
+                    ? programName
+                    : programName + "(PRG)";
+                cell0.SetCellValue(displayProgramName);
                 cell0.CellStyle = textCellStyle; // 应用样式
-                Console.WriteLine($"[VariableTableGenerator] 设置第1行程序名称: {programName}");
+                Console.WriteLine($"[VariableTableGenerator] 设置第1行程序名称: {displayProgramName}");
 
                 // 创建第2行：表头
                 var row1 = sheet.CreateRow(1);
