@@ -23,3 +23,10 @@
 初始值:0
 {{~ end ~}}
 ]
+
+
+[
+变量名称:{{point.hmi_tag_name}}_CONVERT
+变量类型:REAL
+初始值:0
+]

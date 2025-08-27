@@ -36,12 +36,26 @@ DATA_CONVERT_{{point.hmi_tag_name}}(
 
 (*TCP模拟量数据缩放:{{point.hmi_tag_name}} -> {{point.describe}}*)
 {{~ if point.scale != null ~}}
-    {{point.hmi_tag_name}}:={{point.hmi_tag_name}} * {{point.scale }};
+{{~ if point.data_type == "REAL" ~}}
+    {{point.hmi_tag_name}}_CONVERT:={{point.hmi_tag_name}}_MID * {{point.scale }};
+{{~ else if point.data_type == "INT" ~}}
+    {{point.hmi_tag_name}}_CONVERT:=INT_TO_REAL({{point.hmi_tag_name}}_MID) * {{point.scale }};
+{{~ else if point.data_type == "DINT" ~}}
+    {{point.hmi_tag_name}}_CONVERT:=DINT_TO_REAL({{point.hmi_tag_name}}_MID) * {{point.scale }};
+{{~ end ~}}
+{{~ else ~}}
+{{~ if point.data_type == "REAL" ~}}
+    {{point.hmi_tag_name}}_CONVERT:={{point.hmi_tag_name}}_MID;
+{{~ else if point.data_type == "INT" ~}}
+    {{point.hmi_tag_name}}_CONVERT:=INT_TO_REAL({{point.hmi_tag_name}}_MID);
+{{~ else if point.data_type == "DINT" ~}}
+    {{point.hmi_tag_name}}_CONVERT:=DINT_TO_REAL({{point.hmi_tag_name}}_MID);
+{{~ end ~}}
 {{~ end ~}}
 
 (*TCP模拟量数据报警模块调用:{{point.hmi_tag_name}} -> {{point.describe}}*)
 AI_ALARM_COM_{{ point.hmi_tag_name }}(
-    IN:={{ point.hmi_tag_name }}_MID,
+    IN:={{ point.hmi_tag_name }}_CONVERT,
 {{~ # 只有当存在任意报警限值时才生成MAIN_EN和MAIN_V ~}}
 {{~ if point.sll_value != null && point.sll_value != "" || point.sl_value != null && point.sl_value != "" || point.sh_value != null && point.sh_value != "" || point.shh_value != null && point.shh_value != "" ~}}
     MAIN_EN:={{ point.hmi_tag_name }}_WHZZT,
