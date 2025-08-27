@@ -561,9 +561,9 @@ namespace AutomaticGeneration_ST.Services
             {
                 // 生成缓存键
                 var cacheKey = $"{templateName}_{string.Join("_", devices.Select(d => d.DeviceTag).OrderBy(x => x))}";
-                
+
                 // 检查缓存（5分钟内的缓存有效）
-                if (_deviceCodeCache.ContainsKey(cacheKey) && 
+                if (_deviceCodeCache.ContainsKey(cacheKey) &&
                     _lastGenerationTime.ContainsKey(cacheKey) &&
                     DateTime.Now - _lastGenerationTime[cacheKey] < TimeSpan.FromMinutes(5))
                 {
@@ -571,114 +571,74 @@ namespace AutomaticGeneration_ST.Services
                     return _deviceCodeCache[cacheKey];
                 }
 
-                LogInfo($"[{operationId}] 开始生成设备ST程序（去重后），设备数量: {devices.Count}");
-                var result = new Dictionary<string, List<string>>();
-
-                try
+                // 查找模板文件
+                var templateFilePath = FindDeviceTemplateFile(templateName);
+                if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
                 {
-                    // 查找模板文件
-                    var templateFilePath = FindDeviceTemplateFile(templateName);
-                    if (string.IsNullOrWhiteSpace(templateFilePath) || !File.Exists(templateFilePath))
-                    {
-                        LogWarning($"[{operationId}] 未找到模板文件: {templateName}");
-                        return GenerateGenericDeviceCodesList(devices, operationId);
-                    }
-
-                    LogInfo($"[{operationId}] 找到模板文件: {templateFilePath}");
-
-                    // 读取模板内容（只读取一次）
-                    var templateContent = File.ReadAllText(templateFilePath);
-                    var template = Template.Parse(templateContent);
-
-                    if (template.HasErrors)
-                    {
-                        var errors = string.Join(", ", template.Messages.Select(m => m.Message));
-                        LogError($"[{operationId}] 模板解析错误: {errors}");
-                        return GenerateGenericDeviceCodesList(devices, operationId);
-                    }
-
-                    var generatedCodes = new List<string>();
-                    
-                    // 为每个设备独立生成代码
-                    LogInfo($"[{operationId}] 开始为 {devices.Count} 个设备独立生成代码...");
-                    
-                    foreach (var device in devices)
-                    {
-                        try
-                        {
-                            // 使用设备模板数据绑定器生成数据上下文（现在有缓存机制）
-                            var dataContext = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
-
-                            // 使用 Scriban 渲染设备代码
-                            var scriptObject = new ScriptObject();
-                            // 兼容当前 Scriban 版本：使用默认导入重载，将对象的成员全部注入到全局上下文
-                            scriptObject.Import(dataContext);
-                            var tplContext = new TemplateContext();
-                            tplContext.PushGlobal(scriptObject);
-                            var deviceCode = template.Render(tplContext);
-
-                            // 可选：处理未匹配的尖括号占位符，避免编译报错
-                            deviceCode = ProcessAngleBracketPlaceholders(deviceCode);
-
-                            var finalCode = $"(* 设备: {device.DeviceTag} - 模板: {templateName} *)\n{deviceCode}";
-                            generatedCodes.Add(finalCode);
-
-                            // === 设备级变量模板收集/渲染/解析（兼容旧路径） ===
-                            try
-                            {
-                                // 说明：与 GenerationOrchestratorService.GenerateForDevices() 对齐
-                                // 这里针对每个设备渲染一次变量模板（renderOnce=true），并注入 device_tag
-                                var mainTemplatePath = templateFilePath; // 已定位到当前模板路径
-                                var varBlocks = VariableBlockCollector.Collect(
-                                    mainTemplatePath,
-                                    device.Points.Values,
-                                    device.DeviceTag,
-                                    renderOnce: true);
-
-                                var entries = VariableBlockParser.Parse(varBlocks);
-                                foreach (var entry in entries)
-                                {
-                                    // 使用模板名作为 ProgramName（如 XV_CTRL），便于变量表归类
-                                    entry.ProgramName = templateName;
-                                }
-
-                                // 注册全局变量条目，供后续导出/汇总
-                                VariableEntriesRegistry.AddEntries(templateName, entries);
-                                LogInfo($"[{operationId}]   ⇢ 设备 [{device.DeviceTag}] 变量模板已注册: {entries.Count} 条 (模板: {templateName})");
-                            }
-                            catch (Exception ex)
-                            {
-                                // 不中断旧流程，但记录详细错误，便于定位
-                                LogError($"[{operationId}] 设备 [{device.DeviceTag}] 变量模板处理失败: {ex.Message}");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            LogError($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成失败: {ex.Message}");
-                            // 添加错误注释
-                            generatedCodes.Add($"(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
-                        }
-                    }
-                    
-                    // 保存到缓存
-                    _deviceCodeCache[cacheKey] = generatedCodes;
-                    _lastGenerationTime[cacheKey] = DateTime.Now;
-                    
-                    // 定期清理缓存
-                    CleanExpiredCache();
-
-                    return generatedCodes;
-                }
-                catch (Exception ex)
-                {
-                    LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
+                    LogWarning($"[{operationId}] 未找到模板文件: {templateName}");
                     return new List<string>();
                 }
+
+                // 读取并解析模板
+                var templateContent = File.ReadAllText(templateFilePath);
+                var template = Template.Parse(templateContent);
+
+                // 解析模板元数据，获取首行“程序名称”
+                var metadataParser = new TemplateMetadataParser();
+                var metadata = metadataParser.ParseTemplate(templateFilePath);
+                var programNameFromTemplate = metadata?.ProgramName;
+                var groupKey = string.IsNullOrWhiteSpace(programNameFromTemplate) ? templateName : programNameFromTemplate;
+
+                LogInfo($"[{operationId}] 模板 {templateName} 元数据解析: ProgramName='{programNameFromTemplate ?? "<空>"}', 分组键='{groupKey}'");
+
+                var generatedCodes = new List<string>();
+
+                foreach (var device in devices)
+                {
+                    try
+                    {
+                        // 绑定设备上下文并渲染主模板
+                        var contextDict = _deviceTemplateBinder.GenerateDeviceTemplateContext(device, templateContent);
+                        var scriptObject = new ScriptObject();
+                        foreach (var kv in contextDict)
+                            scriptObject.Add(kv.Key, kv.Value);
+                        var scribanCtx = new TemplateContext();
+                        scribanCtx.PushGlobal(scriptObject);
+                        var rendered = template.Render(scribanCtx);
+                        generatedCodes.Add(rendered);
+
+                        // === 设备级变量模板收集/渲染/解析（兼容旧路径） ===
+                        var varBlocks = VariableBlockCollector.Collect(templateFilePath, Array.Empty<object>(), device.DeviceTag, renderOnce: true);
+                        var entries = VariableBlockParser.Parse(varBlocks);
+                        foreach (var entry in entries)
+                        {
+                            // 使用模板首行“程序名称”作为 ProgramName，若未能解析则回退到模板名
+                            entry.ProgramName = groupKey;
+                        }
+
+                        VariableEntriesRegistry.AddEntries(groupKey, entries);
+                        LogInfo($"[{operationId}]   ⇢ 设备 [{device.DeviceTag}] 变量模板已注册: {entries.Count} 条 (分组: {groupKey}, 模板: {templateName})");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"[{operationId}] 设备 [{device.DeviceTag}] 代码生成失败: {ex.Message}");
+                        generatedCodes.Add($"(* 设备: {device.DeviceTag} - 代码生成失败: {ex.Message} *)");
+                    }
+                }
+
+                // 保存到缓存
+                _deviceCodeCache[cacheKey] = generatedCodes;
+                _lastGenerationTime[cacheKey] = DateTime.Now;
+
+                // 定期清理缓存
+                CleanExpiredCache();
+
+                return generatedCodes;
             }
             catch (Exception ex)
             {
-                LogError($"[{operationId}] 设备ST程序生成失败: {ex.Message}");
-                throw new Exception($"设备ST程序生成失败: {ex.Message}", ex);
+                LogError($"[{operationId}] 生成模板 {templateName} 代码时出错: {ex.Message}");
+                return new List<string>();
             }
         }
 
