@@ -153,7 +153,7 @@ namespace AutomaticGeneration_ST.Services
 
                 // 创建第2行：表头
                 var row1 = sheet.CreateRow(1);
-                var headers = new[] { "变量名", "直接地址", "变量说明", "变量类型", "初始值", "掉电保护", "SOE使能" };
+                var headers = new[] { "变量名", "直接地址", "变量说明", "变量类型", "初始值", "掉电保护", "可强制", "SOE使能" };
                 Console.WriteLine($"[VariableTableGenerator] 设置表头，列数: {headers.Length}");
                 
                 for (int i = 0; i < headers.Length; i++)
@@ -202,10 +202,15 @@ namespace AutomaticGeneration_ST.Services
                     dataCell5.SetCellValue(entry.PowerFailureProtection);
                     dataCell5.CellStyle = textCellStyle;
                     
-                    // SOE使能
+                    // 可强制（默认 TRUE）
                     var dataCell6 = row.CreateCell(6);
-                    dataCell6.SetCellValue(entry.SOEEnable);
+                    dataCell6.SetCellValue(entry.ForceEnable);
                     dataCell6.CellStyle = textCellStyle;
+                    
+                    // SOE使能
+                    var dataCell7 = row.CreateCell(7);
+                    dataCell7.SetCellValue(entry.SOEEnable);
+                    dataCell7.CellStyle = textCellStyle;
                     
                     if (i < 3 || i % 10 == 0) // 只显示前3行和每10行的进度
                     {

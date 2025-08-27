@@ -3,9 +3,9 @@
 (*电动阀门:{{device_tag}}控制块调用*)
 XV_CTRL_{{device_tag}}(
 CS:=CS01,
-ZIX:={{ZIX}},
-ZIA:={{ZIA}},
-ZIS:={{ZIS}},
+RL:={{RL}},
+FA:={{FA}},
+RUN:={{RUN}},
 ZIO:={{ZIO}},
 ZIC:={{ZIC}},
 (*A_OPEN:=*)

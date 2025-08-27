@@ -43,6 +43,11 @@ namespace AutomaticGeneration_ST.Models
         public string PowerFailureProtection { get; set; } = "FALSE";
 
         /// <summary>
+        /// 可强制（默认 TRUE）
+        /// </summary>
+        public string ForceEnable { get; set; } = "TRUE";
+
+        /// <summary>
         /// SOE使能（固定为FALSE）
         /// </summary>
         public string SOEEnable { get; set; } = "FALSE";
