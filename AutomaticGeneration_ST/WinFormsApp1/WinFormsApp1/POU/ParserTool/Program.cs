@@ -21,17 +21,20 @@ namespace ParserTool
         {
             // 默认目标文件：POU/Main - 副本.pou（相对当前工作目录）
             var targetPath = args.Length > 0 ? args[0] : Path.Combine("..", "Main - 副本.pou");
-            if (!File.Exists(targetPath))
+            var resolvedPath = Path.GetFullPath(targetPath);
+            Console.WriteLine($"CWD: {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"Target: {resolvedPath}");
+            if (!File.Exists(resolvedPath))
             {
-                Console.Error.WriteLine($"Target file not found: {targetPath}");
+                Console.Error.WriteLine($"Target file not found: {resolvedPath}");
                 Environment.ExitCode = 2;
                 return;
             }
 
-            var bytes = File.ReadAllBytes(targetPath);
+            var bytes = File.ReadAllBytes(resolvedPath);
             var result = new ParseResult
             {
-                File = Path.GetFullPath(targetPath),
+                File = resolvedPath,
                 FileSize = bytes.Length,
             };
 
@@ -76,7 +79,8 @@ namespace ParserTool
             }
 
             // 5) 输出 JSON 到同级目录：POU/Main - 副本.pou.json
-            var outPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(targetPath)!, Path.GetFileName(targetPath) + ".json"));
+            var outPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(resolvedPath)!, Path.GetFileName(resolvedPath) + ".json"));
+            Console.WriteLine($"Output: {outPath}");
             var jsonOpts = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
             var json = JsonSerializer.Serialize(result, jsonOpts);
             File.WriteAllText(outPath, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -145,7 +149,8 @@ namespace ParserTool
             if (s.All(ch => char.IsDigit(ch))) return false;
             // 排除明显非标记性字符串
             if (s.Length > 64) return false;
-            return Regex.IsMatch(s, "^[A-Za-z0-9_\-\.]+$");
+            // 使用安全字符类，不需要转义，且将 '-' 放在末尾避免作为范围符号
+            return Regex.IsMatch(s, "^[A-Za-z0-9_.-]+$");
         }
     }
 
