@@ -1,3 +1,7 @@
+//NEED DELETE
+// REASON: This service and its related components (PointFactory, DeviceClassificationService, TcpDataService, etc.) 
+// belong to a new architecture that is not integrated into the main UI and is currently unused.
+
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System;

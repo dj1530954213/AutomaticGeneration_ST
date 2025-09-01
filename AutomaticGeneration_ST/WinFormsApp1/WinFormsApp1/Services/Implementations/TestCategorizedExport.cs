@@ -1,3 +1,6 @@
+//NEED DELETE
+// REASON: This is a test class for the classified export function and is not used in the main program logic.
+
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using AutomaticGeneration_ST.Services.Implementations;

@@ -1,3 +1,6 @@
+//NEED DELETE
+// REASON: This is a demo class for the worksheet locator service and is not used in the main program logic.
+
 using AutomaticGeneration_ST.Services.Interfaces;
 using AutomaticGeneration_ST.Services.Implementations;
 using System;

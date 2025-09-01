@@ -1,4 +1,6 @@
 using System;
+//NEED DELETE
+// REASON: This service belongs to a new architecture that is not integrated into the main UI and is currently unused.
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

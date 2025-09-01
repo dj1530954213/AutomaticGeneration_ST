@@ -1,3 +1,6 @@
+//NEED DELETE
+//REASON: This model is part of the unused TCP communication architecture and is not integrated into the main UI workflow.
+
 namespace WinFormsApp1.Models
 {
     /// <summary>
