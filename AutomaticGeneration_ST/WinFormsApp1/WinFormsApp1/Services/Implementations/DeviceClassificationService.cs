@@ -14,7 +14,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
     /// <summary>
     /// 设备分类服务实现类
     /// </summary>
-    public class DeviceClassificationService : IDeviceClassificationService
+    // NEED DELETE
+// 原因: 此服务属于未集成的TCP通讯新架构，仅被 DataProcessingOrchestrator 使用，当前未在主UI流程中激活。
+public class DeviceClassificationService : IDeviceClassificationService
     {
         private readonly IPointFactory _pointFactory;
         private readonly LogService _logger = LogService.Instance;

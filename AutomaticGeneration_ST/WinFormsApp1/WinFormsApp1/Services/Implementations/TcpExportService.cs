@@ -1,9 +1,5 @@
-using System;
 //NEED DELETE
 // REASON: This service belongs to a new architecture that is not integrated into the main UI and is currently unused.
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using WinFormsApp1.Generators;
 using WinFormsApp1.Models;
 using WinFormsApp1.Output;
@@ -13,6 +9,8 @@ namespace WinFormsApp1.Services.Implementations
     /// <summary>
     /// 将 TCP 模拟量 / 数字量 ST 脚本导出为 txt 文件
     /// </summary>
+    // NEED DELETE
+    // 原因: 此服务属于未集成的TCP通讯新架构，当前未在主UI流程中激活。
     public class TcpExportService
     {
         private readonly TcpCodeGenerator _codeGenerator;
@@ -62,7 +60,7 @@ namespace WinFormsApp1.Services.Implementations
 
             // 生成器已用两个空行分割各点位脚本
             return codeText
-                .Split(new[] {"\r\n\r\n", "\n\n"}, StringSplitOptions.RemoveEmptyEntries)
+                .Split(new[] { "\r\n\r\n", "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToList();

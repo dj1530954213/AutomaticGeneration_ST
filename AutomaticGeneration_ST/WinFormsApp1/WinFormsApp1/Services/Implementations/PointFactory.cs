@@ -12,7 +12,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
     /// <summary>
     /// 点位工厂实现类
     /// </summary>
-    public class PointFactory : IPointFactory
+    // NEED DELETE
+// 原因: 此工厂类属于未集成的TCP通讯新架构，仅被 DataProcessingOrchestrator 使用，当前未在主UI流程中激活。
+public class PointFactory : IPointFactory
     {
         public Models.Point CreateFromIoPoint(Dictionary<string, object> ioPointData)
         {

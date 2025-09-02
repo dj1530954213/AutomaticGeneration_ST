@@ -15,7 +15,9 @@ namespace AutomaticGeneration_ST.Services.Implementations
     /// <summary>
     /// TCP数据处理服务实现
     /// </summary>
-    public class TcpDataService : ITcpDataService
+    // NEED DELETE
+// 原因: 此服务属于未集成的TCP通讯新架构，仅被 DataProcessingOrchestrator 使用，当前未在主UI流程中激活。
+public class TcpDataService : ITcpDataService
     {
         private readonly IExcelWorkbookParser _excelParser;
         private readonly IWorksheetLocatorService _worksheetLocator;
