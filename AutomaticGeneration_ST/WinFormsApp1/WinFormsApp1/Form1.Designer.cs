@@ -62,7 +62,7 @@ namespace WinFormsApp1
             logFilterComboBox = new ComboBox();
             logSearchBox = new TextBox();
             //NEED DELETE: configPanel 为遗留配置面板，未参与核心流程显示
-            configPanel = new Panel();
+            //configPanel = new Panel();
             mainMenuStrip.SuspendLayout();
             mainStatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
@@ -80,8 +80,8 @@ namespace WinFormsApp1
             // mainMenuStrip
             // 
             mainMenuStrip.ImageScalingSize = new Size(24, 24);
-            //NEED DELETE: 以下加入的 viewMenu、helpMenu 属于非核心菜单项（视图/帮助），建议移除
             mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu});
+            //NEED DELETE: 以下加入的 viewMenu、helpMenu 属于非核心菜单项（视图/帮助），建议移除
             //mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, helpMenu });
             mainMenuStrip.Location = new Point(0, 0);
             mainMenuStrip.Name = "mainMenuStrip";
@@ -379,11 +379,11 @@ namespace WinFormsApp1
             //NEED DELETE: 遗留配置面板（未用于导入/导出链路）
             // configPanel
             // 
-            configPanel.Dock = DockStyle.Fill;
-            configPanel.Location = new Point(0, 0);
-            configPanel.Name = "configPanel";
-            configPanel.Size = new Size(300, 400);
-            configPanel.TabIndex = 4;
+            //configPanel.Dock = DockStyle.Fill;
+            //configPanel.Location = new Point(0, 0);
+            //configPanel.Name = "configPanel";
+            //configPanel.Size = new Size(300, 400);
+            //configPanel.TabIndex = 4;
             // 
             // Form1
             // 
@@ -432,7 +432,7 @@ namespace WinFormsApp1
         private Panel leftPanel;
         private ListBox fileListBox;
         private TabControl previewTabControl;
-        private Panel configPanel;
+        //private Panel configPanel;
         private ToolStripProgressBar progressBar;
         private ToolStripStatusLabel statusLabel;
         private Panel logFilterPanel;

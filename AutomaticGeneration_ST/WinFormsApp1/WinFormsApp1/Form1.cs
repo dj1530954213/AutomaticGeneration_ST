@@ -2888,7 +2888,7 @@ namespace WinFormsApp1
                 
                 // 更新面板颜色
                 leftPanel.BackColor = ThemeManager.GetSurfaceColor();
-                configPanel.BackColor = ThemeManager.GetSurfaceColor();
+                //configPanel.BackColor = ThemeManager.GetSurfaceColor();
                 logFilterPanel.BackColor = ThemeManager.GetSurfaceColor();
                 
                 // 更新日志区域
