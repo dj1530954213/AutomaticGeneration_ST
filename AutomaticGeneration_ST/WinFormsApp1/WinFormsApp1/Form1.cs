@@ -117,7 +117,7 @@ namespace WinFormsApp1
             rightSplitContainer.SplitterWidth = 3;
             
             // 初始化日志过滤功能
-            InitializeLogFilters();
+            //InitializeLogFilters();
             
             // 初始化状态栏定时器
             InitializeStatusTimer();
@@ -247,19 +247,19 @@ namespace WinFormsApp1
         }
 
         //NEED DELETE: 日志筛选/搜索UI（与核心导入/生成/导出无关）
-        private void InitializeLogFilters()
-        {
-            // 搜索框事件
-            logSearchBox.TextChanged += LogSearchBox_TextChanged;
+        //private void InitializeLogFilters()
+        //{
+        //    // 搜索框事件
+        //    logSearchBox.TextChanged += LogSearchBox_TextChanged;
             
-            // 过滤下拉框事件
-            logFilterComboBox.SelectedIndexChanged += LogFilterComboBox_SelectedIndexChanged;
+        //    // 过滤下拉框事件
+        //    logFilterComboBox.SelectedIndexChanged += LogFilterComboBox_SelectedIndexChanged;
             
-            // 清空按钮事件
-            clearLogButton.Click += ClearLogButton_Click;
+        //    // 清空按钮事件
+        //    clearLogButton.Click += ClearLogButton_Click;
             
-            logger.LogInfo("日志过滤功能初始化完成");
-        }
+        //    logger.LogInfo("日志过滤功能初始化完成");
+        //}
 
         private void LogSearchBox_TextChanged(object? sender, EventArgs e)
         {
