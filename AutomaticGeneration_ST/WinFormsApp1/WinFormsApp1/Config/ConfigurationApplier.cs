@@ -107,13 +107,13 @@ namespace WinFormsApp1.Config
                 }
 
                 // 应用语言设置
-                if (!string.IsNullOrEmpty(config.DefaultLanguage))
-                {
-                    if (Enum.TryParse<SupportedLanguage>(config.DefaultLanguage, out var language))
-                    {
-                        LanguageManager.SetLanguage(language);
-                    }
-                }
+                //if (!string.IsNullOrEmpty(config.DefaultLanguage))
+                //{
+                //    if (Enum.TryParse<SupportedLanguage>(config.DefaultLanguage, out var language))
+                //    {
+                //        LanguageManager.SetLanguage(language);
+                //    }
+                //}
 
                 // 其他通用配置应用...
             }
@@ -271,13 +271,13 @@ namespace WinFormsApp1.Config
                     break;
 
                 case "DefaultLanguage":
-                    if (value is string language)
-                    {
-                        if (Enum.TryParse<SupportedLanguage>(language, out var supportedLang))
-                        {
-                            LanguageManager.SetLanguage(supportedLang);
-                        }
-                    }
+                    //if (value is string language)
+                    //{
+                    //    if (Enum.TryParse<SupportedLanguage>(language, out var supportedLang))
+                    //    {
+                    //        LanguageManager.SetLanguage(supportedLang);
+                    //    }
+                    //}
                     break;
             }
         }
