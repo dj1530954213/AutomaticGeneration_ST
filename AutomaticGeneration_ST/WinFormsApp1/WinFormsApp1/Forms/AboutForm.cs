@@ -1,3 +1,4 @@
+//NEED DELETE: 帮助/关于窗口（帮助工具栏相关），非核心功能
 using System;
 using System.Drawing;
 using System.Reflection;

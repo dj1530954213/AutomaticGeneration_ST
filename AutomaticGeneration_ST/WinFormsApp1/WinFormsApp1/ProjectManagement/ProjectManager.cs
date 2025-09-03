@@ -1,3 +1,4 @@
+//NEED DELETE: 旧版项目管理占位类（创建/打开/保存项目），不参与核心导入-生成-导出链路
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

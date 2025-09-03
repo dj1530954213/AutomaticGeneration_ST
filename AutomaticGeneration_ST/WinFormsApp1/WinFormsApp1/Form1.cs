@@ -246,6 +246,7 @@ namespace WinFormsApp1
             // 目前先留空，等步骤7实现工具栏时会完善
         }
 
+        //NEED DELETE: 日志筛选/搜索UI（与核心导入/生成/导出无关）
         private void InitializeLogFilters()
         {
             // 搜索框事件
@@ -278,6 +279,7 @@ namespace WinFormsApp1
             logger.LogInfo("日志已清空");
         }
 
+        //NEED DELETE: 日志筛选实现（非核心功能）
         private void ApplyLogFilters()
         {
             // 这里会实现日志过滤逻辑
@@ -285,6 +287,7 @@ namespace WinFormsApp1
             // 在后续优化中会实现完整的过滤功能
         }
 
+        //NEED DELETE: 状态栏时钟/统计（非核心功能）
         private void InitializeStatusTimer()
         {
             statusTimer.Interval = 1000; // 每秒更新一次
@@ -292,6 +295,7 @@ namespace WinFormsApp1
             statusTimer.Start();
         }
 
+        //NEED DELETE: 状态栏时钟（非核心功能）
         private void StatusTimer_Tick(object? sender, EventArgs e)
         {
             // 更新时间显示
@@ -302,6 +306,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 状态栏统计（非核心功能）
         private void UpdateStatusBarStats()
         {
             var totalPointsLabel = mainStatusStrip.Items["totalPointsLabel"] as ToolStripStatusLabel;
@@ -311,6 +316,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 菜单事件初始化（主要用于视图/帮助等非核心菜单）
         private void InitializeMenuEvents()
         {
             // 菜单事件已在Designer.cs中直接绑定
@@ -379,12 +385,14 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 设置窗口/功能（与核心流程无关）
         private void ShowSettings()
         {
             logger.LogInfo("设置功能已移除");
             MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        //NEED DELETE: 帮助/关于弹窗功能（与核心导入-生成-导出无关）
         private void ShowHelp()
         {
             var helpText = @"ST脚本自动生成器 v2.0 - 使用帮助
@@ -492,44 +500,47 @@ namespace WinFormsApp1
             deviceSTTab.Controls.Add(deviceSTTextBox);
             previewTabControl.TabPages.Add(deviceSTTab);
             
-            // 添加统计信息选项卡
-            var statisticsTab = new TabPage("📊 统计信息");
-            var statsTextBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("微软雅黑", 11F),
-                ReadOnly = true,
-                BackColor = Color.AliceBlue,
-                Name = "statsTextBox"
-            };
-            statisticsTab.Controls.Add(statsTextBox);
-            previewTabControl.TabPages.Add(statisticsTab);
+            //// 添加统计信息选项卡
+            //var statisticsTab = new TabPage("📊 统计信息");
+            //var statsTextBox = new RichTextBox
+            //{
+            //    Dock = DockStyle.Fill,
+            //    Font = new Font("微软雅黑", 11F),
+            //    ReadOnly = true,
+            //    BackColor = Color.AliceBlue,
+            //    Name = "statsTextBox"
+            //};
+            ////NEED DELETE: 统计信息显示（仅展示，不影响导入/生成/导出核心流程）
+            //statisticsTab.Controls.Add(statsTextBox);
+            //previewTabControl.TabPages.Add(statisticsTab);
             
-            // 添加文件信息选项卡
-            var fileInfoTab = new TabPage("📁 文件信息");
-            var fileInfoTextBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("微软雅黑", 11F),
-                ReadOnly = true,
-                BackColor = Color.Honeydew,
-                Name = "fileInfoTextBox"
-            };
-            fileInfoTab.Controls.Add(fileInfoTextBox);
-            previewTabControl.TabPages.Add(fileInfoTab);
+            //// 添加文件信息选项卡
+            //var fileInfoTab = new TabPage("📁 文件信息");
+            //var fileInfoTextBox = new RichTextBox
+            //{
+            //    Dock = DockStyle.Fill,
+            //    Font = new Font("微软雅黑", 11F),
+            //    ReadOnly = true,
+            //    BackColor = Color.Honeydew,
+            //    Name = "fileInfoTextBox"
+            //};
+            ////NEED DELETE: 文件信息显示（非核心流程功能，建议移除）
+            //fileInfoTab.Controls.Add(fileInfoTextBox);
+            //previewTabControl.TabPages.Add(fileInfoTab);
             
-            // 添加模板信息选项卡
-            var templateTab = new TabPage("🎨 模板信息");
-            var templateTextBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("微软雅黑", 11F),
-                ReadOnly = true,
-                BackColor = Color.Lavender,
-                Name = "templateTextBox"
-            };
-            templateTab.Controls.Add(templateTextBox);
-            previewTabControl.TabPages.Add(templateTab);
+            //// 添加模板信息选项卡
+            //var templateTab = new TabPage("🎨 模板信息");
+            //var templateTextBox = new RichTextBox
+            //{
+            //    Dock = DockStyle.Fill,
+            //    Font = new Font("微软雅黑", 11F),
+            //    ReadOnly = true,
+            //    BackColor = Color.Lavender,
+            //    Name = "templateTextBox"
+            //};
+            ////NEED DELETE: 模板信息显示（非核心流程功能，建议移除）
+            //templateTab.Controls.Add(templateTextBox);
+            //previewTabControl.TabPages.Add(templateTab);
             
             // 添加TCP通讯ST程序选项卡
             var tcpCommTab = new TabPage("🌐 TCP通讯ST程序");
@@ -545,6 +556,7 @@ namespace WinFormsApp1
             previewTabControl.TabPages.Add(tcpCommTab);
         }
 
+        //NEED DELETE: 右键菜单（文件/预览/日志）均为增强体验，非核心功能
         private void InitializeContextMenus()
         {
             // 为文件列表添加右键菜单
@@ -584,6 +596,7 @@ namespace WinFormsApp1
             richTextBox1.ContextMenuStrip = logContextMenu;
         }
 
+        //NEED DELETE: 右键“重新处理文件”增强项（非核心）
         private void ReprocessSelectedFile()
         {
             if (fileListBox.SelectedItem != null && !string.IsNullOrEmpty(uploadedFilePath))
@@ -593,6 +606,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 右键“移除文件”增强项（非核心）
         private void RemoveSelectedFile()
         {
             if (fileListBox.SelectedItem != null)
@@ -602,6 +616,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 右键“复制路径”增强项（非核心）
         private void CopyFilePath()
         {
             if (!string.IsNullOrEmpty(uploadedFilePath))
@@ -611,6 +626,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 右键“打开文件夹”增强项（非核心）
         private void OpenFileFolder()
         {
             if (!string.IsNullOrEmpty(uploadedFilePath) && File.Exists(uploadedFilePath))
@@ -621,6 +637,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 预览区复制全部（非核心功能）
         private void CopyAllPreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
@@ -634,6 +651,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 预览区复制选中（非核心功能）
         private void CopySelectedPreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
@@ -651,6 +669,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 预览内容另存为（非核心功能）
         private void SavePreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
@@ -670,6 +689,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 预览查找对话框（非核心功能）
         private void ShowFindDialog()
         {
             // 简单的查找对话框
@@ -693,6 +713,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 日志复制全部（非核心功能）
         private void CopyAllLogContent()
         {
             if (!string.IsNullOrEmpty(richTextBox1.Text))
@@ -702,6 +723,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 日志复制选中（非核心功能）
         private void CopySelectedLogContent()
         {
             if (!string.IsNullOrEmpty(richTextBox1.SelectedText))
@@ -715,6 +737,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 日志另存为（非核心功能）
         private void SaveLogContent()
         {
             using (var saveDialog = new SaveFileDialog())
@@ -730,6 +753,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 项目管理初始化（创建/打开/保存项目），非核心导入-生成-导出流程
         private void InitializeProjectManagement()
         {
             try
@@ -781,6 +805,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 项目状态变化处理（与项目保存/状态相关），非核心流程
         private void OnProjectChanged(object? sender, EventArgs e)
         {
             try
@@ -799,6 +824,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 窗口标题显示项目名称/保存状态（非核心）
         private void UpdateWindowTitle()
         {
             var projectName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目";
@@ -810,6 +836,7 @@ namespace WinFormsApp1
             this.Text = $"{projectName}{hasChanges}{filePath} - ST脚本自动生成器";
         }
 
+        //NEED DELETE: 同步项目数据（项目管理相关），非核心
         private void SyncProjectData()
         {
             try
@@ -923,16 +950,19 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 保存当前项目（项目管理功能与核心流程无关）
         private async void SaveProjectMenuItem_Click(object? sender, EventArgs e)
         {
             await SaveProject();
         }
 
+        //NEED DELETE: 另存为项目（项目管理功能与核心流程无关）
         private async void SaveAsProjectMenuItem_Click(object? sender, EventArgs e)
         {
             await SaveProjectAs();
         }
 
+        //NEED DELETE: 保存项目（项目文件stproj管理，非核心导入/生成/导出流程）
         private async Task<bool> SaveProject()
         {
             try
@@ -966,6 +996,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 另存为项目（项目文件stproj管理，非核心流程）
         private async Task<bool> SaveProjectAs()
         {
             try
@@ -1061,6 +1092,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 关闭项目（项目管理相关，非核心流程）
         private async void CloseProjectMenuItem_Click(object? sender, EventArgs e)
         {
             try
@@ -1619,32 +1651,32 @@ namespace WinFormsApp1
                 // 刷新设备列表（仅在数据变化时）
                 RefreshDeviceListIfNeeded();
                 
-                // 更新统计信息标签页
-                var statsTextBox = previewTabControl.TabPages[2].Controls["statsTextBox"] as RichTextBox;
-                if (statsTextBox != null)
-                {
-                    var stats = GenerateStatistics();
-                    statsTextBox.Text = stats;
-                }
+                //// 更新统计信息标签页
+                //var statsTextBox = previewTabControl.TabPages[2].Controls["statsTextBox"] as RichTextBox;
+                //if (statsTextBox != null)
+                //{
+                //    var stats = GenerateStatistics();
+                //    statsTextBox.Text = stats;
+                //}
                 
-                // 更新文件信息标签页
-                var fileInfoTextBox = previewTabControl.TabPages[3].Controls["fileInfoTextBox"] as RichTextBox;
-                if (fileInfoTextBox != null)
-                {
-                    var fileInfo = GenerateFileInfo();
-                    fileInfoTextBox.Text = fileInfo;
-                }
+                //// 更新文件信息标签页
+                //var fileInfoTextBox = previewTabControl.TabPages[3].Controls["fileInfoTextBox"] as RichTextBox;
+                //if (fileInfoTextBox != null)
+                //{
+                //    var fileInfo = GenerateFileInfo();
+                //    fileInfoTextBox.Text = fileInfo;
+                //}
                 
-                // 更新模板信息标签页
-                var templateTextBox = previewTabControl.TabPages[4].Controls["templateTextBox"] as RichTextBox;
-                if (templateTextBox != null)
-                {
-                    var templateInfo = GenerateTemplateInfo();
-                    templateTextBox.Text = templateInfo;
-                }
+                //// 更新模板信息标签页
+                //var templateTextBox = previewTabControl.TabPages[4].Controls["templateTextBox"] as RichTextBox;
+                //if (templateTextBox != null)
+                //{
+                //    var templateInfo = GenerateTemplateInfo();
+                //    templateTextBox.Text = templateInfo;
+                //}
                 
                 // 更新TCP通讯ST程序标签页
-                var tcpCommTextBox = previewTabControl.TabPages[5].Controls["tcpCommTextBox"] as RichTextBox;
+                var tcpCommTextBox = previewTabControl.TabPages[2].Controls["tcpCommTextBox"] as RichTextBox;
                 if (tcpCommTextBox != null)
                 {
                     var tcpCommContent = GenerateTcpCommPreview();
@@ -2352,11 +2384,11 @@ namespace WinFormsApp1
                 logger.LogInfo("=== 变量表生成流程结束 ===");
                 
                 // 4. 导出统计信息
-                var statsFileName = "Export_Statistics.txt";
-                var statsFilePath = Path.Combine(outputDirectory, statsFileName);
-                var statsContent = GenerateExportStatistics();
-                File.WriteAllText(statsFilePath, statsContent, Encoding.UTF8);
-                totalFiles++;
+                //var statsFileName = "Export_Statistics.txt";
+                //var statsFilePath = Path.Combine(outputDirectory, statsFileName);
+                //var statsContent = GenerateExportStatistics();
+                //File.WriteAllText(statsFilePath, statsContent, Encoding.UTF8);
+                //totalFiles++;
                 
                 logger.LogSuccess($"ProjectCache导出完成，共生成{totalFiles}个文件");
                 
@@ -2565,12 +2597,12 @@ namespace WinFormsApp1
         private string GenerateFileHeader(string fileType)
         {
             var header = new StringBuilder();
-            header.AppendLine("(*");
-            header.AppendLine($" * {fileType}");
-            header.AppendLine($" * 生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            header.AppendLine($" * 项目: {currentProjectCache?.SourceFilePath ?? "未知项目"}");
-            header.AppendLine($" * 生成器: ST自动生成工具 v2.0");
-            header.AppendLine(" *)");
+            //header.AppendLine("(*");
+            //header.AppendLine($" * {fileType}");
+            //header.AppendLine($" * 生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            //header.AppendLine($" * 项目: {currentProjectCache?.SourceFilePath ?? "未知项目"}");
+            //header.AppendLine($" * 生成器: ST自动生成工具 v2.0");
+            //header.AppendLine(" *)");
             header.AppendLine();
             return header.ToString();
         }
@@ -2578,36 +2610,36 @@ namespace WinFormsApp1
         /// <summary>
         /// 生成导出统计信息
         /// </summary>
-        private string GenerateExportStatistics()
-        {
-            var stats = new StringBuilder();
-            stats.AppendLine("ST脚本导出统计报告");
-            stats.AppendLine("=" + new string('=', 50));
-            stats.AppendLine();
-            stats.AppendLine($"导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            stats.AppendLine($"源文件: {currentProjectCache?.SourceFilePath ?? "未知"}");
-            stats.AppendLine();
+        //private string GenerateExportStatistics()
+        //{
+        //    var stats = new StringBuilder();
+        //    stats.AppendLine("ST脚本导出统计报告");
+        //    stats.AppendLine("=" + new string('=', 50));
+        //    stats.AppendLine();
+        //    stats.AppendLine($"导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        //    stats.AppendLine($"源文件: {currentProjectCache?.SourceFilePath ?? "未知"}");
+        //    stats.AppendLine();
             
-            // 统计信息
-            stats.AppendLine("📊 统计数据:");
-            stats.AppendLine($"总设备数: {currentProjectCache?.Statistics.TotalDevices ?? 0}");
-            stats.AppendLine($"总点位数: {currentProjectCache?.Statistics.TotalPoints ?? 0}");
-            stats.AppendLine($"IO映射脚本数: {currentProjectCache?.IOMappingScripts.Count ?? 0}");
-            stats.AppendLine($"设备模板类型数: {currentProjectCache?.DeviceSTPrograms.Count ?? 0}");
-            stats.AppendLine();
+        //    // 统计信息
+        //    stats.AppendLine("📊 统计数据:");
+        //    stats.AppendLine($"总设备数: {currentProjectCache?.Statistics.TotalDevices ?? 0}");
+        //    stats.AppendLine($"总点位数: {currentProjectCache?.Statistics.TotalPoints ?? 0}");
+        //    stats.AppendLine($"IO映射脚本数: {currentProjectCache?.IOMappingScripts.Count ?? 0}");
+        //    stats.AppendLine($"设备模板类型数: {currentProjectCache?.DeviceSTPrograms.Count ?? 0}");
+        //    stats.AppendLine();
             
-            // 设备模板详情
-            if (currentProjectCache?.DeviceSTPrograms.Any() == true)
-            {
-                stats.AppendLine("📋 设备模板详情:");
-                foreach (var template in currentProjectCache.DeviceSTPrograms)
-                {
-                    stats.AppendLine($"• {template.Key}: {template.Value.Count} 个设备");
-                }
-            }
+        //    // 设备模板详情
+        //    if (currentProjectCache?.DeviceSTPrograms.Any() == true)
+        //    {
+        //        stats.AppendLine("📋 设备模板详情:");
+        //        foreach (var template in currentProjectCache.DeviceSTPrograms)
+        //        {
+        //            stats.AppendLine($"• {template.Key}: {template.Value.Count} 个设备");
+        //        }
+        //    }
             
-            return stats.ToString();
-        }
+        //    return stats.ToString();
+        //}
 
         /// <summary>
         /// 生成变量表Excel文件
@@ -2893,6 +2925,7 @@ namespace WinFormsApp1
             }
         }
 
+        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
         private void LightThemeMenuItem_Click(object sender, EventArgs e)
         {
             SetThemeMenuChecked(lightThemeMenuItem);
@@ -2900,6 +2933,7 @@ namespace WinFormsApp1
             logger.LogInfo("已切换到浅色主题");
         }
 
+        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
         private void DarkThemeMenuItem_Click(object sender, EventArgs e)
         {
             SetThemeMenuChecked(darkThemeMenuItem);
@@ -2907,6 +2941,7 @@ namespace WinFormsApp1
             logger.LogInfo("已切换到深色主题");
         }
 
+        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
         private void SystemThemeMenuItem_Click(object sender, EventArgs e)
         {
             SetThemeMenuChecked(systemThemeMenuItem);
@@ -3908,6 +3943,7 @@ namespace WinFormsApp1
         /// <summary>
         /// 清除项目缓存（当用户选择新文件或重置应用时调用）
         /// </summary>
+        //NEED DELETE: 项目缓存管理（非核心）
         private void ClearProjectCache()
         {
             lock (projectCacheLock)

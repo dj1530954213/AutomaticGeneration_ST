@@ -1,3 +1,4 @@
+//NEED DELETE: 设备导入/导出（旧实现，存在属性缺失编译错误），与新流水线重复
 using System;
 using System.Collections.Generic;
 using System.IO;

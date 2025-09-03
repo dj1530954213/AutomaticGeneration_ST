@@ -1,3 +1,4 @@
+//NEED DELETE: 配置窗口（非核心导入/生成/导出流程），仅用于界面设置
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

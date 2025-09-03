@@ -1,3 +1,4 @@
+//NEED DELETE: 界面样式管理（视图相关），与核心导入/生成/导出无关
 using System;
 using System.Drawing;
 using System.Windows.Forms;

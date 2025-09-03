@@ -1,3 +1,4 @@
+//NEED DELETE: 模板选择窗口（模板管理相关UI），与核心导入/生成/导出无关
 using System;
 using System.Collections.Generic;
 using System.Drawing;

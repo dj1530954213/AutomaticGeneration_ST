@@ -1,3 +1,4 @@
+//NEED DELETE: 快捷键管理（UI交互增强），非核心
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;

@@ -1,3 +1,4 @@
+//NEED DELETE: 主题/配色管理（视图相关），与核心链路无关
 using System;
 using System.Drawing;
 using System.Windows.Forms;

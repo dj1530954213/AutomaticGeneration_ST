@@ -1,3 +1,4 @@
+//NEED DELETE: 窗口位置/大小持久化（UI增强），非核心
 using System;
 using System.Drawing;
 using System.IO;

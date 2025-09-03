@@ -1,3 +1,4 @@
+//NEED DELETE: 多语言/语言管理（UI增强），非核心
 using System;
 using System.Collections.Generic;
 using System.Globalization;

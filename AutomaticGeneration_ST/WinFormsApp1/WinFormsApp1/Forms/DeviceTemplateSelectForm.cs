@@ -1,3 +1,4 @@
+//NEED DELETE: 设备模板选择窗口（模板管理UI），非核心主链路
 using System;
 using System.Collections.Generic;
 using System.Drawing;

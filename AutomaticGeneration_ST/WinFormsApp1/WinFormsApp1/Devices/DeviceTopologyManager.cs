@@ -1,3 +1,4 @@
+//NEED DELETE: 设备拓扑管理（遗留），非核心链路
 using System;
 using System.Collections.Generic;
 using System.Linq;

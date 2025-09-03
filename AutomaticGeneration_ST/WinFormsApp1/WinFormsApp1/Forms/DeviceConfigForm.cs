@@ -1,3 +1,4 @@
+//NEED DELETE: 设备配置编辑窗口（模板/标识/编辑相关UI），非核心导入/导出所需
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

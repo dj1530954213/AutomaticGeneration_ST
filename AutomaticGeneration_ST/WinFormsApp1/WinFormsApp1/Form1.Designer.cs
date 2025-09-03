@@ -1,4 +1,4 @@
-﻿namespace WinFormsApp1
+namespace WinFormsApp1
 {
     partial class Form1
     {
@@ -36,13 +36,15 @@
             exitMenuItem = new ToolStripMenuItem();
             editMenu = new ToolStripMenuItem();
             clearLogMenuItem = new ToolStripMenuItem();
-            viewMenu = new ToolStripMenuItem();
-            themeMenu = new ToolStripMenuItem();
-            lightThemeMenuItem = new ToolStripMenuItem();
-            darkThemeMenuItem = new ToolStripMenuItem();
-            systemThemeMenuItem = new ToolStripMenuItem();
-            helpMenu = new ToolStripMenuItem();
-            aboutMenuItem = new ToolStripMenuItem();
+            //NEED DELETE: 视图菜单/工具栏与核心导入-导出流程无关，仅用于主题切换等显示效果，请后续删除相关菜单与事件绑定
+            //viewMenu = new ToolStripMenuItem();
+            //themeMenu = new ToolStripMenuItem();
+            //lightThemeMenuItem = new ToolStripMenuItem();
+            //darkThemeMenuItem = new ToolStripMenuItem();
+            //systemThemeMenuItem = new ToolStripMenuItem();
+            //NEED DELETE: 帮助菜单/工具栏与核心功能无关（关于/帮助弹窗等），可删除以简化界面
+            //helpMenu = new ToolStripMenuItem();
+            //aboutMenuItem = new ToolStripMenuItem();
             mainStatusStrip = new StatusStrip();
             statusLabel = new ToolStripStatusLabel();
             progressBar = new ToolStripProgressBar();
@@ -59,6 +61,7 @@
             clearLogButton = new Button();
             logFilterComboBox = new ComboBox();
             logSearchBox = new TextBox();
+            //NEED DELETE: configPanel 为遗留配置面板，未参与核心流程显示
             configPanel = new Panel();
             mainMenuStrip.SuspendLayout();
             mainStatusStrip.SuspendLayout();
@@ -77,7 +80,9 @@
             // mainMenuStrip
             // 
             mainMenuStrip.ImageScalingSize = new Size(24, 24);
-            mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, helpMenu });
+            //NEED DELETE: 以下加入的 viewMenu、helpMenu 属于非核心菜单项（视图/帮助），建议移除
+            mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu});
+            //mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, helpMenu });
             mainMenuStrip.Location = new Point(0, 0);
             mainMenuStrip.Name = "mainMenuStrip";
             mainMenuStrip.Size = new Size(1200, 32);
@@ -144,56 +149,56 @@
             // 
             // viewMenu
             // 
-            viewMenu.DropDownItems.AddRange(new ToolStripItem[] { themeMenu });
-            viewMenu.Name = "viewMenu";
-            viewMenu.Size = new Size(86, 28);
-            viewMenu.Text = "视图(&V)";
+            //viewMenu.DropDownItems.AddRange(new ToolStripItem[] { themeMenu });
+            //viewMenu.Name = "viewMenu";
+            //viewMenu.Size = new Size(86, 28);
+            //viewMenu.Text = "视图(&V)";
             // 
             // themeMenu
             // 
-            themeMenu.DropDownItems.AddRange(new ToolStripItem[] { lightThemeMenuItem, darkThemeMenuItem, systemThemeMenuItem });
-            themeMenu.Name = "themeMenu";
-            themeMenu.Size = new Size(168, 34);
-            themeMenu.Text = "主题(&T)";
+            //themeMenu.DropDownItems.AddRange(new ToolStripItem[] { lightThemeMenuItem, darkThemeMenuItem, systemThemeMenuItem });
+            //themeMenu.Name = "themeMenu";
+            //themeMenu.Size = new Size(168, 34);
+            //themeMenu.Text = "主题(&T)";
             // 
             // lightThemeMenuItem
             // 
-            lightThemeMenuItem.Checked = true;
-            lightThemeMenuItem.CheckState = CheckState.Checked;
-            lightThemeMenuItem.Name = "lightThemeMenuItem";
-            lightThemeMenuItem.Size = new Size(208, 34);
-            lightThemeMenuItem.Text = "浅色主题(&L)";
-            lightThemeMenuItem.Click += LightThemeMenuItem_Click;
+            //lightThemeMenuItem.Checked = true;
+            //lightThemeMenuItem.CheckState = CheckState.Checked;
+            //lightThemeMenuItem.Name = "lightThemeMenuItem";
+            //lightThemeMenuItem.Size = new Size(208, 34);
+            //lightThemeMenuItem.Text = "浅色主题(&L)";
+            //lightThemeMenuItem.Click += LightThemeMenuItem_Click;
             // 
             // darkThemeMenuItem
             // 
-            darkThemeMenuItem.Name = "darkThemeMenuItem";
-            darkThemeMenuItem.Size = new Size(208, 34);
-            darkThemeMenuItem.Text = "深色主题(&D)";
-            darkThemeMenuItem.Click += DarkThemeMenuItem_Click;
-            // 
-            // systemThemeMenuItem
-            // 
-            systemThemeMenuItem.Name = "systemThemeMenuItem";
-            systemThemeMenuItem.Size = new Size(208, 34);
-            systemThemeMenuItem.Text = "跟随系统(&S)";
-            systemThemeMenuItem.Click += SystemThemeMenuItem_Click;
-            // 
-            // helpMenu
-            // 
-            helpMenu.DropDownItems.AddRange(new ToolStripItem[] { aboutMenuItem });
-            helpMenu.Name = "helpMenu";
-            helpMenu.Size = new Size(88, 28);
-            helpMenu.Text = "帮助(&H)";
-            // 
-            // aboutMenuItem
-            // 
-            aboutMenuItem.Name = "aboutMenuItem";
-            aboutMenuItem.ShortcutKeys = Keys.F1;
-            aboutMenuItem.Size = new Size(232, 34);
-            aboutMenuItem.Text = "❓ 关于(&A)";
-            aboutMenuItem.ToolTipText = "显示关于信息";
-            aboutMenuItem.Click += AboutMenuItem_Click;
+            //darkThemeMenuItem.Name = "darkThemeMenuItem";
+            //darkThemeMenuItem.Size = new Size(208, 34);
+            //darkThemeMenuItem.Text = "深色主题(&D)";
+            //darkThemeMenuItem.Click += DarkThemeMenuItem_Click;
+            //// 
+            //// systemThemeMenuItem
+            //// 
+            //systemThemeMenuItem.Name = "systemThemeMenuItem";
+            //systemThemeMenuItem.Size = new Size(208, 34);
+            //systemThemeMenuItem.Text = "跟随系统(&S)";
+            //systemThemeMenuItem.Click += SystemThemeMenuItem_Click;
+            //// 
+            //// helpMenu
+            //// 
+            //helpMenu.DropDownItems.AddRange(new ToolStripItem[] { aboutMenuItem });
+            //helpMenu.Name = "helpMenu";
+            //helpMenu.Size = new Size(88, 28);
+            //helpMenu.Text = "帮助(&H)";
+            //// 
+            //// aboutMenuItem
+            //// 
+            //aboutMenuItem.Name = "aboutMenuItem";
+            //aboutMenuItem.ShortcutKeys = Keys.F1;
+            //aboutMenuItem.Size = new Size(232, 34);
+            //aboutMenuItem.Text = "❓ 关于(&A)";
+            //aboutMenuItem.ToolTipText = "显示关于信息";
+            //aboutMenuItem.Click += AboutMenuItem_Click;
             // 
             // mainStatusStrip
             // 
@@ -371,6 +376,7 @@
             logSearchBox.Size = new Size(200, 30);
             logSearchBox.TabIndex = 0;
             // 
+            //NEED DELETE: 遗留配置面板（未用于导入/导出链路）
             // configPanel
             // 
             configPanel.Dock = DockStyle.Fill;
