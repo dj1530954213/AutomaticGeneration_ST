@@ -120,7 +120,7 @@ namespace WinFormsApp1
             //InitializeLogFilters();
             
             // 初始化状态栏定时器
-            InitializeStatusTimer();
+            //InitializeStatusTimer();
             
             // 初始化菜单事件
             InitializeMenuEvents();
@@ -261,17 +261,17 @@ namespace WinFormsApp1
         //    logger.LogInfo("日志过滤功能初始化完成");
         //}
 
-        private void LogSearchBox_TextChanged(object? sender, EventArgs e)
-        {
-            // 实现日志搜索功能
-            ApplyLogFilters();
-        }
+        //private void LogSearchBox_TextChanged(object? sender, EventArgs e)
+        //{
+        //    // 实现日志搜索功能
+        //    ApplyLogFilters();
+        //}
 
-        private void LogFilterComboBox_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            // 实现日志级别过滤
-            ApplyLogFilters();
-        }
+        //private void LogFilterComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+        //{
+        //    // 实现日志级别过滤
+        //    ApplyLogFilters();
+        //}
 
         private void ClearLogButton_Click(object? sender, EventArgs e)
         {
@@ -279,42 +279,42 @@ namespace WinFormsApp1
             logger.LogInfo("日志已清空");
         }
 
-        //NEED DELETE: 日志筛选实现（非核心功能）
-        private void ApplyLogFilters()
-        {
-            // 这里会实现日志过滤逻辑
-            // 由于当前日志系统比较简单，这个功能先预留
-            // 在后续优化中会实现完整的过滤功能
-        }
+        ////NEED DELETE: 日志筛选实现（非核心功能）
+        //private void ApplyLogFilters()
+        //{
+        //    // 这里会实现日志过滤逻辑
+        //    // 由于当前日志系统比较简单，这个功能先预留
+        //    // 在后续优化中会实现完整的过滤功能
+        //}
 
-        //NEED DELETE: 状态栏时钟/统计（非核心功能）
-        private void InitializeStatusTimer()
-        {
-            statusTimer.Interval = 1000; // 每秒更新一次
-            statusTimer.Tick += StatusTimer_Tick;
-            statusTimer.Start();
-        }
+        ////NEED DELETE: 状态栏时钟/统计（非核心功能）
+        //private void InitializeStatusTimer()
+        //{
+        //    statusTimer.Interval = 1000; // 每秒更新一次
+        //    statusTimer.Tick += StatusTimer_Tick;
+        //    statusTimer.Start();
+        //}
 
-        //NEED DELETE: 状态栏时钟（非核心功能）
-        private void StatusTimer_Tick(object? sender, EventArgs e)
-        {
-            // 更新时间显示
-            var timeLabel = mainStatusStrip.Items["timeLabel"] as ToolStripStatusLabel;
-            if (timeLabel != null)
-            {
-                timeLabel.Text = DateTime.Now.ToString("HH:mm:ss");
-            }
-        }
+        ////NEED DELETE: 状态栏时钟（非核心功能）
+        //private void StatusTimer_Tick(object? sender, EventArgs e)
+        //{
+        //    // 更新时间显示
+        //    var timeLabel = mainStatusStrip.Items["timeLabel"] as ToolStripStatusLabel;
+        //    if (timeLabel != null)
+        //    {
+        //        timeLabel.Text = DateTime.Now.ToString("HH:mm:ss");
+        //    }
+        //}
 
-        //NEED DELETE: 状态栏统计（非核心功能）
-        private void UpdateStatusBarStats()
-        {
-            var totalPointsLabel = mainStatusStrip.Items["totalPointsLabel"] as ToolStripStatusLabel;
-            if (totalPointsLabel != null)
-            {
-                totalPointsLabel.Text = $"总点位: {pointData.Count}";
-            }
-        }
+        ////NEED DELETE: 状态栏统计（非核心功能）
+        //private void UpdateStatusBarStats()
+        //{
+        //    var totalPointsLabel = mainStatusStrip.Items["totalPointsLabel"] as ToolStripStatusLabel;
+        //    if (totalPointsLabel != null)
+        //    {
+        //        totalPointsLabel.Text = $"总点位: {pointData.Count}";
+        //    }
+        //}
 
         //NEED DELETE: 菜单事件初始化（主要用于视图/帮助等非核心菜单）
         private void InitializeMenuEvents()
@@ -848,7 +848,7 @@ namespace WinFormsApp1
                     if (project.PointData.Any())
                     {
                         pointData = project.PointData;
-                        UpdateStatusBarStats();
+                        //UpdateStatusBarStats();
                     }
                     
                     // 同步生成的代码
@@ -1082,7 +1082,7 @@ namespace WinFormsApp1
                 UpdatePreviewArea();
                 
                 // 更新状态
-                UpdateStatusBarStats();
+                //UpdateStatusBarStats();
                 
                 logger.LogInfo("当前数据已清空");
             }
@@ -1300,7 +1300,7 @@ namespace WinFormsApp1
                 UpdatePreviewArea();
                 
                 // 更新状态栏统计
-                UpdateStatusBarStats();
+                //UpdateStatusBarStats();
                 
                 // 更新提示上下文
                 UpdateTooltipContext();
@@ -1406,7 +1406,7 @@ namespace WinFormsApp1
                 }
                 
                 // 更新状态栏统计
-                UpdateStatusBarStats();
+                //UpdateStatusBarStats();
                 
                 if (generatedScripts.Any())
                 {
@@ -1493,7 +1493,7 @@ namespace WinFormsApp1
                 await LoadGeneratedFilesFromTempDirectory(tempExportPath);
                 
                 // 更新状态栏统计
-                UpdateStatusBarStats();
+                //UpdateStatusBarStats();
                 
                 if (generatedScripts.Any())
                 {
