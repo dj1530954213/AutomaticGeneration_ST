@@ -36,13 +36,13 @@ namespace WinFormsApp1
             exitMenuItem = new ToolStripMenuItem();
             editMenu = new ToolStripMenuItem();
             clearLogMenuItem = new ToolStripMenuItem();
-            //NEED DELETE: 视图菜单/工具栏与核心导入-导出流程无关，仅用于主题切换等显示效果，请后续删除相关菜单与事件绑定
+            //--NEED DELETE: 视图菜单/工具栏与核心导入-导出流程无关，仅用于主题切换等显示效果，请后续删除相关菜单与事件绑定
             //viewMenu = new ToolStripMenuItem();
             //themeMenu = new ToolStripMenuItem();
             //lightThemeMenuItem = new ToolStripMenuItem();
             //darkThemeMenuItem = new ToolStripMenuItem();
             //systemThemeMenuItem = new ToolStripMenuItem();
-            //NEED DELETE: 帮助菜单/工具栏与核心功能无关（关于/帮助弹窗等），可删除以简化界面
+            //--NEED DELETE: 帮助菜单/工具栏与核心功能无关（关于/帮助弹窗等），可删除以简化界面
             //helpMenu = new ToolStripMenuItem();
             //aboutMenuItem = new ToolStripMenuItem();
             mainStatusStrip = new StatusStrip();
@@ -61,7 +61,7 @@ namespace WinFormsApp1
             clearLogButton = new Button();
             logFilterComboBox = new ComboBox();
             logSearchBox = new TextBox();
-            //NEED DELETE: configPanel 为遗留配置面板，未参与核心流程显示
+            //--NEED DELETE: configPanel 为遗留配置面板，未参与核心流程显示
             //configPanel = new Panel();
             mainMenuStrip.SuspendLayout();
             mainStatusStrip.SuspendLayout();

@@ -1,4 +1,4 @@
-//NEED DELETE: 配置重置窗口（非核心功能），仅UI配置管理
+//--NEED DELETE: 配置重置窗口（非核心功能），仅UI配置管理
 using System;
 using System.Drawing;
 using System.Windows.Forms;

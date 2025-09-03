@@ -1,4 +1,4 @@
-////NEED DELETE: 设备点编辑窗口（模板管理/标识/编辑相关），与核心流程无关
+////--NEED DELETE: 设备点编辑窗口（模板管理/标识/编辑相关），与核心流程无关
 //using System;
 //using System.ComponentModel;
 //using System.Drawing;

@@ -246,7 +246,7 @@ namespace WinFormsApp1
             // 目前先留空，等步骤7实现工具栏时会完善
         }
 
-        //NEED DELETE: 日志筛选/搜索UI（与核心导入/生成/导出无关）
+        //--NEED DELETE: 日志筛选/搜索UI（与核心导入/生成/导出无关）
         //private void InitializeLogFilters()
         //{
         //    // 搜索框事件
@@ -279,7 +279,7 @@ namespace WinFormsApp1
             logger.LogInfo("日志已清空");
         }
 
-        ////NEED DELETE: 日志筛选实现（非核心功能）
+        ////--NEED DELETE: 日志筛选实现（非核心功能）
         //private void ApplyLogFilters()
         //{
         //    // 这里会实现日志过滤逻辑
@@ -287,7 +287,7 @@ namespace WinFormsApp1
         //    // 在后续优化中会实现完整的过滤功能
         //}
 
-        ////NEED DELETE: 状态栏时钟/统计（非核心功能）
+        ////--NEED DELETE: 状态栏时钟/统计（非核心功能）
         //private void InitializeStatusTimer()
         //{
         //    statusTimer.Interval = 1000; // 每秒更新一次
@@ -295,7 +295,7 @@ namespace WinFormsApp1
         //    statusTimer.Start();
         //}
 
-        ////NEED DELETE: 状态栏时钟（非核心功能）
+        ////--NEED DELETE: 状态栏时钟（非核心功能）
         //private void StatusTimer_Tick(object? sender, EventArgs e)
         //{
         //    // 更新时间显示
@@ -306,7 +306,7 @@ namespace WinFormsApp1
         //    }
         //}
 
-        ////NEED DELETE: 状态栏统计（非核心功能）
+        ////--NEED DELETE: 状态栏统计（非核心功能）
         //private void UpdateStatusBarStats()
         //{
         //    var totalPointsLabel = mainStatusStrip.Items["totalPointsLabel"] as ToolStripStatusLabel;
@@ -316,7 +316,7 @@ namespace WinFormsApp1
         //    }
         //}
 
-        //NEED DELETE: 菜单事件初始化（主要用于视图/帮助等非核心菜单）
+        //--NEED DELETE: 菜单事件初始化（主要用于视图/帮助等非核心菜单）
         //private void InitializeMenuEvents()
         //{
         //    // 菜单事件已在Designer.cs中直接绑定
@@ -385,14 +385,14 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 设置窗口/功能（与核心流程无关）
+        //--NEED DELETE: 设置窗口/功能（与核心流程无关）
         //private void ShowSettings()
         //{
         //    logger.LogInfo("设置功能已移除");
         //    MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
         //}
 
-        //NEED DELETE: 帮助/关于弹窗功能（与核心导入-生成-导出无关）
+        //--NEED DELETE: 帮助/关于弹窗功能（与核心导入-生成-导出无关）
 //        private void ShowHelp()
 //        {
 //            var helpText = @"ST脚本自动生成器 v2.0 - 使用帮助
@@ -510,7 +510,7 @@ namespace WinFormsApp1
             //    BackColor = Color.AliceBlue,
             //    Name = "statsTextBox"
             //};
-            ////NEED DELETE: 统计信息显示（仅展示，不影响导入/生成/导出核心流程）
+            ////--NEED DELETE: 统计信息显示（仅展示，不影响导入/生成/导出核心流程）
             //statisticsTab.Controls.Add(statsTextBox);
             //previewTabControl.TabPages.Add(statisticsTab);
             
@@ -524,7 +524,7 @@ namespace WinFormsApp1
             //    BackColor = Color.Honeydew,
             //    Name = "fileInfoTextBox"
             //};
-            ////NEED DELETE: 文件信息显示（非核心流程功能，建议移除）
+            ////--NEED DELETE: 文件信息显示（非核心流程功能，建议移除）
             //fileInfoTab.Controls.Add(fileInfoTextBox);
             //previewTabControl.TabPages.Add(fileInfoTab);
             
@@ -538,7 +538,7 @@ namespace WinFormsApp1
             //    BackColor = Color.Lavender,
             //    Name = "templateTextBox"
             //};
-            ////NEED DELETE: 模板信息显示（非核心流程功能，建议移除）
+            ////--NEED DELETE: 模板信息显示（非核心流程功能，建议移除）
             //templateTab.Controls.Add(templateTextBox);
             //previewTabControl.TabPages.Add(templateTab);
             
@@ -556,13 +556,12 @@ namespace WinFormsApp1
             previewTabControl.TabPages.Add(tcpCommTab);
         }
 
-        //NEED DELETE: 右键菜单（文件/预览/日志）均为增强体验，非核心功能
         private void InitializeContextMenus()
         {
             // 为文件列表添加右键菜单
             var fileContextMenu = new ContextMenuStrip();
             fileContextMenu.Items.Add("📁 打开文件", null, (s, e) => button_upload_Click(s, e));
-            fileContextMenu.Items.Add("🔄 重新处理", null, (s, e) => ReprocessSelectedFile());
+            //fileContextMenu.Items.Add("🔄 重新处理", null, (s, e) => ReprocessSelectedFile());
             fileContextMenu.Items.Add("❌ 移除文件", null, (s, e) => RemoveSelectedFile());
             fileContextMenu.Items.Add(new ToolStripSeparator());
             fileContextMenu.Items.Add("📋 复制路径", null, (s, e) => CopyFilePath());
@@ -596,15 +595,15 @@ namespace WinFormsApp1
             richTextBox1.ContextMenuStrip = logContextMenu;
         }
 
-        //NEED DELETE: 右键“重新处理文件”增强项（非核心）
-        private void ReprocessSelectedFile()
-        {
-            if (fileListBox.SelectedItem != null && !string.IsNullOrEmpty(uploadedFilePath))
-            {
-                logger.LogInfo("重新处理文件: " + Path.GetFileName(uploadedFilePath));
-                ProcessExcelFile(uploadedFilePath);
-            }
-        }
+        //--NEED DELETE: 右键“重新处理文件”增强项（非核心）
+        //private void ReprocessSelectedFile()
+        //{
+        //    if (fileListBox.SelectedItem != null && !string.IsNullOrEmpty(uploadedFilePath))
+        //    {
+        //        logger.LogInfo("重新处理文件: " + Path.GetFileName(uploadedFilePath));
+        //        ProcessExcelFile(uploadedFilePath);
+        //    }
+        //}
 
         //NEED DELETE: 右键“移除文件”增强项（非核心）
         private void RemoveSelectedFile()
@@ -637,7 +636,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 预览区复制全部（非核心功能）
         private void CopyAllPreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
