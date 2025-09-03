@@ -59,12 +59,10 @@ namespace AutomaticGeneration_ST.Services.Implementations
             {
                 StartTime = DateTime.Now
             };
-            //NEED DELETE: 导出前的严格校验导致导出被阻断（非核心链路），建议删除/放宽
             
             try
             {
                 // 验证配置
-                //NEED DELETE: 导出前配置ValidateConfiguration导致提前失败（建议改为日志警告）
                 if (!ValidateConfiguration(configuration, out string validationError))
                 {
                     result.SetFailure($"配置验证失败: {validationError}");
@@ -72,7 +70,6 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 }
                 
                 // 验证输入
-                //NEED DELETE: 空脚本直接失败（建议允许跳过/生成空文件，不阻断导出）
                 if (categorizedScripts == null || categorizedScripts.Count == 0)
                 {
                     result.SetFailure("没有可导出的脚本");
@@ -174,7 +171,6 @@ namespace AutomaticGeneration_ST.Services.Implementations
         /// <param name="configuration">导出配置</param>
         /// <param name="errorMessage">错误信息</param>
         /// <returns>验证结果</returns>
-        //NEED DELETE: 导出前配置严格校验（会阻断导出），按需求应删除或改为记录告警
         public bool ValidateConfiguration(ExportConfiguration configuration, out string errorMessage)
         {
             if (configuration == null)

@@ -1201,7 +1201,7 @@ namespace WinFormsApp1
                 
                 // ============ 关键架构改进：使用ImportPipeline作为单一处理入口 ============
                 // 清除旧缓存以确保全新处理
-                ClearProjectCache();
+                //ClearProjectCache();
                 
                 // 通过ImportPipeline执行完整的数据处理管道
                 var projectCache = await importPipeline.ImportAsync(filePath);
@@ -1232,7 +1232,7 @@ namespace WinFormsApp1
                 MessageBox.Show($"处理Excel文件失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 
                 // 处理失败时清除缓存
-                ClearProjectCache();
+                //ClearProjectCache();
             }
         }
         
@@ -3929,24 +3929,24 @@ namespace WinFormsApp1
         /// <summary>
         /// 清除项目缓存（当用户选择新文件或重置应用时调用）
         /// </summary>
-        //NEED DELETE: 项目缓存管理（非核心）
-        private void ClearProjectCache()
-        {
-            lock (projectCacheLock)
-            {
-                currentProjectCache = null;
-                logger?.LogInfo("🗑️ 已清除项目缓存");
-            }
-        }
+        //--NEED DELETE: 项目缓存管理（非核心）
+        //private void ClearProjectCache()
+        //{
+        //    lock (projectCacheLock)
+        //    {
+        //        currentProjectCache = null;
+        //        logger?.LogInfo("🗑️ 已清除项目缓存");
+        //    }
+        //}
 
         /// <summary>
         /// 检查当前是否有有效的项目缓存
         /// </summary>
         /// <returns>如果有有效项目缓存返回true</returns>
-        private bool HasValidProjectCache()
-        {
-            return currentProjectCache != null && currentProjectCache.IsValid();
-        }
+        //private bool HasValidProjectCache()
+        //{
+        //    return currentProjectCache != null && currentProjectCache.IsValid();
+        //}
         
         /// <summary>
         /// 将IO映射脚本转换为按模板分组的格式，以便进行变量分析
