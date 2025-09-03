@@ -1,4 +1,4 @@
-////NEED DELETE: 项目保存/打开/设置管理（stproj）与导入->生成->导出核心流程无关；按需求应移除相关管理逻辑
+////--NEED DELETE: 项目保存/打开/设置管理（stproj）与导入->生成->导出核心流程无关；按需求应移除相关管理逻辑
 //using System;
 //using System.Collections.Generic;
 //using System.IO;
