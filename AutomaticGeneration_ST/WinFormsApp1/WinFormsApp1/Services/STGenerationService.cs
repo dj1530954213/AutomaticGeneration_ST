@@ -296,7 +296,6 @@ namespace AutomaticGeneration_ST.Services
                 throw new DirectoryNotFoundException($"导出目录的父目录不存在: {exportParent}");
         }
 
-        //NEED DELETE: 数据上下文参数校验（可能阻断导出），按需求应删除或降级为非阻断
         private void ValidateInputParametersForDataContext(string templateDirectory, string configFilePath, string exportRootPath)
         {
             if (string.IsNullOrWhiteSpace(templateDirectory))

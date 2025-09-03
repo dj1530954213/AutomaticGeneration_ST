@@ -2950,8 +2950,8 @@ namespace WinFormsApp1
             try
             {
                 // 重新加载窗口设置
-                var windowSettings = WindowSettings.Load();
-                windowSettings.ApplyToForm(this);
+                //var windowSettings = WindowSettings.Load();
+                //windowSettings.ApplyToForm(this);
                 
                 // 重新初始化快捷键（如果设置有变化）
                 KeyboardShortcutManager.RefreshShortcuts(this);
@@ -3299,21 +3299,21 @@ namespace WinFormsApp1
             {
                 // 这里可以保存分割器位置到WindowSettings
                 // 为了避免频繁保存，可以使用定时器延迟保存
-                if (statusTimer != null)
-                {
-                    statusTimer.Stop();
-                    statusTimer.Interval = 1000; // 1秒后保存
-                    statusTimer.Tick += (s, e) => {
-                        var settings = WindowSettings.Load();
-                        if (splitterIndex == 1)
-                            settings.SplitterDistance1 = distance;
-                        else
-                            settings.SplitterDistance2 = distance;
-                        settings.Save();
-                        statusTimer.Stop();
-                    };
-                    statusTimer.Start();
-                }
+                //if (statusTimer != null)
+                //{
+                //    statusTimer.Stop();
+                //    statusTimer.Interval = 1000; // 1秒后保存
+                //    statusTimer.Tick += (s, e) => {
+                //        var settings = WindowSettings.Load();
+                //        if (splitterIndex == 1)
+                //            settings.SplitterDistance1 = distance;
+                //        else
+                //            settings.SplitterDistance2 = distance;
+                //        settings.Save();
+                //        statusTimer.Stop();
+                //    };
+                //    statusTimer.Start();
+                //}
             }
             catch (Exception ex)
             {
@@ -3675,8 +3675,8 @@ namespace WinFormsApp1
             try
             {
                 // 重新加载窗口设置
-                var settings = WindowSettings.Load();
-                settings.ApplyToForm(this);
+                //var settings = WindowSettings.Load();
+                //settings.ApplyToForm(this);
                 
                 // 重新应用主题
                 ApplyCurrentTheme();
@@ -4072,16 +4072,16 @@ namespace WinFormsApp1
                 //SimpleProjectManager.CloseProject();
                 
                 // 保存窗口设置
-                var settings = WindowSettings.Load();
-                settings.UpdateFromForm(this);
-                if (mainSplitContainer != null && rightSplitContainer != null)
-                {
-                    settings.UpdateSplitterDistances(
-                        mainSplitContainer.SplitterDistance,
-                        rightSplitContainer.SplitterDistance
-                    );
-                }
-                settings.Save();
+                //var settings = WindowSettings.Load();
+                //settings.UpdateFromForm(this);
+                //if (mainSplitContainer != null && rightSplitContainer != null)
+                //{
+                //    settings.UpdateSplitterDistances(
+                //        mainSplitContainer.SplitterDistance,
+                //        rightSplitContainer.SplitterDistance
+                //    );
+                //}
+                //settings.Save();
             }
             catch (Exception ex)
             {
