@@ -44,7 +44,7 @@ namespace AutomaticGeneration_ST.Services.Interfaces
         /// </summary>
         /// <param name="configuration">导出配置</param>
         /// <returns>验证结果</returns>
-        //NEED DELETE: 导出前配置校验接口（会导致提前失败），按需求应移除或降级为非阻断
-        bool ValidateConfiguration(ExportConfiguration configuration, out string errorMessage);
+        //--NEED DELETE: 导出前配置校验接口（会导致提前失败），按需求应移除或降级为非阻断
+        //bool ValidateConfiguration(ExportConfiguration configuration, out string errorMessage);
     }
 }
