@@ -574,7 +574,7 @@ namespace WinFormsApp1
             previewContextMenu.Items.Add("📋 复制选中", null, (s, e) => CopySelectedPreviewContent());
             previewContextMenu.Items.Add(new ToolStripSeparator());
             previewContextMenu.Items.Add("💾 保存预览", null, (s, e) => SavePreviewContent());
-            previewContextMenu.Items.Add("🔍 查找", null, (s, e) => ShowFindDialog());
+            //previewContextMenu.Items.Add("🔍 查找", null, (s, e) => ShowFindDialog());
             
             // 为每个预览标签页的文本框添加右键菜单
             foreach (TabPage tab in previewTabControl.TabPages)
@@ -605,7 +605,6 @@ namespace WinFormsApp1
         //    }
         //}
 
-        //NEED DELETE: 右键“移除文件”增强项（非核心）
         private void RemoveSelectedFile()
         {
             if (fileListBox.SelectedItem != null)
@@ -615,7 +614,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 右键“复制路径”增强项（非核心）
         private void CopyFilePath()
         {
             if (!string.IsNullOrEmpty(uploadedFilePath))
@@ -625,7 +623,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 右键“打开文件夹”增强项（非核心）
         private void OpenFileFolder()
         {
             if (!string.IsNullOrEmpty(uploadedFilePath) && File.Exists(uploadedFilePath))
@@ -649,7 +646,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 预览区复制选中（非核心功能）
         private void CopySelectedPreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
@@ -667,7 +663,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 预览内容另存为（非核心功能）
         private void SavePreviewContent()
         {
             var currentTab = previewTabControl.SelectedTab;
@@ -687,31 +682,30 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 预览查找对话框（非核心功能）
-        private void ShowFindDialog()
-        {
-            // 简单的查找对话框
-            var findText = Microsoft.VisualBasic.Interaction.InputBox("请输入要查找的文本:", "查找", "");
-            if (!string.IsNullOrEmpty(findText))
-            {
-                var currentTab = previewTabControl.SelectedTab;
-                if (currentTab?.Controls[0] is RichTextBox textBox)
-                {
-                    var index = textBox.Find(findText, RichTextBoxFinds.None);
-                    if (index >= 0)
-                    {
-                        textBox.Focus();
-                        logger.LogInfo($"找到文本: {findText}");
-                    }
-                    else
-                    {
-                        logger.LogWarning($"未找到文本: {findText}");
-                    }
-                }
-            }
-        }
+        //--NEED DELETE: 预览查找对话框（非核心功能）
+        //private void ShowFindDialog()
+        //{
+        //    // 简单的查找对话框
+        //    var findText = Microsoft.VisualBasic.Interaction.InputBox("请输入要查找的文本:", "查找", "");
+        //    if (!string.IsNullOrEmpty(findText))
+        //    {
+        //        var currentTab = previewTabControl.SelectedTab;
+        //        if (currentTab?.Controls[0] is RichTextBox textBox)
+        //        {
+        //            var index = textBox.Find(findText, RichTextBoxFinds.None);
+        //            if (index >= 0)
+        //            {
+        //                textBox.Focus();
+        //                logger.LogInfo($"找到文本: {findText}");
+        //            }
+        //            else
+        //            {
+        //                logger.LogWarning($"未找到文本: {findText}");
+        //            }
+        //        }
+        //    }
+        //}
 
-        //NEED DELETE: 日志复制全部（非核心功能）
         private void CopyAllLogContent()
         {
             if (!string.IsNullOrEmpty(richTextBox1.Text))
@@ -721,7 +715,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 日志复制选中（非核心功能）
         private void CopySelectedLogContent()
         {
             if (!string.IsNullOrEmpty(richTextBox1.SelectedText))
@@ -735,7 +728,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 日志另存为（非核心功能）
         private void SaveLogContent()
         {
             using (var saveDialog = new SaveFileDialog())
@@ -751,7 +743,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 项目管理初始化（创建/打开/保存项目），非核心导入-生成-导出流程
         private void InitializeProjectManagement()
         {
             try
@@ -803,7 +794,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 项目状态变化处理（与项目保存/状态相关），非核心流程
         private void OnProjectChanged(object? sender, EventArgs e)
         {
             try
@@ -822,7 +812,6 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 窗口标题显示项目名称/保存状态（非核心）
         private void UpdateWindowTitle()
         {
             var projectName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目";
@@ -834,7 +823,6 @@ namespace WinFormsApp1
             this.Text = $"{projectName}{hasChanges}{filePath} - ST脚本自动生成器";
         }
 
-        //NEED DELETE: 同步项目数据（项目管理相关），非核心
         private void SyncProjectData()
         {
             try
@@ -864,178 +852,178 @@ namespace WinFormsApp1
             }
         }
 
-        private async void NewProjectMenuItem_Click(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (SimpleProjectManager.NeedsSave())
-                {
-                    var result = MessageBox.Show(
-                        "当前项目有未保存的更改，是否保存？",
-                        "确认", 
-                        MessageBoxButtons.YesNoCancel, 
-                        MessageBoxIcon.Question);
+        //private async void NewProjectMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (SimpleProjectManager.NeedsSave())
+        //        {
+        //            var result = MessageBox.Show(
+        //                "当前项目有未保存的更改，是否保存？",
+        //                "确认", 
+        //                MessageBoxButtons.YesNoCancel, 
+        //                MessageBoxIcon.Question);
                     
-                    if (result == DialogResult.Yes)
-                    {
-                        await SaveProject();
-                    }
-                    else if (result == DialogResult.Cancel)
-                    {
-                        return;
-                    }
-                }
+        //            if (result == DialogResult.Yes)
+        //            {
+        //                await SaveProject();
+        //            }
+        //            else if (result == DialogResult.Cancel)
+        //            {
+        //                return;
+        //            }
+        //        }
                 
-                SimpleProjectManager.CreateNewProject();
-                ClearCurrentData();
+        //        SimpleProjectManager.CreateNewProject();
+        //        ClearCurrentData();
                 
-                logger.LogInfo("已创建新项目");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"创建新项目失败: {ex.Message}");
-                MessageBox.Show($"创建新项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        logger.LogInfo("已创建新项目");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"创建新项目失败: {ex.Message}");
+        //        MessageBox.Show($"创建新项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
-        private async void OpenProjectMenuItem_Click(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (SimpleProjectManager.NeedsSave())
-                {
-                    var result = MessageBox.Show(
-                        "当前项目有未保存的更改，是否保存？",
-                        "确认", 
-                        MessageBoxButtons.YesNoCancel, 
-                        MessageBoxIcon.Question);
+        //private async void OpenProjectMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (SimpleProjectManager.NeedsSave())
+        //        {
+        //            var result = MessageBox.Show(
+        //                "当前项目有未保存的更改，是否保存？",
+        //                "确认", 
+        //                MessageBoxButtons.YesNoCancel, 
+        //                MessageBoxIcon.Question);
                     
-                    if (result == DialogResult.Yes)
-                    {
-                        await SaveProject();
-                    }
-                    else if (result == DialogResult.Cancel)
-                    {
-                        return;
-                    }
-                }
+        //            if (result == DialogResult.Yes)
+        //            {
+        //                await SaveProject();
+        //            }
+        //            else if (result == DialogResult.Cancel)
+        //            {
+        //                return;
+        //            }
+        //        }
                 
-                using var openDialog = new OpenFileDialog
-                {
-                    Title = "打开项目文件",
-                    Filter = SimpleProjectManager.GetFileFilter(),
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                };
+        //        using var openDialog = new OpenFileDialog
+        //        {
+        //            Title = "打开项目文件",
+        //            Filter = SimpleProjectManager.GetFileFilter(),
+        //            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        //        };
                 
-                if (openDialog.ShowDialog() == DialogResult.OK)
-                {
-                    var success = await SimpleProjectManager.OpenProjectAsync(openDialog.FileName);
-                    if (success)
-                    {
-                        logger.LogInfo($"已打开项目: {Path.GetFileName(openDialog.FileName)}");
-                    }
-                    else
-                    {
-                        logger.LogError("打开项目文件失败");
-                        MessageBox.Show("打开项目文件失败，请检查文件格式是否正确", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"打开项目失败: {ex.Message}");
-                MessageBox.Show($"打开项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        if (openDialog.ShowDialog() == DialogResult.OK)
+        //        {
+        //            var success = await SimpleProjectManager.OpenProjectAsync(openDialog.FileName);
+        //            if (success)
+        //            {
+        //                logger.LogInfo($"已打开项目: {Path.GetFileName(openDialog.FileName)}");
+        //            }
+        //            else
+        //            {
+        //                logger.LogError("打开项目文件失败");
+        //                MessageBox.Show("打开项目文件失败，请检查文件格式是否正确", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"打开项目失败: {ex.Message}");
+        //        MessageBox.Show($"打开项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
-        //NEED DELETE: 保存当前项目（项目管理功能与核心流程无关）
-        private async void SaveProjectMenuItem_Click(object? sender, EventArgs e)
-        {
-            await SaveProject();
-        }
+        ////--NEED DELETE: 保存当前项目（项目管理功能与核心流程无关）
+        //private async void SaveProjectMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    await SaveProject();
+        //}
 
-        //NEED DELETE: 另存为项目（项目管理功能与核心流程无关）
-        private async void SaveAsProjectMenuItem_Click(object? sender, EventArgs e)
-        {
-            await SaveProjectAs();
-        }
+        ////--NEED DELETE: 另存为项目（项目管理功能与核心流程无关）
+        //private async void SaveAsProjectMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    await SaveProjectAs();
+        //}
 
-        //NEED DELETE: 保存项目（项目文件stproj管理，非核心导入/生成/导出流程）
-        private async Task<bool> SaveProject()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(SimpleProjectManager.CurrentFilePath))
-                {
-                    return await SaveProjectAs();
-                }
+        ////--NEED DELETE: 保存项目（项目文件stproj管理，非核心导入/生成/导出流程）
+        //private async Task<bool> SaveProject()
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrEmpty(SimpleProjectManager.CurrentFilePath))
+        //        {
+        //            return await SaveProjectAs();
+        //        }
                 
-                // 更新项目数据
-                UpdateProjectData();
+        //        // 更新项目数据
+        //        UpdateProjectData();
                 
-                var success = await SimpleProjectManager.SaveProjectAsync();
-                if (success)
-                {
-                    logger.LogInfo("项目已保存");
-                }
-                else
-                {
-                    logger.LogError("保存项目失败");
-                    MessageBox.Show("保存项目失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+        //        var success = await SimpleProjectManager.SaveProjectAsync();
+        //        if (success)
+        //        {
+        //            logger.LogInfo("项目已保存");
+        //        }
+        //        else
+        //        {
+        //            logger.LogError("保存项目失败");
+        //            MessageBox.Show("保存项目失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        }
                 
-                return success;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"保存项目失败: {ex.Message}");
-                MessageBox.Show($"保存项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-        }
+        //        return success;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"保存项目失败: {ex.Message}");
+        //        MessageBox.Show($"保存项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return false;
+        //    }
+        //}
 
-        //NEED DELETE: 另存为项目（项目文件stproj管理，非核心流程）
-        private async Task<bool> SaveProjectAs()
-        {
-            try
-            {
-                using var saveDialog = new SaveFileDialog
-                {
-                    Title = "另存为项目文件",
-                    Filter = SimpleProjectManager.GetFileFilter(),
-                    DefaultExt = "stproj",
-                    FileName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目",
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                };
+        //--NEED DELETE: 另存为项目（项目文件stproj管理，非核心流程）
+        //private async Task<bool> SaveProjectAs()
+        //{
+        //    try
+        //    {
+        //        using var saveDialog = new SaveFileDialog
+        //        {
+        //            Title = "另存为项目文件",
+        //            Filter = SimpleProjectManager.GetFileFilter(),
+        //            DefaultExt = "stproj",
+        //            FileName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目",
+        //            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        //        };
                 
-                if (saveDialog.ShowDialog() == DialogResult.OK)
-                {
-                    // 更新项目数据
-                    UpdateProjectData();
+        //        if (saveDialog.ShowDialog() == DialogResult.OK)
+        //        {
+        //            // 更新项目数据
+        //            UpdateProjectData();
                     
-                    var success = await SimpleProjectManager.SaveAsProjectAsync(saveDialog.FileName);
-                    if (success)
-                    {
-                        logger.LogInfo($"项目已另存为: {Path.GetFileName(saveDialog.FileName)}");
-                    }
-                    else
-                    {
-                        logger.LogError("另存为项目失败");
-                        MessageBox.Show("另存为项目失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+        //            var success = await SimpleProjectManager.SaveAsProjectAsync(saveDialog.FileName);
+        //            if (success)
+        //            {
+        //                logger.LogInfo($"项目已另存为: {Path.GetFileName(saveDialog.FileName)}");
+        //            }
+        //            else
+        //            {
+        //                logger.LogError("另存为项目失败");
+        //                MessageBox.Show("另存为项目失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //            }
                     
-                    return success;
-                }
+        //            return success;
+        //        }
                 
-                return false;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"另存为项目失败: {ex.Message}");
-                MessageBox.Show($"另存为项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-        }
+        //        return false;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"另存为项目失败: {ex.Message}");
+        //        MessageBox.Show($"另存为项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return false;
+        //    }
+        //}
 
         private void UpdateProjectData()
         {
@@ -1061,69 +1049,69 @@ namespace WinFormsApp1
             }
         }
 
-        private void ClearCurrentData()
-        {
-            try
-            {
-                // 清空当前数据
-                pointData.Clear();
-                generatedScripts.Clear();
-                uploadedFilePath = "";
+        //private void ClearCurrentData()
+        //{
+        //    try
+        //    {
+        //        // 清空当前数据
+        //        pointData.Clear();
+        //        generatedScripts.Clear();
+        //        uploadedFilePath = "";
                 
-                // 清空文件列表
-                fileListBox.Items.Clear();
+        //        // 清空文件列表
+        //        fileListBox.Items.Clear();
                 
-                // 清空项目缓存
-                ClearProjectCache();
+        //        // 清空项目缓存
+        //        ClearProjectCache();
                 
-                // 清空预览区域
-                UpdatePreviewArea();
+        //        // 清空预览区域
+        //        UpdatePreviewArea();
                 
-                // 更新状态
-                //UpdateStatusBarStats();
+        //        // 更新状态
+        //        //UpdateStatusBarStats();
                 
-                logger.LogInfo("当前数据已清空");
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"清空当前数据时出错: {ex.Message}");
-            }
-        }
+        //        logger.LogInfo("当前数据已清空");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger?.LogError($"清空当前数据时出错: {ex.Message}");
+        //    }
+        //}
 
-        //NEED DELETE: 关闭项目（项目管理相关，非核心流程）
-        private async void CloseProjectMenuItem_Click(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (SimpleProjectManager.NeedsSave())
-                {
-                    var result = MessageBox.Show(
-                        "当前项目有未保存的更改，是否保存？",
-                        "确认", 
-                        MessageBoxButtons.YesNoCancel, 
-                        MessageBoxIcon.Question);
+        //--NEED DELETE: 关闭项目（项目管理相关，非核心流程）
+        //private async void CloseProjectMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (SimpleProjectManager.NeedsSave())
+        //        {
+        //            var result = MessageBox.Show(
+        //                "当前项目有未保存的更改，是否保存？",
+        //                "确认", 
+        //                MessageBoxButtons.YesNoCancel, 
+        //                MessageBoxIcon.Question);
                     
-                    if (result == DialogResult.Yes)
-                    {
-                        await SaveProject();
-                    }
-                    else if (result == DialogResult.Cancel)
-                    {
-                        return;
-                    }
-                }
+        //            if (result == DialogResult.Yes)
+        //            {
+        //                await SaveProject();
+        //            }
+        //            else if (result == DialogResult.Cancel)
+        //            {
+        //                return;
+        //            }
+        //        }
                 
-                SimpleProjectManager.CloseProject();
-                ClearCurrentData();
+        //        SimpleProjectManager.CloseProject();
+        //        ClearCurrentData();
                 
-                logger.LogInfo("项目已关闭");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"关闭项目失败: {ex.Message}");
-                MessageBox.Show($"关闭项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        logger.LogInfo("项目已关闭");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"关闭项目失败: {ex.Message}");
+        //        MessageBox.Show($"关闭项目失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
         private void button_upload_Click(object sender, EventArgs e)
         {
@@ -2173,45 +2161,45 @@ namespace WinFormsApp1
             }
         }
 
-        private async void ExportSTScripts(string selectedPath)
-        {
-            try
-            {
-                logger.LogInfo($"正在分类保存ST脚本到: {selectedPath}");
+        //private async void ExportSTScripts(string selectedPath)
+        //{
+        //    try
+        //    {
+        //        logger.LogInfo($"正在分类保存ST脚本到: {selectedPath}");
                 
-                var outputDirectory = OutputWriter.WriteCategorizedFiles(generatedScripts, pointData, selectedPath);
+        //        var outputDirectory = OutputWriter.WriteCategorizedFiles(generatedScripts, pointData, selectedPath);
                 
-                logger.LogSuccess($"ST脚本分类导出成功");
-                logger.LogInfo($"共导出{generatedScripts.Count}个点位的ST代码");
+        //        logger.LogSuccess($"ST脚本分类导出成功");
+        //        logger.LogInfo($"共导出{generatedScripts.Count}个点位的ST代码");
                 
-                // 导出成功后询问是否保存项目
-                var saveProjectResult = MessageBox.Show(
-                    $"ST脚本导出成功!\n\n输出文件夹: {Path.GetFileName(outputDirectory)}\n位置: {outputDirectory}\n点位数量: {generatedScripts.Count}\n\n是否保存当前项目？",
-                    "导出成功", 
-                    MessageBoxButtons.YesNo, 
-                    MessageBoxIcon.Information);
+        //        // 导出成功后询问是否保存项目
+        //        var saveProjectResult = MessageBox.Show(
+        //            $"ST脚本导出成功!\n\n输出文件夹: {Path.GetFileName(outputDirectory)}\n位置: {outputDirectory}\n点位数量: {generatedScripts.Count}\n\n是否保存当前项目？",
+        //            "导出成功", 
+        //            MessageBoxButtons.YesNo, 
+        //            MessageBoxIcon.Information);
                 
-                if (saveProjectResult == DialogResult.Yes)
-                {
-                    // 更新项目数据
-                    UpdateProjectData();
-                    SimpleProjectManager.UpdateSettings("lastExportPath", outputDirectory);
-                    SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
+        //        if (saveProjectResult == DialogResult.Yes)
+        //        {
+        //            // 更新项目数据
+        //            UpdateProjectData();
+        //            SimpleProjectManager.UpdateSettings("lastExportPath", outputDirectory);
+        //            SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
                     
-                    // 保存项目
-                    var projectSaved = await SaveProject();
-                    if (projectSaved)
-                    {
-                        logger.LogInfo("项目已保存");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"保存ST脚本文件时出错: {ex.Message}");
-                throw;
-            }
-        }
+        //            // 保存项目
+        //            var projectSaved = await SaveProject();
+        //            if (projectSaved)
+        //            {
+        //                logger.LogInfo("项目已保存");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"保存ST脚本文件时出错: {ex.Message}");
+        //        throw;
+        //    }
+        //}
 
         /// <summary>
         /// 新架构：从ProjectCache导出ST脚本，支持所有模板类型
@@ -2406,11 +2394,11 @@ namespace WinFormsApp1
                     SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
                     
                     // 保存项目
-                    var projectSaved = await SaveProject();
-                    if (projectSaved)
-                    {
-                        logger.LogInfo("项目已保存");
-                    }
+                    //var projectSaved = await SaveProject();
+                    //if (projectSaved)
+                    //{
+                    //    logger.LogInfo("项目已保存");
+                    //}
                 }
             }
             catch (Exception ex)
@@ -2424,126 +2412,126 @@ namespace WinFormsApp1
         /// <summary>
         /// 分类导出ST脚本按钮事件处理方法
         /// </summary>
-        private async void button_categorized_export_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                logger.LogInfo("开始执行分类导出ST脚本...");
+        //private async void button_categorized_export_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        logger.LogInfo("开始执行分类导出ST脚本...");
                 
-                // 检查是否已初始化服务
-                if (categorizedExportService == null)
-                {
-                    logger.LogError("分类导出服务未初始化，请重启程序或联系技术支持");
-                    MessageBox.Show("分类导出服务未初始化，请重启程序后重试", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+        //        // 检查是否已初始化服务
+        //        if (categorizedExportService == null)
+        //        {
+        //            logger.LogError("分类导出服务未初始化，请重启程序或联系技术支持");
+        //            MessageBox.Show("分类导出服务未初始化，请重启程序后重试", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //            return;
+        //        }
                 
-                // 检查是否有ProjectCache数据
-                if (currentProjectCache == null || 
-                    currentProjectCache.IOMappingScripts == null || 
-                    !currentProjectCache.IOMappingScripts.Any())
-                {
-                    logger.LogWarning("没有可分类导出的ST脚本，请先上传并处理点表文件");
-                    MessageBox.Show("没有可分类导出的ST脚本，请先上传并处理点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+        //        // 检查是否有ProjectCache数据
+        //        if (currentProjectCache == null || 
+        //            currentProjectCache.IOMappingScripts == null || 
+        //            !currentProjectCache.IOMappingScripts.Any())
+        //        {
+        //            logger.LogWarning("没有可分类导出的ST脚本，请先上传并处理点表文件");
+        //            MessageBox.Show("没有可分类导出的ST脚本，请先上传并处理点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //            return;
+        //        }
                 
-                // 选择导出目录
-                using (var folderDialog = new FolderBrowserDialog())
-                {
-                    folderDialog.Description = "选择分类导出目录";
-                    folderDialog.ShowNewFolderButton = true;
+        //        // 选择导出目录
+        //        using (var folderDialog = new FolderBrowserDialog())
+        //        {
+        //            folderDialog.Description = "选择分类导出目录";
+        //            folderDialog.ShowNewFolderButton = true;
                     
-                    if (folderDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        var selectedPath = folderDialog.SelectedPath;
+        //            if (folderDialog.ShowDialog() == DialogResult.OK)
+        //            {
+        //                var selectedPath = folderDialog.SelectedPath;
                         
-                        // 显示进度条
-                        UpdateProgressBar("正在执行分类导出...", 0, true);
+        //                // 显示进度条
+        //                UpdateProgressBar("正在执行分类导出...", 0, true);
                         
-                        // 先将IO映射脚本转换为分类脚本
-                        var categorizedScripts = new List<CategorizedScript>();
-                        for (int i = 0; i < currentProjectCache.IOMappingScripts.Count; i++)
-                        {
-                            var scriptContent = currentProjectCache.IOMappingScripts[i];
-                            categorizedScripts.Add(new CategorizedScript
-                            {
-                                Content = scriptContent,
-                                Category = ScriptCategory.UNKNOWN, // 需要分类器来判断
-                                DeviceTag = $"Script_{i + 1}" // 临时标识
-                            });
-                        }
+        //                // 先将IO映射脚本转换为分类脚本
+        //                var categorizedScripts = new List<CategorizedScript>();
+        //                for (int i = 0; i < currentProjectCache.IOMappingScripts.Count; i++)
+        //                {
+        //                    var scriptContent = currentProjectCache.IOMappingScripts[i];
+        //                    categorizedScripts.Add(new CategorizedScript
+        //                    {
+        //                        Content = scriptContent,
+        //                        Category = ScriptCategory.UNKNOWN, // 需要分类器来判断
+        //                        DeviceTag = $"Script_{i + 1}" // 临时标识
+        //                    });
+        //                }
                         
-                        // 创建导出配置
-                        var config = AutomaticGeneration_ST.Models.ExportConfiguration.CreateDefault(selectedPath);
-                        config.OverwriteExisting = true;
-                        config.IncludeTimestamp = false;
+        //                // 创建导出配置
+        //                var config = AutomaticGeneration_ST.Models.ExportConfiguration.CreateDefault(selectedPath);
+        //                config.OverwriteExisting = true;
+        //                config.IncludeTimestamp = false;
                         
-                        // 执行分类导出
-                        var exportResult = await Task.Run(() => 
-                            categorizedExportService.ExportScriptsByCategory(
-                                categorizedScripts, 
-                                config));
+        //                // 执行分类导出
+        //                var exportResult = await Task.Run(() => 
+        //                    categorizedExportService.ExportScriptsByCategory(
+        //                        categorizedScripts, 
+        //                        config));
                         
-                        UpdateProgressBar("分类导出完成", 100, false);
+        //                UpdateProgressBar("分类导出完成", 100, false);
                         
-                        if (exportResult.IsSuccess)
-                        {
-                            // 生成成功统计信息
-                            var statsMessage = GenerateCategorizedExportStats(exportResult, selectedPath);
+        //                if (exportResult.IsSuccess)
+        //                {
+        //                    // 生成成功统计信息
+        //                    var statsMessage = GenerateCategorizedExportStats(exportResult, selectedPath);
                             
-                            logger.LogSuccess($"分类导出成功! 共导出{exportResult.Statistics.TotalScriptsExported}个脚本到{exportResult.SuccessfulFilesCount}个分类文件中");
+        //                    logger.LogSuccess($"分类导出成功! 共导出{exportResult.Statistics.TotalScriptsExported}个脚本到{exportResult.SuccessfulFilesCount}个分类文件中");
                             
-                            // 显示详细结果
-                            var result = MessageBox.Show(
-                                statsMessage,
-                                "分类导出成功", 
-                                MessageBoxButtons.YesNo, 
-                                MessageBoxIcon.Information,
-                                MessageBoxDefaultButton.Button2);
+        //                    // 显示详细结果
+        //                    var result = MessageBox.Show(
+        //                        statsMessage,
+        //                        "分类导出成功", 
+        //                        MessageBoxButtons.YesNo, 
+        //                        MessageBoxIcon.Information,
+        //                        MessageBoxDefaultButton.Button2);
                                 
-                            // 询问是否打开输出目录
-                            if (result == DialogResult.Yes)
-                            {
-                                Process.Start(new ProcessStartInfo
-                                {
-                                    FileName = selectedPath,
-                                    UseShellExecute = true,
-                                    Verb = "open"
-                                });
-                            }
+        //                    // 询问是否打开输出目录
+        //                    if (result == DialogResult.Yes)
+        //                    {
+        //                        Process.Start(new ProcessStartInfo
+        //                        {
+        //                            FileName = selectedPath,
+        //                            UseShellExecute = true,
+        //                            Verb = "open"
+        //                        });
+        //                    }
                             
-                            // 询问是否保存项目
-                            var saveResult = MessageBox.Show(
-                                "是否保存当前项目？",
-                                "保存项目",
-                                MessageBoxButtons.YesNo,
-                                MessageBoxIcon.Question);
+        //                    // 询问是否保存项目
+        //                    var saveResult = MessageBox.Show(
+        //                        "是否保存当前项目？",
+        //                        "保存项目",
+        //                        MessageBoxButtons.YesNo,
+        //                        MessageBoxIcon.Question);
                                 
-                            if (saveResult == DialogResult.Yes)
-                            {
-                                SaveProjectAs();
-                            }
-                        }
-                        else
-                        {
-                            logger.LogError($"分类导出失败: {exportResult.ErrorMessage}");
-                            MessageBox.Show($"分类导出失败:\n\n{exportResult.ErrorMessage}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                    else
-                    {
-                        logger.LogInfo("用户取消了分类导出操作");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                UpdateProgressBar("分类导出失败", 0, false);
-                logger.LogError($"执行分类导出时出错: {ex.Message}");
-                MessageBox.Show($"分类导出失败:\n\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //                    if (saveResult == DialogResult.Yes)
+        //                    {
+        //                        //SaveProjectAs();
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    logger.LogError($"分类导出失败: {exportResult.ErrorMessage}");
+        //                    MessageBox.Show($"分类导出失败:\n\n{exportResult.ErrorMessage}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //                }
+        //            }
+        //            else
+        //            {
+        //                logger.LogInfo("用户取消了分类导出操作");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateProgressBar("分类导出失败", 0, false);
+        //        logger.LogError($"执行分类导出时出错: {ex.Message}");
+        //        MessageBox.Show($"分类导出失败:\n\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
         
         /// <summary>
         /// 生成分类导出统计信息
@@ -2923,29 +2911,29 @@ namespace WinFormsApp1
             }
         }
 
-        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
-        private void LightThemeMenuItem_Click(object sender, EventArgs e)
-        {
-            SetThemeMenuChecked(lightThemeMenuItem);
-            ThemeManager.SetTheme(ThemeType.Light);
-            logger.LogInfo("已切换到浅色主题");
-        }
+        //--NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
+        //private void LightThemeMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    SetThemeMenuChecked(lightThemeMenuItem);
+        //    ThemeManager.SetTheme(ThemeType.Light);
+        //    logger.LogInfo("已切换到浅色主题");
+        //}
 
-        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
-        private void DarkThemeMenuItem_Click(object sender, EventArgs e)
-        {
-            SetThemeMenuChecked(darkThemeMenuItem);
-            ThemeManager.SetTheme(ThemeType.Dark);
-            logger.LogInfo("已切换到深色主题");
-        }
+        //--NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
+        //private void DarkThemeMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    SetThemeMenuChecked(darkThemeMenuItem);
+        //    ThemeManager.SetTheme(ThemeType.Dark);
+        //    logger.LogInfo("已切换到深色主题");
+        //}
 
-        //NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
-        private void SystemThemeMenuItem_Click(object sender, EventArgs e)
-        {
-            SetThemeMenuChecked(systemThemeMenuItem);
-            ThemeManager.SetTheme(ThemeType.System);
-            logger.LogInfo("已切换到跟随系统主题");
-        }
+        //--NEED DELETE: 视图-主题切换（与核心导入/生成/导出无关）
+        //private void SystemThemeMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    SetThemeMenuChecked(systemThemeMenuItem);
+        //    ThemeManager.SetTheme(ThemeType.System);
+        //    logger.LogInfo("已切换到跟随系统主题");
+        //}
 
         private void SetThemeMenuChecked(ToolStripMenuItem selectedItem)
         {
@@ -4033,29 +4021,30 @@ namespace WinFormsApp1
             try
             {
                 // 检查是否有未保存的项目更改
-                if (SimpleProjectManager.NeedsSave())
-                {
-                    var result = MessageBox.Show(
-                        "当前项目有未保存的更改，是否保存？",
-                        "确认退出", 
-                        MessageBoxButtons.YesNoCancel, 
-                        MessageBoxIcon.Question);
+                //if (SimpleProjectManager.NeedsSave())
+                //{
+                //    var result = MessageBox.Show(
+                //        "当前项目有未保存的更改，是否保存？",
+                //        "确认退出", 
+                //        MessageBoxButtons.YesNoCancel, 
+                //        MessageBoxIcon.Question);
                     
-                    if (result == DialogResult.Yes)
-                    {
-                        var saved = await SaveProject();
-                        if (!saved)
-                        {
-                            e.Cancel = true; // 取消关闭
-                            return;
-                        }
-                    }
-                    else if (result == DialogResult.Cancel)
-                    {
-                        e.Cancel = true; // 取消关闭
-                        return;
-                    }
-                }
+                //    if (result == DialogResult.Yes)
+                //    {
+                //        return;
+                //        //var saved = await SaveProject();
+                //        //if (!saved)
+                //        //{
+                //        //    e.Cancel = true; // 取消关闭
+                //        //    return;
+                //        //}
+                //    }
+                //    else if (result == DialogResult.Cancel)
+                //    {
+                //        e.Cancel = true; // 取消关闭
+                //        return;
+                //    }
+                //}
             }
             catch (Exception ex)
             {

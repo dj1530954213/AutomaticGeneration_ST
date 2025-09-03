@@ -13,7 +13,6 @@ namespace AutomaticGeneration_ST.Services.Implementations
     {
         public void Export(string rootExportPath, IEnumerable<GenerationResult> resultsToExport)
         {
-            //NEED DELETE: 导出前硬性校验根目录为空直接抛异常（阻断导出），按需求应放宽或在UI层提示
             if (string.IsNullOrWhiteSpace(rootExportPath))
             {
                 throw new System.ArgumentException("导出的根路径不能为空。", nameof(rootExportPath));

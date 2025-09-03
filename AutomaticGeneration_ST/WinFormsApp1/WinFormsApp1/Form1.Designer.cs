@@ -81,7 +81,7 @@ namespace WinFormsApp1
             // 
             mainMenuStrip.ImageScalingSize = new Size(24, 24);
             mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu});
-            //NEED DELETE: 以下加入的 viewMenu、helpMenu 属于非核心菜单项（视图/帮助），建议移除
+            //--NEED DELETE: 以下加入的 viewMenu、helpMenu 属于非核心菜单项（视图/帮助），建议移除
             //mainMenuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, viewMenu, helpMenu });
             mainMenuStrip.Location = new Point(0, 0);
             mainMenuStrip.Name = "mainMenuStrip";
@@ -267,14 +267,14 @@ namespace WinFormsApp1
             // 
             // button_categorized_export
             // 
-            button_categorized_export.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            button_categorized_export.Location = new Point(390, 10);
-            button_categorized_export.Name = "button_categorized_export";
-            button_categorized_export.Size = new Size(200, 45);
-            button_categorized_export.TabIndex = 2;
-            button_categorized_export.Text = "🗂️ 分类导出ST脚本";
-            button_categorized_export.UseVisualStyleBackColor = true;
-            button_categorized_export.Click += button_categorized_export_Click;
+            //button_categorized_export.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            //button_categorized_export.Location = new Point(390, 10);
+            //button_categorized_export.Name = "button_categorized_export";
+            //button_categorized_export.Size = new Size(200, 45);
+            //button_categorized_export.TabIndex = 2;
+            //button_categorized_export.Text = "🗂️ 分类导出ST脚本";
+            //button_categorized_export.UseVisualStyleBackColor = true;
+            //button_categorized_export.Click += button_categorized_export_Click;
             // 
             // button_export
             // 
@@ -376,7 +376,7 @@ namespace WinFormsApp1
             logSearchBox.Size = new Size(200, 30);
             logSearchBox.TabIndex = 0;
             // 
-            //NEED DELETE: 遗留配置面板（未用于导入/导出链路）
+            //--NEED DELETE: 遗留配置面板（未用于导入/导出链路）
             // configPanel
             // 
             //configPanel.Dock = DockStyle.Fill;
