@@ -267,15 +267,15 @@ namespace WinFormsApp1.Forms
             buttonLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80F));
             
             // 预览按钮
-            previewButton = new Button
-            {
-                Text = "预览",
-                Dock = DockStyle.Fill,
-                Font = new Font("微软雅黑", 9F),
-                UseVisualStyleBackColor = true,
-                Margin = new Padding(2)
-            };
-            previewButton.Click += OnPreviewButtonClick;
+            //previewButton = new Button
+            //{
+            //    Text = "预览",
+            //    Dock = DockStyle.Fill,
+            //    Font = new Font("微软雅黑", 9F),
+            //    UseVisualStyleBackColor = true,
+            //    Margin = new Padding(2)
+            //};
+            //previewButton.Click += OnPreviewButtonClick;
             
             // 重置按钮
             resetButton = new Button
@@ -513,20 +513,20 @@ namespace WinFormsApp1.Forms
             statusLabel.Text = message;
         }
         
-        private void OnPreviewButtonClick(object? sender, EventArgs e)
-        {
-            try
-            {
-                // 创建模板预览对话框
-                var previewForm = new TemplatePreviewForm(_selectedTemplates);
-                previewForm.ShowDialog(this);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"预览模板时出错: {ex.Message}", "错误", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //private void OnPreviewButtonClick(object? sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        // 创建模板预览对话框
+        //        //var previewForm = new TemplatePreviewForm(_selectedTemplates);
+        //        previewForm.ShowDialog(this);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"预览模板时出错: {ex.Message}", "错误", 
+        //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
         
         private void OnResetButtonClick(object? sender, EventArgs e)
         {

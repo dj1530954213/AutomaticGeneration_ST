@@ -1,4 +1,4 @@
-////NEED DELETE: 最小示例/控制台入口（与WinForms主流程无关），仅示例用途
+////--NEED DELETE: 最小示例/控制台入口（与WinForms主流程无关），仅示例用途
 //using System;
 //using System.Collections.Generic;
 //using System.IO;

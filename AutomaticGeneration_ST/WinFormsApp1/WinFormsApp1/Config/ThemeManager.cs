@@ -1,4 +1,4 @@
-//NEED DELETE: 主题/配色管理（视图相关），与核心链路无关
+
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -15,9 +15,9 @@ namespace WinFormsApp1.Config
     public static class ThemeManager
     {
         public static ThemeType CurrentTheme { get; private set; } = ThemeType.Light;
-        
+
         public static event Action<ThemeType>? ThemeChanged;
-        
+
         // 浅色主题颜色
         public static class LightTheme
         {
@@ -33,7 +33,7 @@ namespace WinFormsApp1.Config
             public static readonly Color StatusBarColor = Color.FromArgb(248, 249, 250);
             public static readonly Color ToolBarColor = Color.FromArgb(248, 249, 250);
         }
-        
+
         // 深色主题颜色
         public static class DarkTheme
         {
@@ -49,7 +49,7 @@ namespace WinFormsApp1.Config
             public static readonly Color StatusBarColor = Color.FromArgb(52, 58, 64);
             public static readonly Color ToolBarColor = Color.FromArgb(52, 58, 64);
         }
-        
+
         public static void SetTheme(ThemeType theme)
         {
             if (theme == ThemeType.System)
@@ -57,85 +57,85 @@ namespace WinFormsApp1.Config
                 // 检测系统主题（简化版本，实际可能需要更复杂的系统检测）
                 theme = IsSystemDarkMode() ? ThemeType.Dark : ThemeType.Light;
             }
-            
+
             CurrentTheme = theme;
             ThemeChanged?.Invoke(theme);
         }
-        
+
         public static Color GetBackgroundColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.BackgroundColor : LightTheme.BackgroundColor;
         }
-        
+
         public static Color GetSurfaceColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.SurfaceColor : LightTheme.SurfaceColor;
         }
-        
+
         public static Color GetTextColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.TextColor : LightTheme.TextColor;
         }
-        
+
         public static Color GetSecondaryTextColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.SecondaryTextColor : LightTheme.SecondaryTextColor;
         }
-        
+
         public static Color GetBorderColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.BorderColor : LightTheme.BorderColor;
         }
-        
+
         public static Color GetAccentColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.AccentColor : LightTheme.AccentColor;
         }
-        
+
         public static Color GetHoverColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.HoverColor : LightTheme.HoverColor;
         }
-        
+
         public static Color GetSelectedColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.SelectedColor : LightTheme.SelectedColor;
         }
-        
+
         public static Color GetMenuBarColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.MenuBarColor : LightTheme.MenuBarColor;
         }
-        
+
         public static Color GetStatusBarColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.StatusBarColor : LightTheme.StatusBarColor;
         }
-        
+
         public static Color GetToolBarColor()
         {
             return CurrentTheme == ThemeType.Dark ? DarkTheme.ToolBarColor : LightTheme.ToolBarColor;
         }
-        
+
         public static void ApplyTheme(Control control)
         {
             if (control == null) return;
-            
+
             // 递归应用主题到所有子控件
             ApplyThemeToControl(control);
-            
+
             foreach (Control child in control.Controls)
             {
                 ApplyTheme(child);
             }
         }
-        
+
         private static void ApplyThemeToControl(Control control)
         {
             // 基本控件颜色设置
             control.BackColor = GetBackgroundColor();
             control.ForeColor = GetTextColor();
-            
+
             // 特殊控件处理
             if (control is MenuStrip menuStrip)
             {
@@ -178,7 +178,7 @@ namespace WinFormsApp1.Config
                 splitContainer.BackColor = GetBorderColor();
             }
         }
-        
+
         private static void ApplyMenuTheme(MenuStrip menuStrip)
         {
             foreach (ToolStripItem item in menuStrip.Items)
@@ -186,12 +186,12 @@ namespace WinFormsApp1.Config
                 ApplyMenuItemTheme(item);
             }
         }
-        
+
         private static void ApplyMenuItemTheme(ToolStripItem item)
         {
             item.BackColor = GetMenuBarColor();
             item.ForeColor = GetTextColor();
-            
+
             if (item is ToolStripMenuItem menuItem)
             {
                 foreach (ToolStripItem subItem in menuItem.DropDownItems)
@@ -200,7 +200,7 @@ namespace WinFormsApp1.Config
                 }
             }
         }
-        
+
         private static bool IsSystemDarkMode()
         {
             try

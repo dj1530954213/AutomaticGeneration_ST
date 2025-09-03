@@ -266,7 +266,6 @@ namespace AutomaticGeneration_ST.Services
             }
         }
 
-        //NEED DELETE: 导出前参数严格校验并抛异常（会阻断导出），按需求应删除或降级为非阻断
         private void ValidateInputParameters(string excelFilePath, string templateDirectory, string configFilePath, string exportRootPath)
         {
             if (string.IsNullOrWhiteSpace(excelFilePath))
