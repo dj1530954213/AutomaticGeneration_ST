@@ -3389,25 +3389,25 @@ namespace WinFormsApp1
                         HandleRefreshShortcut();
                         break;
                         
-                    case "ClearLog":
-                        HandleClearLogShortcut();
-                        break;
+                    //case "ClearLog":
+                    //    HandleClearLogShortcut();
+                    //    break;
                         
-                    case "ToggleTheme":
-                        HandleToggleThemeShortcut();
-                        break;
+                    //case "ToggleTheme":
+                    //    HandleToggleThemeShortcut();
+                    //    break;
                         
-                    case "Settings":
-                        HandleSettingsShortcut();
-                        break;
+                    //case "Settings":
+                    //    HandleSettingsShortcut();
+                    //    break;
                         
-                    case "Help":
-                        HandleHelpShortcut();
-                        break;
+                    //case "Help":
+                    //    HandleHelpShortcut();
+                    //    break;
                         
-                    case "About":
-                        HandleAboutShortcut();
-                        break;
+                    //case "About":
+                    //    HandleAboutShortcut();
+                    //    break;
                         
                     case "FocusFileList":
                         HandleFocusFileListShortcut();
@@ -3561,84 +3561,84 @@ namespace WinFormsApp1
             logger.LogInfo($"快捷键: 已切换到{(newTheme == ThemeType.Light ? "浅色" : "深色")}主题");
         }
 
-        private void HandleSettingsShortcut()
-        {
-            // 打开设置对话框
-            try
-            {
-                // 设置功能已移除
-                MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                logger.LogInfo("设置功能已移除");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"打开设置对话框失败: {ex.Message}");
-            }
-        }
+        //private void HandleSettingsShortcut()
+        //{
+        //    // 打开设置对话框
+        //    try
+        //    {
+        //        // 设置功能已移除
+        //        MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        logger.LogInfo("设置功能已移除");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"打开设置对话框失败: {ex.Message}");
+        //    }
+        //}
 
-        private void HandleHelpShortcut()
-        {
-            // 显示帮助信息
-            var helpText = @"ST脚本自动生成器 - 快捷键帮助
+//        private void HandleHelpShortcut()
+//        {
+//            // 显示帮助信息
+//            var helpText = @"ST脚本自动生成器 - 快捷键帮助
 
-文件操作:
-  Ctrl+O        打开点表文件
-  Ctrl+S        导出ST脚本
-  Alt+F4        退出程序
+//文件操作:
+//  Ctrl+O        打开点表文件
+//  Ctrl+S        导出ST脚本
+//  Alt+F4        退出程序
 
-编辑操作:
-  Ctrl+C        复制选中内容
-  Ctrl+A        全选内容
-  Ctrl+F        聚焦搜索框
+//编辑操作:
+//  Ctrl+C        复制选中内容
+//  Ctrl+A        全选内容
+//  Ctrl+F        聚焦搜索框
 
-视图操作:
-  F5            刷新/重新生成
-  Ctrl+L        清空日志
-  Ctrl+T        切换主题
-  F11           全屏显示
+//视图操作:
+//  F5            刷新/重新生成
+//  Ctrl+L        清空日志
+//  Ctrl+T        切换主题
+//  F11           全屏显示
 
-工具操作:
-  Ctrl+,        打开设置
-  F1            显示帮助
-  Ctrl+Shift+A  关于软件
+//工具操作:
+//  Ctrl+,        打开设置
+//  F1            显示帮助
+//  Ctrl+Shift+A  关于软件
 
-导航操作:
-  Ctrl+1        聚焦文件列表
-  Ctrl+2        聚焦预览区域
-  Ctrl+3        聚焦日志区域
+//导航操作:
+//  Ctrl+1        聚焦文件列表
+//  Ctrl+2        聚焦预览区域
+//  Ctrl+3        聚焦日志区域
 
-更多功能请查看菜单栏。";
+//更多功能请查看菜单栏。";
 
-            MessageBox.Show(helpText, "快捷键帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+//            MessageBox.Show(helpText, "快捷键帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
+//        }
 
-        private void HandleAboutShortcut()
-        {
-            // 显示关于对话框
-            try
-            {
-                using var aboutForm = new Forms.AboutForm();
-                aboutForm.ShowDialog(this);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"显示关于对话框失败: {ex.Message}");
+//        private void HandleAboutShortcut()
+//        {
+//            // 显示关于对话框
+//            try
+//            {
+//                //using var aboutForm = new Forms.AboutForm();
+//                //aboutForm.ShowDialog(this);
+//            }
+//            catch (Exception ex)
+//            {
+//                logger.LogError($"显示关于对话框失败: {ex.Message}");
                 
-                // 备用简单消息框
-                var aboutText = @"ST脚本自动生成器 v2.0
+//                // 备用简单消息框
+//                var aboutText = @"ST脚本自动生成器 v2.0
 
-一个专业的工业自动化代码生成工具
-支持AI/AO/DI/DO点位的ST脚本自动生成
+//一个专业的工业自动化代码生成工具
+//支持AI/AO/DI/DO点位的ST脚本自动生成
 
-开发者: Claude
-技术栈: .NET 9.0, WinForms, NPOI, Scriban
-发布时间: 2025年1月
+//开发者: Claude
+//技术栈: .NET 9.0, WinForms, NPOI, Scriban
+//发布时间: 2025年1月
 
-© 2025 版权所有";
+//© 2025 版权所有";
 
-                MessageBox.Show(aboutText, "关于", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
+//                MessageBox.Show(aboutText, "关于", MessageBoxButtons.OK, MessageBoxIcon.Information);
+//            }
+//        }
 
         private void HandleFocusFileListShortcut()
         {
