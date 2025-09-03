@@ -123,7 +123,7 @@ namespace WinFormsApp1
             //InitializeStatusTimer();
             
             // 初始化菜单事件
-            InitializeMenuEvents();
+            //InitializeMenuEvents();
             
             logger.LogInfo("现代化UI界面初始化完成");
         }
@@ -317,12 +317,12 @@ namespace WinFormsApp1
         //}
 
         //NEED DELETE: 菜单事件初始化（主要用于视图/帮助等非核心菜单）
-        private void InitializeMenuEvents()
-        {
-            // 菜单事件已在Designer.cs中直接绑定
-            // 这里可以添加其他菜单相关的初始化逻辑
-            logger.LogInfo("菜单事件初始化完成");
-        }
+        //private void InitializeMenuEvents()
+        //{
+        //    // 菜单事件已在Designer.cs中直接绑定
+        //    // 这里可以添加其他菜单相关的初始化逻辑
+        //    logger.LogInfo("菜单事件初始化完成");
+        //}
 
         // 文件菜单事件处理器
         private void OpenFileMenuItem_Click(object? sender, EventArgs e)
@@ -352,10 +352,10 @@ namespace WinFormsApp1
         }
 
         // 帮助菜单事件处理器
-        private void AboutMenuItem_Click(object? sender, EventArgs e)
-        {
-            ShowHelp();
-        }
+        //private void AboutMenuItem_Click(object? sender, EventArgs e)
+        //{
+        //    ShowHelp();
+        //}
 
         private async void RegenerateCode()
         {
@@ -386,31 +386,31 @@ namespace WinFormsApp1
         }
 
         //NEED DELETE: 设置窗口/功能（与核心流程无关）
-        private void ShowSettings()
-        {
-            logger.LogInfo("设置功能已移除");
-            MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+        //private void ShowSettings()
+        //{
+        //    logger.LogInfo("设置功能已移除");
+        //    MessageBox.Show("设置功能暂时不可用。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //}
 
         //NEED DELETE: 帮助/关于弹窗功能（与核心导入-生成-导出无关）
-        private void ShowHelp()
-        {
-            var helpText = @"ST脚本自动生成器 v2.0 - 使用帮助
+//        private void ShowHelp()
+//        {
+//            var helpText = @"ST脚本自动生成器 v2.0 - 使用帮助
 
-🔸 支持的文件格式：Excel (.xlsx) 和 CSV (.csv)
-🔸 支持的点位类型：AI、AO、DI、DO
-🔸 拖拽支持：可直接拖拽文件到左侧面板
-🔸 快捷键：
-   • Ctrl+O: 打开文件
-   • Ctrl+S: 导出结果  
-   • F5: 重新生成代码
-   • Ctrl+L: 清空日志
-   • F1: 显示帮助
+//🔸 支持的文件格式：Excel (.xlsx) 和 CSV (.csv)
+//🔸 支持的点位类型：AI、AO、DI、DO
+//🔸 拖拽支持：可直接拖拽文件到左侧面板
+//🔸 快捷键：
+//   • Ctrl+O: 打开文件
+//   • Ctrl+S: 导出结果  
+//   • F5: 重新生成代码
+//   • Ctrl+L: 清空日志
+//   • F1: 显示帮助
 
-📧 技术支持：ST脚本生成器开发团队";
+//📧 技术支持：ST脚本生成器开发团队";
 
-            MessageBox.Show(helpText, "帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+//            MessageBox.Show(helpText, "帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
+//        }
 
         private void UpdateProgressBar(string statusText, int percentage, bool isIndeterminate)
         {
