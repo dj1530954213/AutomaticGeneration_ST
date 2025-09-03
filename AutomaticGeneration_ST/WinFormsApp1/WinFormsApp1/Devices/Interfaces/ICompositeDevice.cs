@@ -1,4 +1,4 @@
-////NEED DELETE: 设备管理接口（遗留），与核心生成链路无关
+////--NEED DELETE: 设备管理接口（遗留），与核心生成链路无关
 //using System;
 //using System.Collections.Generic;
 //using System.Threading.Tasks;

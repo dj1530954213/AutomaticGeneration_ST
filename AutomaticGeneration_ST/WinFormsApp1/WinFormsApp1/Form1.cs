@@ -6,7 +6,7 @@ using WinFormsApp1.Excel;
 using WinFormsApp1.Generators;
 using WinFormsApp1.Output;
 using WinFormsApp1.Config;
-using WinFormsApp1.ProjectManagement;
+//using WinFormsApp1.ProjectManagement;
 using WinFormsApp1.Tests;
 using System.Windows.Forms;
 using AutomaticGeneration_ST.Services;
@@ -49,7 +49,7 @@ namespace WinFormsApp1
             InitializeTheme();
             InitializeKeyboardShortcuts();
             InitializeTooltips();
-            InitializeProjectManagement();
+            //InitializeProjectManagement();
         }
 
         private async void InitializeLogger()
@@ -743,29 +743,29 @@ namespace WinFormsApp1
             }
         }
 
-        private void InitializeProjectManagement()
-        {
-            try
-            {
-                // 订阅项目变更事件
-                SimpleProjectManager.ProjectChanged += OnProjectChanged;
+        //private void InitializeProjectManagement()
+        //{
+        //    try
+        //    {
+        //        // 订阅项目变更事件
+        //        SimpleProjectManager.ProjectChanged += OnProjectChanged;
                 
-                // 创建新项目或加载现有项目
-                if (SimpleProjectManager.CurrentProject == null)
-                {
-                    SimpleProjectManager.CreateNewProject();
-                }
+        //        // 创建新项目或加载现有项目
+        //        if (SimpleProjectManager.CurrentProject == null)
+        //        {
+        //            SimpleProjectManager.CreateNewProject();
+        //        }
                 
-                // 初始化服务容器和分类导出服务
-                InitializeServices();
+        //        // 初始化服务容器和分类导出服务
+        //        InitializeServices();
                 
-                logger.LogInfo("项目管理系统已初始化");
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"初始化项目管理系统时出错: {ex.Message}");
-            }
-        }
+        //        logger.LogInfo("项目管理系统已初始化");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger?.LogError($"初始化项目管理系统时出错: {ex.Message}");
+        //    }
+        //}
         
         /// <summary>
         /// 初始化服务容器和相关服务
@@ -794,63 +794,63 @@ namespace WinFormsApp1
             }
         }
 
-        private void OnProjectChanged(object? sender, EventArgs e)
-        {
-            try
-            {
-                // 更新窗口标题
-                UpdateWindowTitle();
+        //private void OnProjectChanged(object? sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        // 更新窗口标题
+        //        UpdateWindowTitle();
                 
-                // 同步项目数据
-                SyncProjectData();
+        //        // 同步项目数据
+        //        SyncProjectData();
                 
-                logger.LogInfo("项目状态已更新");
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"更新项目状态时出错: {ex.Message}");
-            }
-        }
+        //        logger.LogInfo("项目状态已更新");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger?.LogError($"更新项目状态时出错: {ex.Message}");
+        //    }
+        //}
 
-        private void UpdateWindowTitle()
-        {
-            var projectName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目";
-            var hasChanges = SimpleProjectManager.HasUnsavedChanges ? " *" : "";
-            var filePath = !string.IsNullOrEmpty(SimpleProjectManager.CurrentFilePath) 
-                ? $" - {Path.GetFileName(SimpleProjectManager.CurrentFilePath)}" 
-                : "";
+        //private void UpdateWindowTitle()
+        //{
+        //    var projectName = SimpleProjectManager.CurrentProject?.Name ?? "新建项目";
+        //    var hasChanges = SimpleProjectManager.HasUnsavedChanges ? " *" : "";
+        //    var filePath = !string.IsNullOrEmpty(SimpleProjectManager.CurrentFilePath) 
+        //        ? $" - {Path.GetFileName(SimpleProjectManager.CurrentFilePath)}" 
+        //        : "";
             
-            this.Text = $"{projectName}{hasChanges}{filePath} - ST脚本自动生成器";
-        }
+        //    this.Text = $"{projectName}{hasChanges}{filePath} - ST脚本自动生成器";
+        //}
 
-        private void SyncProjectData()
-        {
-            try
-            {
-                var project = SimpleProjectManager.CurrentProject;
-                if (project != null)
-                {
-                    // 同步点位数据
-                    if (project.PointData.Any())
-                    {
-                        pointData = project.PointData;
-                        //UpdateStatusBarStats();
-                    }
+        //private void SyncProjectData()
+        //{
+        //    try
+        //    {
+        //        var project = SimpleProjectManager.CurrentProject;
+        //        if (project != null)
+        //        {
+        //            // 同步点位数据
+        //            if (project.PointData.Any())
+        //            {
+        //                pointData = project.PointData;
+        //                //UpdateStatusBarStats();
+        //            }
                     
-                    // 同步生成的代码
-                    if (!string.IsNullOrEmpty(project.GeneratedCode))
-                    {
-                        var codeScripts = project.GeneratedCode.Split(new[] { "\n\n" + new string('-', 50) + "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
-                        generatedScripts = codeScripts.ToList();
-                        UpdatePreviewArea();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"同步项目数据时出错: {ex.Message}");
-            }
-        }
+        //            // 同步生成的代码
+        //            if (!string.IsNullOrEmpty(project.GeneratedCode))
+        //            {
+        //                var codeScripts = project.GeneratedCode.Split(new[] { "\n\n" + new string('-', 50) + "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
+        //                generatedScripts = codeScripts.ToList();
+        //                UpdatePreviewArea();
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger?.LogError($"同步项目数据时出错: {ex.Message}");
+        //    }
+        //}
 
         //private async void NewProjectMenuItem_Click(object? sender, EventArgs e)
         //{
@@ -1025,29 +1025,29 @@ namespace WinFormsApp1
         //    }
         //}
 
-        private void UpdateProjectData()
-        {
-            try
-            {
-                // 更新点位数据
-                SimpleProjectManager.SetPointData(pointData);
+        //private void UpdateProjectData()
+        //{
+        //    try
+        //    {
+        //        // 更新点位数据
+        //        SimpleProjectManager.SetPointData(pointData);
                 
-                // 更新生成的代码
-                if (generatedScripts.Any())
-                {
-                    var combinedCode = string.Join("\n\n" + new string('-', 50) + "\n\n", generatedScripts);
-                    SimpleProjectManager.SetGeneratedCode(combinedCode);
-                }
+        //        // 更新生成的代码
+        //        if (generatedScripts.Any())
+        //        {
+        //            var combinedCode = string.Join("\n\n" + new string('-', 50) + "\n\n", generatedScripts);
+        //            SimpleProjectManager.SetGeneratedCode(combinedCode);
+        //        }
                 
-                // 更新其他设置
-                SimpleProjectManager.UpdateSettings("lastProcessedFile", uploadedFilePath);
-                SimpleProjectManager.UpdateSettings("lastUpdateTime", DateTime.Now);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"更新项目数据时出错: {ex.Message}");
-            }
-        }
+        //        // 更新其他设置
+        //        SimpleProjectManager.UpdateSettings("lastProcessedFile", uploadedFilePath);
+        //        SimpleProjectManager.UpdateSettings("lastUpdateTime", DateTime.Now);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger?.LogError($"更新项目数据时出错: {ex.Message}");
+        //    }
+        //}
 
         //private void ClearCurrentData()
         //{
@@ -1142,7 +1142,7 @@ namespace WinFormsApp1
                         UpdateProgressBar("文件处理完成", 100, false);
                         
                         // 标记项目有变更
-                        UpdateProjectData();
+                        //UpdateProjectData();
                     }
                     else
                     {
@@ -1222,7 +1222,7 @@ namespace WinFormsApp1
                 UpdateUIFromProjectCache(projectCache);
                 
                 // 更新项目管理数据
-                UpdateProjectData();
+                //UpdateProjectData();
                 
                 logger.LogSuccess($"✅ Excel文件处理完成 - 设备数:{projectCache.Statistics.TotalDevices}, 点位数:{projectCache.Statistics.TotalPoints}, ST文件数:{projectCache.Statistics.GeneratedSTFiles}");
             }
@@ -1400,7 +1400,7 @@ namespace WinFormsApp1
                     UpdatePreviewArea();
                     
                     // 标记项目有变更
-                    UpdateProjectData();
+                    //UpdateProjectData();
                     
                     // 显示预览
                     logger.LogInfo("生成预览:");
@@ -1487,7 +1487,7 @@ namespace WinFormsApp1
                     UpdatePreviewArea();
                     
                     // 标记项目有变更
-                    UpdateProjectData();
+                    //UpdateProjectData();
                     
                     logger.LogInfo($"新架构生成预览 - 共{generatedScripts.Count}个脚本文件");
                 }
@@ -2389,9 +2389,9 @@ namespace WinFormsApp1
                 if (saveProjectResult == DialogResult.Yes)
                 {
                     // 更新项目数据
-                    UpdateProjectData();
-                    SimpleProjectManager.UpdateSettings("lastExportPath", outputDirectory);
-                    SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
+                    //UpdateProjectData();
+                    //SimpleProjectManager.UpdateSettings("lastExportPath", outputDirectory);
+                    //SimpleProjectManager.UpdateSettings("lastExportTime", DateTime.Now);
                     
                     // 保存项目
                     //var projectSaved = await SaveProject();
@@ -4069,7 +4069,7 @@ namespace WinFormsApp1
                 Config.ConfigurationManager.Dispose();
                 
                 // 关闭项目
-                SimpleProjectManager.CloseProject();
+                //SimpleProjectManager.CloseProject();
                 
                 // 保存窗口设置
                 var settings = WindowSettings.Load();
@@ -4096,130 +4096,130 @@ namespace WinFormsApp1
         /// <summary>
         /// 使用新的标准化架构进行ST代码生成的测试方法
         /// </summary>
-        private async void TestNewArchitecture()
-        {
-            try
-            {
-                logger.LogInfo("开始使用新的标准化架构进行ST代码生成...");
+        //private async void TestNewArchitecture()
+        //{
+        //    try
+        //    {
+        //        logger.LogInfo("开始使用新的标准化架构进行ST代码生成...");
 
-                // 检查是否有上传的文件
-                if (string.IsNullOrEmpty(uploadedFilePath) || !File.Exists(uploadedFilePath))
-                {
-                    logger.LogWarning("请先上传Excel点表文件");
-                    MessageBox.Show("请先上传Excel点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+        //        // 检查是否有上传的文件
+        //        if (string.IsNullOrEmpty(uploadedFilePath) || !File.Exists(uploadedFilePath))
+        //        {
+        //            logger.LogWarning("请先上传Excel点表文件");
+        //            MessageBox.Show("请先上传Excel点表文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //            return;
+        //        }
 
-                // 定义路径
-                var templateDir = Path.Combine(Application.StartupPath, "Templates");
-                var configFile = Path.Combine(Application.StartupPath, "template-mapping.json");
+        //        // 定义路径
+        //        var templateDir = Path.Combine(Application.StartupPath, "Templates");
+        //        var configFile = Path.Combine(Application.StartupPath, "template-mapping.json");
                 
-                // 选择导出目录
-                using var folderDialog = new FolderBrowserDialog
-                {
-                    Description = "选择ST代码导出目录",
-                    ShowNewFolderButton = true,
-                    SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                };
+        //        // 选择导出目录
+        //        using var folderDialog = new FolderBrowserDialog
+        //        {
+        //            Description = "选择ST代码导出目录",
+        //            ShowNewFolderButton = true,
+        //            SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        //        };
 
-                if (folderDialog.ShowDialog() != DialogResult.OK)
-                {
-                    logger.LogInfo("用户取消了导出操作");
-                    return;
-                }
+        //        if (folderDialog.ShowDialog() != DialogResult.OK)
+        //        {
+        //            logger.LogInfo("用户取消了导出操作");
+        //            return;
+        //        }
 
-                var exportPath = Path.Combine(folderDialog.SelectedPath, $"ST_Generated_{DateTime.Now:yyyyMMdd_HHmmss}");
+        //        var exportPath = Path.Combine(folderDialog.SelectedPath, $"ST_Generated_{DateTime.Now:yyyyMMdd_HHmmss}");
 
-                // 使用新的服务架构
-                var stGenerationService = new AutomaticGeneration_ST.Services.STGenerationService();
+        //        // 使用新的服务架构
+        //        var stGenerationService = new AutomaticGeneration_ST.Services.STGenerationService();
 
-                // 显示进度
-                UpdateProgressBar("正在使用新架构生成ST代码...", 0, true);
+        //        // 显示进度
+        //        UpdateProgressBar("正在使用新架构生成ST代码...", 0, true);
 
-                // 使用缓存机制获取数据上下文，避免重复解析Excel
-                var dataContext = GetCachedDataContext(uploadedFilePath);
-                if (dataContext == null)
-                {
-                    throw new Exception("无法加载Excel数据");
-                }
+        //        // 使用缓存机制获取数据上下文，避免重复解析Excel
+        //        var dataContext = GetCachedDataContext(uploadedFilePath);
+        //        if (dataContext == null)
+        //        {
+        //            throw new Exception("无法加载Excel数据");
+        //        }
 
-                // 从已有数据上下文获取统计信息，避免重复加载
-                var statistics = stGenerationService.GetStatistics(dataContext);
-                logger.LogInfo($"数据统计: 总点位 {statistics.TotalPoints}个, 设备 {statistics.DeviceCount}个, 独立点位 {statistics.StandalonePointsCount}个");
+        //        // 从已有数据上下文获取统计信息，避免重复加载
+        //        var statistics = stGenerationService.GetStatistics(dataContext);
+        //        logger.LogInfo($"数据统计: 总点位 {statistics.TotalPoints}个, 设备 {statistics.DeviceCount}个, 独立点位 {statistics.StandalonePointsCount}个");
                 
-                // 生成ST代码（使用新的重载方法）
-                var generatedFileCount = stGenerationService.GenerateSTCode(
-                    dataContext, 
-                    templateDir, 
-                    configFile, 
-                    exportPath);
+        //        // 生成ST代码（使用新的重载方法）
+        //        var generatedFileCount = stGenerationService.GenerateSTCode(
+        //            dataContext, 
+        //            templateDir, 
+        //            configFile, 
+        //            exportPath);
 
-                UpdateProgressBar("ST代码生成完成", 100, false);
+        //        UpdateProgressBar("ST代码生成完成", 100, false);
 
-                logger.LogSuccess($"新架构ST代码生成成功! 共生成 {generatedFileCount} 个文件");
-                logger.LogInfo($"输出目录: {exportPath}");
+        //        logger.LogSuccess($"新架构ST代码生成成功! 共生成 {generatedFileCount} 个文件");
+        //        logger.LogInfo($"输出目录: {exportPath}");
 
-                // 显示统计信息
-                var statsMessage = $"ST代码生成完成!\n\n" +
-                                 $"生成文件数: {generatedFileCount}\n" +
-                                 $"总点位数: {statistics.TotalPoints}\n" +
-                                 $"设备数量: {statistics.DeviceCount}\n" +
-                                 $"独立点位: {statistics.StandalonePointsCount}\n" +
-                                 $"输出目录: {exportPath}\n\n" +
-                                 $"点位类型分布:\n";
+        //        // 显示统计信息
+        //        var statsMessage = $"ST代码生成完成!\n\n" +
+        //                         $"生成文件数: {generatedFileCount}\n" +
+        //                         $"总点位数: {statistics.TotalPoints}\n" +
+        //                         $"设备数量: {statistics.DeviceCount}\n" +
+        //                         $"独立点位: {statistics.StandalonePointsCount}\n" +
+        //                         $"输出目录: {exportPath}\n\n" +
+        //                         $"点位类型分布:\n";
 
-                foreach (var kvp in statistics.PointTypeBreakdown)
-                {
-                    statsMessage += $"  {kvp.Key}: {kvp.Value}个\n";
-                }
+        //        foreach (var kvp in statistics.PointTypeBreakdown)
+        //        {
+        //            statsMessage += $"  {kvp.Key}: {kvp.Value}个\n";
+        //        }
 
-                MessageBox.Show(statsMessage, "生成完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        MessageBox.Show(statsMessage, "生成完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // 询问是否打开输出目录
-                var openResult = MessageBox.Show("是否打开输出目录?", "操作完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (openResult == DialogResult.Yes)
-                {
-                    System.Diagnostics.Process.Start("explorer.exe", exportPath);
-                }
+        //        // 询问是否打开输出目录
+        //        var openResult = MessageBox.Show("是否打开输出目录?", "操作完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        //        if (openResult == DialogResult.Yes)
+        //        {
+        //            System.Diagnostics.Process.Start("explorer.exe", exportPath);
+        //        }
 
-                // 更新项目数据
-                UpdateProjectData();
-            }
-            catch (Exception ex)
-            {
-                UpdateProgressBar("生成失败", 0, false);
-                logger.LogError($"使用新架构生成ST代码时出错: {ex.Message}");
-                MessageBox.Show($"生成失败:\n\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        // 更新项目数据
+        //        //UpdateProjectData();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateProgressBar("生成失败", 0, false);
+        //        logger.LogError($"使用新架构生成ST代码时出错: {ex.Message}");
+        //        MessageBox.Show($"生成失败:\n\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
         /// <summary>
         /// 重写导出按钮事件，增加新架构选项
         /// </summary>
-        private async void button_export_Click_Enhanced(object sender, EventArgs e)
-        {
-            var result = MessageBox.Show(
-                "选择使用的生成架构:\n\n" +
-                "是(Y) - 使用新的标准化架构\n" +
-                "否(N) - 使用原有架构\n" +
-                "取消 - 取消操作",
-                "选择架构",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question);
+        //private async void button_export_Click_Enhanced(object sender, EventArgs e)
+        //{
+        //    var result = MessageBox.Show(
+        //        "选择使用的生成架构:\n\n" +
+        //        "是(Y) - 使用新的标准化架构\n" +
+        //        "否(N) - 使用原有架构\n" +
+        //        "取消 - 取消操作",
+        //        "选择架构",
+        //        MessageBoxButtons.YesNoCancel,
+        //        MessageBoxIcon.Question);
 
-            switch (result)
-            {
-                case DialogResult.Yes:
-                    TestNewArchitecture();
-                    break;
-                case DialogResult.No:
-                    button_export_Click(sender, e);
-                    break;
-                case DialogResult.Cancel:
-                    logger.LogInfo("用户取消了导出操作");
-                    break;
-            }
-        }
+        //    switch (result)
+        //    {
+        //        case DialogResult.Yes:
+        //            //TestNewArchitecture();
+        //            break;
+        //        case DialogResult.No:
+        //            button_export_Click(sender, e);
+        //            break;
+        //        case DialogResult.Cancel:
+        //            logger.LogInfo("用户取消了导出操作");
+        //            break;
+        //    }
+        //}
 
 
 
