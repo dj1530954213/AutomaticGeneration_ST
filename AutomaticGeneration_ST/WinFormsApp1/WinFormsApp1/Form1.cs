@@ -3429,9 +3429,9 @@ namespace WinFormsApp1
                         HandleReloadConfigShortcut();
                         break;
                         
-                    case "RunUITests":
-                        HandleRunUITestsShortcut();
-                        break;
+                    //case "RunUITests":
+                    //    HandleRunUITestsShortcut();
+                    //    break;
                         
                     default:
                         logger.LogInfo($"未处理的快捷键: {shortcutName}");
@@ -3703,114 +3703,114 @@ namespace WinFormsApp1
             }
         }
 
-        private void HandleRunUITestsShortcut()
-        {
-            try
-            {
-                logger.LogInfo("开始执行UI稳定性测试...");
+        //private void HandleRunUITestsShortcut()
+        //{
+        //    try
+        //    {
+        //        logger.LogInfo("开始执行UI稳定性测试...");
                 
-                // 显示处理状态
-                statusLabel.Text = "执行UI测试中...";
-                progressBar.Visible = true;
-                progressBar.Style = ProgressBarStyle.Marquee;
+        //        // 显示处理状态
+        //        statusLabel.Text = "执行UI测试中...";
+        //        progressBar.Visible = true;
+        //        progressBar.Style = ProgressBarStyle.Marquee;
                 
-                Application.DoEvents();
+        //        Application.DoEvents();
                 
-                // 执行测试
-                var testSuite = UITestManager.RunUIStabilityTests(this);
+        //        // 执行测试
+        //        var testSuite = UITestManager.RunUIStabilityTests(this);
                 
-                // 生成报告
-                var report = UITestManager.GenerateTestReport(testSuite);
+        //        // 生成报告
+        //        var report = UITestManager.GenerateTestReport(testSuite);
                 
-                // 隐藏进度条
-                progressBar.Visible = false;
-                statusLabel.Text = "就绪";
+        //        // 隐藏进度条
+        //        progressBar.Visible = false;
+        //        statusLabel.Text = "就绪";
                 
-                // 显示测试结果
-                ShowTestResults(testSuite, report);
+        //        // 显示测试结果
+        //        ShowTestResults(testSuite, report);
                 
-                logger.LogInfo($"UI测试完成 - 通过: {testSuite.PassedTests}/{testSuite.TotalTests}");
-            }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                statusLabel.Text = "就绪";
-                logger.LogError($"执行UI测试失败: {ex.Message}");
-            }
-        }
+        //        logger.LogInfo($"UI测试完成 - 通过: {testSuite.PassedTests}/{testSuite.TotalTests}");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        progressBar.Visible = false;
+        //        statusLabel.Text = "就绪";
+        //        logger.LogError($"执行UI测试失败: {ex.Message}");
+        //    }
+        //}
 
-        private void ShowTestResults(UITestManager.UITestSuite testSuite, string report)
-        {
-            var form = new Form
-            {
-                Text = "UI稳定性测试结果",
-                Size = new Size(600, 500),
-                StartPosition = FormStartPosition.CenterParent,
-                ShowInTaskbar = false
-            };
+        //private void ShowTestResults(UITestManager.UITestSuite testSuite, string report)
+        //{
+        //    var form = new Form
+        //    {
+        //        Text = "UI稳定性测试结果",
+        //        Size = new Size(600, 500),
+        //        StartPosition = FormStartPosition.CenterParent,
+        //        ShowInTaskbar = false
+        //    };
 
-            var textBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("Consolas", 9),
-                ReadOnly = true,
-                Text = report,
-                BackColor = ThemeManager.GetBackgroundColor(),
-                ForeColor = ThemeManager.GetTextColor()
-            };
+        //    var textBox = new RichTextBox
+        //    {
+        //        Dock = DockStyle.Fill,
+        //        Font = new Font("Consolas", 9),
+        //        ReadOnly = true,
+        //        Text = report,
+        //        BackColor = ThemeManager.GetBackgroundColor(),
+        //        ForeColor = ThemeManager.GetTextColor()
+        //    };
 
-            var buttonPanel = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 50
-            };
+        //    var buttonPanel = new Panel
+        //    {
+        //        Dock = DockStyle.Bottom,
+        //        Height = 50
+        //    };
 
-            var okButton = new Button
-            {
-                Text = "确定",
-                Size = new Size(80, 30),
-                Location = new System.Drawing.Point(500, 10),
-                DialogResult = DialogResult.OK
-            };
+        //    var okButton = new Button
+        //    {
+        //        Text = "确定",
+        //        Size = new Size(80, 30),
+        //        Location = new System.Drawing.Point(500, 10),
+        //        DialogResult = DialogResult.OK
+        //    };
 
-            var saveButton = new Button
-            {
-                Text = "保存报告",
-                Size = new Size(80, 30),
-                Location = new System.Drawing.Point(410, 10)
-            };
+        //    var saveButton = new Button
+        //    {
+        //        Text = "保存报告",
+        //        Size = new Size(80, 30),
+        //        Location = new System.Drawing.Point(410, 10)
+        //    };
 
-            saveButton.Click += (s, e) => SaveTestReport(report);
+        //    saveButton.Click += (s, e) => SaveTestReport(report);
 
-            buttonPanel.Controls.AddRange(new Control[] { okButton, saveButton });
-            form.Controls.AddRange(new Control[] { textBox, buttonPanel });
+        //    buttonPanel.Controls.AddRange(new Control[] { okButton, saveButton });
+        //    form.Controls.AddRange(new Control[] { textBox, buttonPanel });
 
-            form.AcceptButton = okButton;
-            form.ShowDialog(this);
-        }
+        //    form.AcceptButton = okButton;
+        //    form.ShowDialog(this);
+        //}
 
-        private void SaveTestReport(string report)
-        {
-            try
-            {
-                using var saveDialog = new SaveFileDialog
-                {
-                    Filter = "文本文件|*.txt|所有文件|*.*",
-                    DefaultExt = "txt",
-                    FileName = $"UI测试报告_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
-                };
+        //private void SaveTestReport(string report)
+        //{
+        //    try
+        //    {
+        //        using var saveDialog = new SaveFileDialog
+        //        {
+        //            Filter = "文本文件|*.txt|所有文件|*.*",
+        //            DefaultExt = "txt",
+        //            FileName = $"UI测试报告_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+        //        };
 
-                if (saveDialog.ShowDialog() == DialogResult.OK)
-                {
-                    File.WriteAllText(saveDialog.FileName, report, Encoding.UTF8);
-                    logger.LogInfo($"测试报告已保存到: {saveDialog.FileName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"保存测试报告失败: {ex.Message}");
-            }
-        }
+        //        if (saveDialog.ShowDialog() == DialogResult.OK)
+        //        {
+        //            File.WriteAllText(saveDialog.FileName, report, Encoding.UTF8);
+        //            logger.LogInfo($"测试报告已保存到: {saveDialog.FileName}");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError($"保存测试报告失败: {ex.Message}");
+        //    }
+        //}
 
         private void InitializeTooltips()
         {
