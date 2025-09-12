@@ -1,3 +1,7 @@
+// NEED DELETE: Legacy script category matcher (DI). Not used by active flow.
+// Reason: `ScriptClassificationService` does not register matchers currently, and categorized
+// export paths in `Form1` are commented out. No active references.
+// 说明：脚本分类匹配器（DI）属遗留实现，当前未被注册或调用，UI分类导出未启用，可安全删除。
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System.Collections.Generic;

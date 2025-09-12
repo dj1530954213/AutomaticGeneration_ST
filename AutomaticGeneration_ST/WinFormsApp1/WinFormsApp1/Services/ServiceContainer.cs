@@ -55,12 +55,11 @@ namespace AutomaticGeneration_ST.Services
             RegisterTransient<IWorksheetLocatorService>(() => 
                 new WorksheetLocatorService(GetService<IExcelWorkbookParser>()));
 
-            // 注册TCP数据服务
-            // Removed legacy: TCP data service not used in core flow
-            // RegisterTransient<ITcpDataService>(() => 
-            //     new TcpDataService(
-            //         GetService<IExcelWorkbookParser>(),
-            //         GetService<IWorksheetLocatorService>()));
+            // 注册TCP数据服务（供 ExcelDataService 的 TCP 处理使用）
+            RegisterTransient<ITcpDataService>(() => 
+                new TcpDataService(
+                    GetService<IExcelWorkbookParser>(),
+                    GetService<IWorksheetLocatorService>()));
 
             // Removed legacy: data processing orchestrator not used in core UI flow
             // RegisterTransient<IDataProcessingOrchestrator>(() =>

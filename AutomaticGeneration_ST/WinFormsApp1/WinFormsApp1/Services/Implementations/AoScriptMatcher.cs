@@ -1,3 +1,7 @@
+// NEED DELETE: Legacy script category matcher (AO). Not used by active flow.
+// Reason: `ScriptClassificationService` initializes without registering matchers, and
+// Form1's categorized export entry points are commented out. No runtime references.
+// 说明：脚本分类匹配器（AO）为遗留实现，当前未注册使用，UI分类导出未启用，可安全删除。
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System.Collections.Generic;

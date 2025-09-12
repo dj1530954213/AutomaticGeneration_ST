@@ -1,4 +1,10 @@
 using NPOI.SS.UserModel;
+// NEED DELETE: Legacy Excel reader (NPOI/CSV). Replaced by the EPPlus-based pipeline.
+// Reason: The active import flow uses `Services/Implementations/ExcelDataService.cs` with EPPlus
+// and `Services/Implementations/ExcelWorkbookParser.cs` + `WorksheetLocatorService` to read sheets.
+// This class is no longer referenced by `Form1` or the core ImportPipeline; safe to remove after
+// verifying no external tools depend on it.
+// 说明：该类为旧版Excel解析器（NPOI/CSV），现已由EPPlus方案替代，主流程未引用，可安全删除。
 using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;

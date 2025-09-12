@@ -1,3 +1,8 @@
+// NEED DELETE: Legacy device controller base class. Not part of current import→generate→export flow.
+// Reason: The entire `Devices/` legacy stack (composite devices/controllers) is unused in the
+// active architecture centered on `ImportPipeline` and Scriban generators. Other device classes
+// in this folder are already marked NEED DELETE; this base is likewise safe to remove.
+// 说明：设备控制器基类属遗留代码，当前主流程未使用；与已标注删除的设备管理代码一致，可安全删除。
 using System;
 using System.Collections.Generic;
 

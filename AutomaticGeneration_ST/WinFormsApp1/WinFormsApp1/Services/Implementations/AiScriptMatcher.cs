@@ -1,3 +1,7 @@
+// NEED DELETE: Legacy script category matcher (AI). Not used by active flow.
+// Reason: `ScriptClassificationService` currently initializes with an empty matcher list
+// and categorized export in `Form1` is commented out. This matcher has zero runtime references.
+// 说明：脚本分类匹配器（AI）为遗留实现，当前分类服务未注册任何匹配器，UI分类导出功能亦未启用，可安全删除。
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System.Collections.Generic;

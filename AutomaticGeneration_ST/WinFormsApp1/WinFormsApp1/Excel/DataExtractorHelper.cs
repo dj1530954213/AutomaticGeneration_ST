@@ -1,3 +1,8 @@
+// NEED DELETE: Legacy data extraction helper used by deprecated orchestrator stack.
+// Reason: Only referenced by `Services/Implementations/DataProcessingOrchestrator.cs`,
+// `DeviceClassificationService.cs`, and `PointFactory.cs`, which are all annotated as NEED DELETE
+// and not part of the active EPPlus-based ImportPipeline + Generation services.
+// 说明：该工具类仅被已标注删除的编排/设备分类/点位工厂所使用，当前主流程未使用，可安全删除。
 using System;
 using System.Collections.Generic;
 using System.Linq;

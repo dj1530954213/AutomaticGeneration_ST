@@ -1,3 +1,7 @@
+// NEED DELETE: Optional categorized export service not used by the current main UI flow.
+// Reason: Form1's categorized export logic is commented out; the standard export path
+// uses project cache grouping and direct file writes. This service is registered but unused.
+// 说明：该服务用于“分类导出”功能，当前UI中相关调用已注释，主流程未使用，可安全删除。
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System;

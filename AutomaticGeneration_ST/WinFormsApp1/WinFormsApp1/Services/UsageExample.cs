@@ -1,3 +1,7 @@
+// NEED DELETE: Sample usage/demo class, not used in the active WinForms flow.
+// Reason: Demonstrates service container and orchestrator usage for console-like demos;
+// not invoked by `Program.cs` or `Form1`, safe to remove.
+// 说明：该文件为示例/演示用法，不参与当前WinForms主流程，可安全删除。
 using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Services.Interfaces;
 using System;

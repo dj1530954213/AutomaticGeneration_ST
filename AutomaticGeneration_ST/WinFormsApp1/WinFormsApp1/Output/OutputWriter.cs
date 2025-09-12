@@ -1,3 +1,8 @@
+// NEED DELETE: Legacy output helper for file writing and preview (legacy pipeline).
+// Reason: The active export flow writes files directly in `Form1` and uses the new
+// generation services. `OutputWriter` is only referenced by the legacy `TcpExportService`
+// and commented-out code in `Form1`, hence not part of the core import-generate-export flow.
+// 说明：该类属于旧输出工具，仅被遗留的 TCP 导出服务调用，主流程未使用，可安全删除。
 using System;
 using System.Collections.Generic;
 using System.IO;
