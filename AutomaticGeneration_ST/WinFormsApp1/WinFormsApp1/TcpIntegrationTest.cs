@@ -1,6 +1,7 @@
 // NEED DELETE: TCP integration test helper (demo). Not part of production WinForms flow.
 // Reason: Used only for manual testing of TCP services; not invoked by `Program.cs` or `Form1`.
 // 说明：该文件为TCP功能演示/集成测试代码，不在生产主流程中使用，可安全删除。
+﻿#if LEGACY_UNUSED || false
 using System;
 using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Services.Interfaces;
@@ -61,3 +62,4 @@ namespace WinFormsApp1
         }
     }
 }
+#endif

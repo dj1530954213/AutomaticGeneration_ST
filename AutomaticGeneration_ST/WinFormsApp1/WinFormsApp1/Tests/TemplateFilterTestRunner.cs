@@ -1,6 +1,7 @@
 // NEED DELETE: 测试/演示代码（模板过滤功能），不属于WinForms主流程。
 // 原因：仅用于本地验证 `TemplateRenderer.FilterClassificationLines` 的单元测试/示例，未被 `Program.cs` 或 `Form1.cs` 调用。
 // 建议：如需保留测试，应迁移到独立测试项目；当前工程中可安全删除，不影响导入-生成-导出主链路。
+﻿#if LEGACY_UNUSED || false
 using System;
 using System.Collections.Generic;
 using WinFormsApp1.Template;
@@ -207,3 +208,4 @@ DO_Point_1 := TRUE;
         }
     }
 }
+#endif
