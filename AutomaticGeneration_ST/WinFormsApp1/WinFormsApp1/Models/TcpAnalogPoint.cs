@@ -1,4 +1,5 @@
-//NEED DELETE
+//--NEED DELETE: 未集成的TCP通信点模型
+// 处理建议: 若不保留TCP链路，删除本文件并清理引用（ServiceContainer注册、Orchestrator、Tcp*服务/导出器等）。
 //REASON: This model is part of the unused TCP communication architecture and is not integrated into the main UI workflow.
 
 namespace WinFormsApp1.Models

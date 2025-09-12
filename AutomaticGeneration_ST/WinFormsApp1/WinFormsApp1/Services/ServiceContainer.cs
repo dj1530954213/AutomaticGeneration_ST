@@ -35,7 +35,7 @@ namespace AutomaticGeneration_ST.Services
         {
             // 注册单例服务
             RegisterSingleton<IExcelWorkbookParser>(() => new ExcelWorkbookParser());
-            RegisterSingleton<IPointFactory>(() => new PointFactory());
+            // Removed legacy: RegisterSingleton<IPointFactory>(() => new PointFactory());
             RegisterSingleton<ITemplateRegistry>(() => 
             {
                 var registry = new TemplateRegistry(_templateDirectory);
@@ -47,31 +47,34 @@ namespace AutomaticGeneration_ST.Services
             });
 
             // 注册需要依赖的服务
-            RegisterTransient<IDeviceClassificationService>(() => 
-                new DeviceClassificationService(GetService<IPointFactory>()));
+            // Removed legacy: device classification service and point factory registrations
+            // RegisterTransient<IDeviceClassificationService>(() => 
+            //     new DeviceClassificationService(GetService<IPointFactory>()));
 
             // 注册工作表定位服务
             RegisterTransient<IWorksheetLocatorService>(() => 
                 new WorksheetLocatorService(GetService<IExcelWorkbookParser>()));
 
             // 注册TCP数据服务
-            RegisterTransient<ITcpDataService>(() => 
-                new TcpDataService(
-                    GetService<IExcelWorkbookParser>(),
-                    GetService<IWorksheetLocatorService>()));
+            // Removed legacy: TCP data service not used in core flow
+            // RegisterTransient<ITcpDataService>(() => 
+            //     new TcpDataService(
+            //         GetService<IExcelWorkbookParser>(),
+            //         GetService<IWorksheetLocatorService>()));
 
-            RegisterTransient<IDataProcessingOrchestrator>(() =>
-               new DataProcessingOrchestrator(
-                   GetService<IExcelWorkbookParser>(),
-                   GetService<IPointFactory>(),
-                   GetService<IDeviceClassificationService>(),
-                   GetService<ITemplateRegistry>(),
-                   GetService<IWorksheetLocatorService>(),
-                   GetService<ITcpDataService>()));
+            // Removed legacy: data processing orchestrator not used in core UI flow
+            // RegisterTransient<IDataProcessingOrchestrator>(() =>
+            //    new DataProcessingOrchestrator(
+            //        GetService<IExcelWorkbookParser>(),
+            //        GetService<IPointFactory>(),
+            //        GetService<IDeviceClassificationService>(),
+            //        GetService<ITemplateRegistry>(),
+            //        GetService<IWorksheetLocatorService>(),
+            //        GetService<ITcpDataService>()));
 
             // 兼容现有系统的IDataService
-            RegisterTransient<IDataService>(() =>
-                new RefactoredExcelDataService(GetService<IDataProcessingOrchestrator>()));
+            // Use ExcelDataService directly for IDataService
+            RegisterTransient<IDataService>(() => new ExcelDataService(GetService<IWorksheetLocatorService>()));
 
             // 注册分类导出相关服务
             RegisterSingleton<IScriptClassifier>(() => new ScriptClassificationService());

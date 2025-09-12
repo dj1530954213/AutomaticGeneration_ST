@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -8,6 +8,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <StartupObject>WinFormsApp1.Program</StartupObject>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**;Domain\obj\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +40,16 @@
     <Content Include="VERSION_INFO.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="**\obj\**\*.cs" />
+    <Compile Remove="**\bin\**\*.cs" />
+    <Compile Remove="Domain\obj\**\*.cs" />
+    <None Remove="**\obj\**\*" />
+    <None Remove="Domain\obj\**\*" />
+    <EmbeddedResource Remove="**\obj\**\*" />
+    <EmbeddedResource Remove="Domain\obj\**\*" />
   </ItemGroup>
 
   <ItemGroup>
