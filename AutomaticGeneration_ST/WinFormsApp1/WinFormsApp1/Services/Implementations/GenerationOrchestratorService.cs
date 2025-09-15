@@ -84,7 +84,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     _logger.LogError($"❌ 无法加载模板文件: {scribanFileName}");
                     continue;
                 }
-                // 同时读取模板文本用于占位符校验（严格别名规则）
+                // 读取模板路径与文本（用于变量模板收集与占位符预校验）
                 var templatePath = System.IO.Path.Combine(_templateDirectory, scribanFileName);
                 var templateContent = System.IO.File.ReadAllText(templatePath);
                 var binder = new DeviceTemplateDataBinder();
@@ -94,8 +94,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 {
                     try
                     {
-                        // 先执行严格占位符绑定校验：仅别名映射，缺失即抛错
-                        // 该调用也会生成绑定上下文，但此处仅用于校验（实际渲染仍由设备生成器完成）
+                        // 预校验：别名必须声明（HMI 可为空）。未声明即抛错，阻止渲染产生大量空值
                         binder.BindDeviceTemplateData(device, templateContent);
 
                         var result = _deviceGenerator.Generate(device, template);

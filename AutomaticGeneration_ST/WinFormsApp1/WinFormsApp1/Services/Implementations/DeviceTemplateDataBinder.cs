@@ -84,13 +84,17 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                     if (device.TryGetHmiByAlias(placeholder, out var hmi))
                     {
-                        dataBinding[placeholder] = hmi ?? string.Empty; // HMI 允许为空 → 空字符串
+                        // 当 HMI 为空或全空白时，向模板注入 null，以便模板可用 `if VAR != null` 做存在性判断
+                        object value = string.IsNullOrWhiteSpace(hmi) ? null : hmi;
+                        dataBinding[placeholder] = value;
                         pointBindings[placeholder] = 1;
-                        _logger.LogInfo($"   ✓ 别名匹配 {placeholder} -> {(string.IsNullOrEmpty(hmi) ? "<空字符串>" : hmi)}");
+                        _logger.LogInfo($"   ✓ 别名匹配 {placeholder} -> {(string.IsNullOrWhiteSpace(hmi) ? "<null>" : hmi)}");
                     }
                     else
                     {
-                        throw new KeyNotFoundException($"设备[{device.DeviceTag}] 模板占位符 '{placeholder}' 在“设备分类表”的“别名”列中未找到对应行");
+                        // 别名未在设备分类表中声明：视为配置错误，直接抛出异常
+                        // 说明：允许 HMI 为空（占位符存在但值为空）；但不允许“别名缺失”
+                        throw new KeyNotFoundException($"设备[{device.DeviceTag}] 模板占位符 '{placeholder}' 未在设备分类表的“别名”列中声明。请在该设备行补充此别名（HMI 可留空）。");
                     }
                 }
 
@@ -118,24 +122,38 @@ namespace AutomaticGeneration_ST.Services.Implementations
         {
             var placeholders = new HashSet<string>();
 
-            // 使用正则表达式匹配 {{placeholder}} 格式的占位符
+            // 匹配所有形如 {{ ... }} 的片段
             var pattern = @"\{\{([^}]+)\}\}";
             var matches = Regex.Matches(templateContent, pattern);
 
+            // 仅保留“纯标识符”的变量作为占位符（用于别名解析）
+            // 例如：FA、RL、RUN、A_OPEN；排除控制语句，如 if/else/for/end 等
+            var identRegex = new Regex(@"^[A-Za-z_][A-Za-z0-9_]*$");
+            var controlKeywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "if", "else", "elsif", "elseif", "end", "for", "with", "when", "case"
+            };
+
             foreach (Match match in matches)
             {
-                if (match.Groups.Count > 1)
-                {
-                    var placeholder = match.Groups[1].Value.Trim();
-                    if (!string.IsNullOrWhiteSpace(placeholder) && 
-                        !placeholder.StartsWith("#") && // 跳过注释
-                        !placeholder.StartsWith("/") && // 跳过Scriban控制语句
-                        !placeholder.Contains("for") && // 跳过循环语句
-                        !placeholder.Contains("end"))   // 跳过结束语句
-                    {
-                        placeholders.Add(placeholder);
-                    }
-                }
+                if (match.Groups.Count <= 1) continue;
+
+                // 去除前后空白和 scriban 压缩标记 ~
+                var raw = match.Groups[1].Value;
+                var token = raw.Trim().Trim('~').Trim();
+                if (string.IsNullOrWhiteSpace(token)) continue;
+
+                // 取首个单词用于判断是否为控制关键字
+                var firstWord = token.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                     .FirstOrDefault() ?? string.Empty;
+                if (controlKeywords.Contains(firstWord))
+                    continue; // 跳过控制语句
+
+                // 仅接受“纯标识符”
+                if (!identRegex.IsMatch(token))
+                    continue;
+
+                placeholders.Add(token);
             }
 
             return placeholders.ToList();

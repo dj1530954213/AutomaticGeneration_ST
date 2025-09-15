@@ -24,12 +24,13 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
                 {
                     var aliasLower = kvp.Key ?? string.Empty; // 已在Device中标准化为小写
                     var aliasUpper = aliasLower.ToUpperInvariant();
-                    var hmi = kvp.Value ?? string.Empty; // HMI允许为空，按规则回填空字符串
+                    var hmi = kvp.Value; // 允许为空
 
                     if (!string.IsNullOrEmpty(aliasLower))
                     {
-                        scriptObject[aliasLower] = hmi;
-                        scriptObject[aliasUpper] = hmi;
+                        object value = string.IsNullOrWhiteSpace(hmi) ? null : hmi;
+                        scriptObject[aliasLower] = value;
+                        scriptObject[aliasUpper] = value;
                     }
                 }
             }
@@ -77,7 +78,9 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             var context = new TemplateContext()
             {
                 // 允许C#属性名在Scriban中自动转换为小写下划线
-                MemberRenamer = member => member.Name.ToSnakeCase()
+                MemberRenamer = member => member.Name.ToSnakeCase(),
+                // 开启严格变量模式：未定义变量直接抛错，避免静默空字符串
+                StrictVariables = true
             };
 
             // *** 增强的辅助函数集合 ***
