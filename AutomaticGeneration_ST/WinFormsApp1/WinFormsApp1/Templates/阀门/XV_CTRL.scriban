@@ -5,11 +5,23 @@ XV_CTRL_{{device_tag}}(
 CS:=CS01,
 RL:={{RL}},
 FA:={{FA}},
+{{~ if RUN != null ~}}
+RUN:={{RUN}},
+{{~ else ~}}
 (*RUN:=,*)
+{{~ end ~}}
 ZIO:={{ZIO}},
 ZIC:={{ZIC}},
-(*A_OPEN:=*)
-(*A_CLOSE:=*)
+{{~ if A_OPEN != null ~}}
+A_OPEN:={{A_OPEN}},
+{{~ else ~}}
+(*A_OPEN:=,*)
+{{~ end ~}}
+{{~ if A_CLOSE != null ~}}
+A_CLOSE:={{A_CLOSE}},
+{{~ else ~}}
+(*A_CLOSE:=,*)
+{{~ end ~}}
 DA_RST:=RESET,
 DA_TIME:=T#150S,
 C_AM:={{C_AM}},

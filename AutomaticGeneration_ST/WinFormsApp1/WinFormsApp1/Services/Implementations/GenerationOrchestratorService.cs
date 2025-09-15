@@ -1,6 +1,7 @@
 using AutomaticGeneration_ST.Models;
 using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using AutomaticGeneration_ST.Services.Interfaces;
+using AutomaticGeneration_ST.Services.Implementations;
 using Scriban;
 using AutomaticGeneration_ST.Services.VariableBlocks;
 using System.Collections.Generic;
@@ -83,12 +84,20 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     _logger.LogError($"❌ 无法加载模板文件: {scribanFileName}");
                     continue;
                 }
+                // 同时读取模板文本用于占位符校验（严格别名规则）
+                var templatePath = System.IO.Path.Combine(_templateDirectory, scribanFileName);
+                var templateContent = System.IO.File.ReadAllText(templatePath);
+                var binder = new DeviceTemplateDataBinder();
 
                 // 步骤3: 批量处理同一模板的所有设备
                 foreach (var device in templateDevices)
                 {
                     try
                     {
+                        // 先执行严格占位符绑定校验：仅别名映射，缺失即抛错
+                        // 该调用也会生成绑定上下文，但此处仅用于校验（实际渲染仍由设备生成器完成）
+                        binder.BindDeviceTemplateData(device, templateContent);
+
                         var result = _deviceGenerator.Generate(device, template);
 
                         // >>> Populate VariableEntries via VariableBlockCollector & VariableBlockParser

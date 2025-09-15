@@ -14,6 +14,26 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             var scriptObject = new ScriptObject();
             scriptObject.Add("device", device);
 
+            // 注入严格模式所需的占位符绑定：
+            // 1) 设备位号
+            scriptObject.Add("device_tag", device.DeviceTag);
+            // 2) 设备别名 → HMI 映射（别名大小写兼容：同时注入小写和大写键名）
+            if (device.AliasIndex != null)
+            {
+                foreach (var kvp in device.AliasIndex)
+                {
+                    var aliasLower = kvp.Key ?? string.Empty; // 已在Device中标准化为小写
+                    var aliasUpper = aliasLower.ToUpperInvariant();
+                    var hmi = kvp.Value ?? string.Empty; // HMI允许为空，按规则回填空字符串
+
+                    if (!string.IsNullOrEmpty(aliasLower))
+                    {
+                        scriptObject[aliasLower] = hmi;
+                        scriptObject[aliasUpper] = hmi;
+                    }
+                }
+            }
+
             // 创建点位快速访问对象
             var pointsShortcuts = new ScriptObject();
             foreach (var point in device.Points.Values)

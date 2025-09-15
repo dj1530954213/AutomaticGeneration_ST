@@ -39,7 +39,11 @@ namespace AutomaticGeneration_ST.Services.Implementations
             if (string.IsNullOrWhiteSpace(templateContent))
                 throw new ArgumentException("模板内容不能为空", nameof(templateContent));
 
-            var cacheKey = $"{device.DeviceTag}_{templateContent.GetHashCode()}";
+            // 缓存键加入别名签名，确保别名变化时不会命中旧缓存
+            var aliasSig = (device.AliasIndex != null && device.AliasIndex.Count > 0)
+                ? string.Join("|", device.AliasIndex.OrderBy(kvp => kvp.Key).Select(kvp => $"{kvp.Key}={kvp.Value}")).GetHashCode().ToString()
+                : "noalias";
+            var cacheKey = $"{device.DeviceTag}_{templateContent.GetHashCode()}_{aliasSig}";
             
             // 检查调用频率限制
             if (!CheckCallFrequencyLimit(cacheKey))
@@ -71,26 +75,22 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 var placeholders = ExtractPlaceholders(templateContent);
                 _logger.LogInfo($"   📝 发现 {placeholders.Count} 个占位符: {string.Join(", ", placeholders)}");
 
-                // 3. 为每个占位符查找对应的点位变量名（使用新的字典结构）
+                // 3. 仅通过“别名”精确匹配，占位符必须在设备别名中存在；否则抛出异常
                 var pointBindings = new Dictionary<string, int>();
                 foreach (var placeholder in placeholders)
                 {
                     if (placeholder.Equals("device_tag", StringComparison.OrdinalIgnoreCase))
                         continue; // device_tag已经处理过
 
-                    // 在设备的点位中查找包含该占位符的变量名
-                    var matchedVariableName = FindMatchingPointVariable(device, placeholder);
-                    if (!string.IsNullOrWhiteSpace(matchedVariableName))
+                    if (device.TryGetHmiByAlias(placeholder, out var hmi))
                     {
-                        dataBinding[placeholder] = matchedVariableName;
+                        dataBinding[placeholder] = hmi ?? string.Empty; // HMI 允许为空 → 空字符串
                         pointBindings[placeholder] = 1;
-                        _logger.LogInfo($"   ✓ {placeholder} -> {matchedVariableName}");
+                        _logger.LogInfo($"   ✓ 别名匹配 {placeholder} -> {(string.IsNullOrEmpty(hmi) ? "<空字符串>" : hmi)}");
                     }
                     else
                     {
-                        // 如果找不到匹配的点位，使用占位符本身并记录警告
-                        dataBinding[placeholder] = $"<{placeholder}>";
-                        _logger.LogWarning($"   ⚠️ 未找到匹配的点位: {placeholder}");
+                        throw new KeyNotFoundException($"设备[{device.DeviceTag}] 模板占位符 '{placeholder}' 在“设备分类表”的“别名”列中未找到对应行");
                     }
                 }
 
@@ -139,183 +139,6 @@ namespace AutomaticGeneration_ST.Services.Implementations
             }
 
             return placeholders.ToList();
-        }
-
-        /// <summary>
-        /// 在设备的点位中查找匹配指定占位符的点位（新版本支持字典结构）
-        /// </summary>
-        /// <param name="device">设备对象</param>
-        /// <param name="placeholder">占位符</param>
-        /// <returns>匹配的变量名，如果未找到则返回null</returns>
-        private string FindMatchingPointVariable(Device device, string placeholder)
-        {
-            // 合并所有点位变量名进行搜索
-            var allVariableNames = device.GetAllVariableNames();
-            
-            if (allVariableNames.Count == 0)
-                return null;
-
-            _logger.LogInfo($"   🔍 在 {allVariableNames.Count} 个点位中搜索占位符: {placeholder}");
-
-            // 1. 精确匹配：查找变量名中包含占位符的点位
-            var exactMatches = allVariableNames
-                .Where(name => name.Contains(placeholder, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (exactMatches.Count == 1)
-            {
-                return exactMatches.First();
-            }
-
-            // 2. 如果有多个匹配，优先选择最接近的匹配
-            if (exactMatches.Count > 1)
-            {
-                var bestMatch = exactMatches
-                    .OrderBy(name => Math.Abs(name.Length - placeholder.Length))
-                    .ThenBy(name => name)
-                    .First();
-
-                _logger.LogInfo($"   🔍 占位符 [{placeholder}] 有多个匹配，选择最佳匹配: {bestMatch}");
-                return bestMatch;
-            }
-
-            // 3. 模糊匹配：查找描述或其他字段中包含占位符的点位
-            foreach (var variableName in allVariableNames)
-            {
-                var pointData = device.FindPointData(variableName);
-                if (pointData != null)
-                {
-                    // 检查描述字段
-                    var description = pointData.GetValueOrDefault("描述信息")?.ToString() ?? 
-                                    pointData.GetValueOrDefault("变量描述")?.ToString() ?? "";
-                    
-                    if (description.Contains(placeholder, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _logger.LogInfo($"   🔍 占位符 [{placeholder}] 通过描述匹配到: {variableName}");
-                        return variableName;
-                    }
-                }
-            }
-
-            // 4. 特殊匹配规则：根据占位符的含义进行智能匹配
-            return FindPointBySemanticMatchingNew(device, placeholder);
-        }
-
-        /// <summary>
-        /// 兼容旧版本的FindMatchingPoint方法
-        /// </summary>
-        private Models.Point FindMatchingPoint(Device device, string placeholder)
-        {
-            var variableName = FindMatchingPointVariable(device, placeholder);
-            if (string.IsNullOrWhiteSpace(variableName))
-                return null;
-
-            // 使用兼容的Points属性获取Point对象
-            #pragma warning disable CS0618 // 忽略过时警告
-            return device.Points.GetValueOrDefault(variableName);
-            #pragma warning restore CS0618
-        }
-
-        /// <summary>
-        /// 根据语义进行智能匹配（新版本支持字典结构）
-        /// </summary>
-        /// <param name="device">设备对象</param>
-        /// <param name="placeholder">占位符</param>
-        /// <returns>匹配的变量名</returns>
-        private string FindPointBySemanticMatchingNew(Device device, string placeholder)
-        {
-            var lowerPlaceholder = placeholder.ToLower();
-
-            // 常见的阀门控制信号映射
-            var semanticMappings = new Dictionary<string, string[]>
-            {
-                // 位置反馈信号
-                ["xs"] = new[] { "开到位", "开限位", "open", "opened", "XS_" },
-                ["ua"] = new[] { "开到位反馈", "开位", "open_fb" },
-                ["zsh"] = new[] { "开到位", "开限", "zsh", "ZSH_" },
-                ["zsl"] = new[] { "关到位", "关限", "zsl", "ZSL_" },
-                ["uia"] = new[] { "状态", "位置", "position" },
-                
-                // 控制命令信号
-                ["c_am"] = new[] { "自动", "auto", "C_AM_" },
-                ["s_am"] = new[] { "自动反馈", "auto_fb", "S_AM_", "AM_" },
-                ["c_open"] = new[] { "开命令", "open_cmd", "C_OPEN_" },
-                ["c_close"] = new[] { "关命令", "close_cmd", "C_CLOSE_" },
-                ["s_open"] = new[] { "开反馈", "open_fb", "S_OPEN_" },
-                ["s_close"] = new[] { "关反馈", "close_fb", "S_CLOSE_" },
-                
-                // 输出信号
-                ["am"] = new[] { "自动模式", "auto_mode", "AM_" },
-                ["x0"] = new[] { "开输出", "open_out", "X0_" },
-                ["xc"] = new[] { "关输出", "close_out", "XC_" },
-                ["da"] = new[] { "故障", "alarm", "DA_" },
-                
-                // PID控制器相关信号
-                ["pvxs"] = new[] { "PV", "过程变量", "process_value" },
-                ["pvua"] = new[] { "PV", "过程变量", "process_value" },
-                ["c_am_pv"] = new[] { "C_AM_PV_", "自动" },
-                ["s_am_pv"] = new[] { "S_AM_PV_", "AM_PV_", "自动反馈" },
-                ["c_fp"] = new[] { "C_FP", "强制" },
-                ["s_fp"] = new[] { "S_FP", "强制反馈" },
-                ["fp"] = new[] { "FP", "强制" },
-                ["out"] = new[] { "OUT", "输出" }
-            };
-
-            if (semanticMappings.ContainsKey(lowerPlaceholder))
-            {
-                var keywords = semanticMappings[lowerPlaceholder];
-                var allVariableNames = device.GetAllVariableNames();
-                
-                foreach (var keyword in keywords)
-                {
-                    // 先在变量名中查找
-                    var matchedByName = allVariableNames
-                        .FirstOrDefault(name => name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
-                    
-                    if (!string.IsNullOrWhiteSpace(matchedByName))
-                    {
-                        _logger.LogInfo($"   🧠 占位符 [{placeholder}] 语义匹配到变量名: {matchedByName} (关键词: {keyword})");
-                        return matchedByName;
-                    }
-                    
-                    // 再在描述中查找
-                    foreach (var variableName in allVariableNames)
-                    {
-                        var pointData = device.FindPointData(variableName);
-                        if (pointData != null)
-                        {
-                            var description = pointData.GetValueOrDefault("描述信息")?.ToString() ?? 
-                                            pointData.GetValueOrDefault("变量描述")?.ToString() ?? "";
-                            
-                            if (description.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                            {
-                                _logger.LogInfo($"   🧠 占位符 [{placeholder}] 语义匹配到描述: {variableName} (关键词: {keyword})");
-                                return variableName;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// 根据语义进行智能匹配（兼容旧版本）
-        /// </summary>
-        /// <param name="device">设备对象</param>
-        /// <param name="placeholder">占位符</param>
-        /// <returns>匹配的点位</returns>
-        private Models.Point FindPointBySemanticMatching(Device device, string placeholder)
-        {
-            var variableName = FindPointBySemanticMatchingNew(device, placeholder);
-            if (string.IsNullOrWhiteSpace(variableName))
-                return null;
-
-            // 使用兼容的Points属性获取Point对象
-            #pragma warning disable CS0618 // 忽略过时警告
-            return device.Points.GetValueOrDefault(variableName);
-            #pragma warning restore CS0618
         }
 
         /// <summary>

@@ -35,6 +35,12 @@ namespace AutomaticGeneration_ST.Models
         public Dictionary<string, Dictionary<string, object>> DevicePoints { get; private set; }
 
         /// <summary>
+        /// 别名索引：别名 -> 变量名称（HMI）
+        /// 说明：HMI 名允许为空字符串，用于模板占位符填充空字符串的场景
+        /// </summary>
+        public Dictionary<string, string> AliasIndex { get; private set; } = new Dictionary<string, string>();
+
+        /// <summary>
         /// 兼容性保留：旧的Points属性，现在合并了IoPoints和DevicePoints中的Point对象
         /// </summary>
         [System.Obsolete("建议使用IoPoints和DevicePoints分别访问不同类型的点位数据")]
@@ -79,6 +85,53 @@ namespace AutomaticGeneration_ST.Models
             TemplateName = templateName;
             IoPoints = new Dictionary<string, Dictionary<string, object>>();
             DevicePoints = new Dictionary<string, Dictionary<string, object>>();
+        }
+
+        /// <summary>
+        /// 添加别名映射（别名 -> 变量名称（HMI））。HMI 可为空字符串。
+        /// 同一设备内若出现相同别名但指向不同 HMI，则抛出异常，避免歧义。
+        /// </summary>
+        /// <param name="alias">别名（来自设备分类表“别名”列）</param>
+        /// <param name="hmi">变量名称（HMI），允许为空字符串</param>
+        public void AddAlias(string alias, string hmi)
+        {
+            if (string.IsNullOrWhiteSpace(alias)) return;
+
+            var key = NormalizeAlias(alias);
+            var value = hmi?.Trim() ?? string.Empty;
+
+            if (AliasIndex.TryGetValue(key, out var existing))
+            {
+                if (!string.Equals(existing ?? string.Empty, value, System.StringComparison.Ordinal))
+                {
+                    throw new System.InvalidOperationException($"设备[{DeviceTag}] 存在重复别名 '{alias}' 指向不同HMI: '{existing}' vs '{value}'");
+                }
+                // 相同映射则忽略
+                return;
+            }
+
+            AliasIndex[key] = value;
+        }
+
+        /// <summary>
+        /// 根据别名获取HMI变量名（允许为空字符串）。
+        /// </summary>
+        public bool TryGetHmiByAlias(string alias, out string hmi)
+        {
+            hmi = string.Empty;
+            if (string.IsNullOrWhiteSpace(alias)) return false;
+            var key = NormalizeAlias(alias);
+            if (AliasIndex.TryGetValue(key, out var value))
+            {
+                hmi = value ?? string.Empty;
+                return true;
+            }
+            return false;
+        }
+
+        private static string NormalizeAlias(string s)
+        {
+            return s?.Trim().ToLowerInvariant() ?? string.Empty;
         }
 
         /// <summary>

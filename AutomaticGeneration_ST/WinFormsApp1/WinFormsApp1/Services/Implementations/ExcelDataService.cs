@@ -291,6 +291,13 @@ namespace AutomaticGeneration_ST.Services.Implementations
             var hmiTagField = hmiTagFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
             var categoryField = categoryFields.FirstOrDefault(f => headerIndexes.ContainsKey(f));
 
+            // 别名列为强制要求：固定列名“别名”
+            var aliasField = "别名";
+            if (!headerIndexes.ContainsKey(aliasField))
+            {
+                throw new InvalidDataException("设备分类表缺少必需列: 别名");
+            }
+
             if (string.IsNullOrEmpty(deviceTagField))
             {
                 _logger.LogError($"❌ 未找到设备位号字段，尝试过的字段名: {string.Join(", ", deviceTagFields)}");
@@ -303,7 +310,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 return;
             }
 
-            _logger.LogInfo($"✓ 使用字段映射: 设备位号='{deviceTagField}', 模板='{templateField}', HMI变量='{hmiTagField}', 类别='{categoryField}'");
+            _logger.LogInfo($"✓ 使用字段映射: 设备位号='{deviceTagField}', 模板='{templateField}', HMI变量='{hmiTagField}', 类别='{categoryField}', 别名='{aliasField}'");
 
             int processedRows = 0;
             int createdDevices = 0;
@@ -317,10 +324,12 @@ namespace AutomaticGeneration_ST.Services.Implementations
                     var deviceTag = GetSafeFieldValue<string>(sheet, row, headerIndexes, deviceTagField);
                     var templateName = GetSafeFieldValue<string>(sheet, row, headerIndexes, templateField ?? "");
                     var hmiTagName = GetSafeFieldValue<string>(sheet, row, headerIndexes, hmiTagField);
+                    var alias = GetSafeFieldValue<string>(sheet, row, headerIndexes, aliasField);
 
                     processedRows++;
 
-                    if (string.IsNullOrWhiteSpace(deviceTag) || string.IsNullOrWhiteSpace(hmiTagName)) 
+                    // 仅当设备位号为空时跳过该行；HMI 名允许为空
+                    if (string.IsNullOrWhiteSpace(deviceTag)) 
                     {
                         skippedRows++;
                         continue;
@@ -334,53 +343,62 @@ namespace AutomaticGeneration_ST.Services.Implementations
                         _logger.LogInfo($"   ✓ 创建新设备: [{deviceTag}] 模板='{templateName}'");
                     }
 
-                    // 先检查是否在IO表中存在（硬点）
-                    if (masterList.TryGetValue(hmiTagName, out var ioPoint))
+                    // 无论 HMI 是否为空，先登记别名映射（空HMI会记录为空字符串）
+                    deviceMap[deviceTag].AddAlias(alias, hmiTagName);
+
+                    // 若 HMI 名为空，则不创建点位条目，仅保留别名映射
+                    if (!string.IsNullOrWhiteSpace(hmiTagName))
                     {
-                        // 硬点：从IO表获取详细信息
-                        var ioPointData = new Dictionary<string, object>
+                        // 先检查是否在IO表中存在（硬点）
+                        if (masterList.TryGetValue(hmiTagName, out var ioPoint))
                         {
-                            ["变量名称（HMI名）"] = ioPoint.HmiTagName ?? "",
-                            ["模块名称"] = ioPoint.ModuleName ?? "",
-                            ["模块类型"] = ioPoint.ModuleType ?? "",
-                            ["供电类型（有源/无源）"] = ioPoint.PowerSupplyType ?? "",
-                            ["线制"] = ioPoint.WireSystem ?? "",
-                            ["通道位号"] = ioPoint.ChannelNumber ?? "",
-                            ["场站名"] = ioPoint.StationName ?? "",
-                            ["场站编号"] = ioPoint.StationId ?? "",
-                            ["变量描述"] = ioPoint.Description ?? "",
-                            ["数据类型"] = ioPoint.DataType ?? "",
-                            ["PLC绝对地址"] = ioPoint.PlcAbsoluteAddress ?? "",
-                            ["上位机通讯地址"] = ioPoint.ScadaCommAddress ?? "",
-                            ["是否历史存储"] = ioPoint.StoreHistory,
-                            ["是否掉电保护"] = ioPoint.PowerDownProtection,
-                            ["量程低"] = ioPoint.RangeLow,
-                            ["量程高"] = ioPoint.RangeHigh,
-                            ["单位"] = ioPoint.Unit ?? "",
-                            ["仪表类型"] = ioPoint.InstrumentType ?? "",
-                            ["点位类型"] = ioPoint.PointType ?? "",
-                            ["SHH值"] = ioPoint.SHH_Value,
-                            ["SH值"] = ioPoint.SH_Value,
-                            ["SL值"] = ioPoint.SL_Value,
-                            ["SLL值"] = ioPoint.SLL_Value
-                        };
-                        
-                        deviceMap[deviceTag].AddIoPoint(hmiTagName, ioPointData);
-                        pointsAssignedToDevices.Add(hmiTagName);
-                    }
-                    else
-                    {
-                        // 软点：先创建基础信息，详细信息稍后从设备专用表获取
-                        var softPointData = new Dictionary<string, object>
+                            // 硬点：从IO表获取详细信息
+                            var ioPointData = new Dictionary<string, object>
+                            {
+                                ["变量名称（HMI名）"] = ioPoint.HmiTagName ?? "",
+                                ["模块名称"] = ioPoint.ModuleName ?? "",
+                                ["模块类型"] = ioPoint.ModuleType ?? "",
+                                ["供电类型（有源/无源）"] = ioPoint.PowerSupplyType ?? "",
+                                ["线制"] = ioPoint.WireSystem ?? "",
+                                ["通道位号"] = ioPoint.ChannelNumber ?? "",
+                                ["场站名"] = ioPoint.StationName ?? "",
+                                ["场站编号"] = ioPoint.StationId ?? "",
+                                ["变量描述"] = ioPoint.Description ?? "",
+                                ["数据类型"] = ioPoint.DataType ?? "",
+                                ["PLC绝对地址"] = ioPoint.PlcAbsoluteAddress ?? "",
+                                ["上位机通讯地址"] = ioPoint.ScadaCommAddress ?? "",
+                                ["是否历史存储"] = ioPoint.StoreHistory,
+                                ["是否掉电保护"] = ioPoint.PowerDownProtection,
+                                ["量程低"] = ioPoint.RangeLow,
+                                ["量程高"] = ioPoint.RangeHigh,
+                                ["单位"] = ioPoint.Unit ?? "",
+                                ["仪表类型"] = ioPoint.InstrumentType ?? "",
+                                ["点位类型"] = ioPoint.PointType ?? "",
+                                ["SHH值"] = ioPoint.SHH_Value,
+                                ["SH值"] = ioPoint.SH_Value,
+                                ["SL值"] = ioPoint.SL_Value,
+                                ["SLL值"] = ioPoint.SLL_Value,
+                                ["别名"] = alias ?? string.Empty
+                            };
+                            
+                            deviceMap[deviceTag].AddIoPoint(hmiTagName, ioPointData);
+                            pointsAssignedToDevices.Add(hmiTagName);
+                        }
+                        else
                         {
-                            ["变量名称"] = hmiTagName,
-                            ["变量描述"] = "", // 从设备专用表获取
-                            ["数据类型"] = "", // 从设备专用表获取
-                            ["PLC地址"] = "", // 从设备专用表获取
-                            ["MODBUS地址"] = "" // 从设备专用表获取
-                        };
-                        
-                        deviceMap[deviceTag].AddDevicePoint(hmiTagName, softPointData);
+                            // 软点：先创建基础信息，详细信息稍后从设备专用表获取
+                            var softPointData = new Dictionary<string, object>
+                            {
+                                ["变量名称"] = hmiTagName,
+                                ["变量描述"] = "", // 从设备专用表获取
+                                ["数据类型"] = "", // 从设备专用表获取
+                                ["PLC地址"] = "", // 从设备专用表获取
+                                ["MODBUS地址"] = "", // 从设备专用表获取
+                                ["别名"] = alias ?? string.Empty
+                            };
+                            
+                            deviceMap[deviceTag].AddDevicePoint(hmiTagName, softPointData);
+                        }
                     }
                 }
                 catch (Exception ex)
