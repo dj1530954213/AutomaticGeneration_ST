@@ -395,7 +395,7 @@ namespace WinFormsApp1
             Controls.Add(mainStatusStrip);
             MainMenuStrip = mainMenuStrip;
             Name = "Form1";
-            Text = "ST脚本自动生成器 v2.0";
+            Text = "ST脚本自动生成器 v0.1";
             WindowState = FormWindowState.Maximized;
             mainMenuStrip.ResumeLayout(false);
             mainMenuStrip.PerformLayout();

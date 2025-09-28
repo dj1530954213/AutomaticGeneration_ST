@@ -63,7 +63,7 @@ namespace WinFormsApp1.Config
     {
         [DisplayName("应用程序标题")]
         [Description("显示在主窗口标题栏的应用程序名称")]
-        public string ApplicationTitle { get; set; } = "ST脚本自动生成器 v2.0";
+        public string ApplicationTitle { get; set; } = "ST脚本自动生成器 v0.1";
 
         [DisplayName("默认语言")]
         [Description("应用程序界面语言")]

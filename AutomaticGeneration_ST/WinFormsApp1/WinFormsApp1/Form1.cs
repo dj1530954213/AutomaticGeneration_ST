@@ -62,7 +62,7 @@ namespace WinFormsApp1
                 
                 logger = LogService.Instance;
                 logger.Initialize(richTextBox1);
-                logger.LogInfo("ST脚本自动生成器 v2.0 已启动");
+                logger.LogInfo("ST脚本自动生成器 v0.1 已启动");
                 logger.LogInfo("支持的点位类型: AI, AO, DI, DO");
                 logger.LogInfo("配置系统初始化完成");
                 
@@ -74,7 +74,7 @@ namespace WinFormsApp1
                 logger = LogService.Instance;
                 logger.Initialize(richTextBox1);
                 logger.LogError($"配置系统初始化失败: {ex.Message}");
-                logger.LogInfo("ST脚本自动生成器 v2.0 已启动（使用默认配置）");
+                logger.LogInfo("ST脚本自动生成器 v0.1 已启动（使用默认配置）");
                 logger.LogInfo("支持的点位类型: AI, AO, DI, DO");
             }
         }

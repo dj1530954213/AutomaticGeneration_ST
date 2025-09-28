@@ -29,7 +29,6 @@ namespace WinFormsApp1.Utils
         /// 将通道位号或PLC地址转换为硬点通道号
         /// 支持两种格式：
         /// 1. 传统格式: 1_1_AI_0 -> DPIO_2_1_2_1
-        /// 2. PLC地址格式: %MD320 -> DPIO_2_1_1_1, %MX25.0 -> DPIO_2_3_1_1
         /// </summary>
         public static string ConvertToHardChannel(string channelPosition)
         {

@@ -30,7 +30,11 @@ C_OPEN:={{C_OPEN}},
 C_CLOSE:={{C_CLOSE}},
 S_OPEN:={{S_OPEN}},
 S_CLOSE:={{S_CLOSE}},
+{{~ if AM != null ~}}
 AM=>{{AM}},
+{{~ else ~}}
+(*AM:=,*)
+{{~ end ~}}
 XO=>{{XO}},
 XC=>{{XC}},
 DA=>{{DA}}
