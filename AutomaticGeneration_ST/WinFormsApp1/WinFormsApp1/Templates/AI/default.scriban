@@ -1,4 +1,4 @@
-程序名称:MAPPING_AI
+程序名称:AI_MAPPING
 子程序变量声明文件:AI_VARIABLE
 {{~ for point in points ~}}
 (* AI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)

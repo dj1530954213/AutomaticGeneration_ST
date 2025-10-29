@@ -1,4 +1,4 @@
-程序名称:MAPPING_AO
+程序名称:AO_MAPPING
 子程序变量声明文件:AO_VARIABLE
 {{~ for point in points ~}}
 (* AO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)

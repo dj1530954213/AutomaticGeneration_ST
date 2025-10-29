@@ -1,3 +1,4 @@
+using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using AutomaticGeneration_ST.Services.Generation;
 using AutomaticGeneration_ST.Services.VariableBlocks;
@@ -113,8 +114,13 @@ namespace AutomaticGeneration_ST.Services.Generation.Implementations
             // 严格模式：让 VariableBlockCollector/Parser 的异常冒泡
             var varBlocks = VariableBlockCollector.Collect(mainTemplatePath, points);
             var entries = VariableBlockParser.Parse(varBlocks);
-            foreach (var e in entries) e.ProgramName = templateKey;
-            VariableEntriesRegistry.AddEntries(templateKey, entries);
+            var programName = TemplateMetadataCache.GetProgramName(mainTemplatePath) ?? templateKey;
+            foreach (var e in entries)
+            {
+                e.ProgramName = programName;
+            }
+
+            VariableEntriesRegistry.AddEntries(programName, entries);
             return entries;
         }
     }

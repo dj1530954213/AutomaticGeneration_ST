@@ -913,11 +913,12 @@ namespace AutomaticGeneration_ST.Services.Implementations
                                     _logger.LogInfo($"[TCP_ANALOG] 开始变量块收集: {mainTemplatePath}");
                                     var blocks = VariableBlockCollector.Collect(mainTemplatePath, analogPoints.Cast<object>());
                                     var entries = VariableBlockParser.Parse(blocks);
+                                    var programName = TemplateMetadataCache.GetProgramName(mainTemplatePath) ?? "TCP_ANALOG";
                                     foreach (var e in entries)
                                     {
-                                        e.ProgramName = "TCP_ANALOG";
+                                        e.ProgramName = programName;
                                     }
-                                    VariableEntriesRegistry.AddEntries("TCP_ANALOG", entries);
+                                    VariableEntriesRegistry.AddEntries(programName, entries);
                                     _logger.LogSuccess($"[TCP_ANALOG] 变量条目已注册: {entries.Count} 条");
                                 }
                             }

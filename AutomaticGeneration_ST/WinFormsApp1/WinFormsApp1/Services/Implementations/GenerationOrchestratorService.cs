@@ -1,4 +1,5 @@
 using AutomaticGeneration_ST.Models;
+using AutomaticGeneration_ST.Services;
 using AutomaticGeneration_ST.Services.Generation.Interfaces;
 using AutomaticGeneration_ST.Services.Interfaces;
 using AutomaticGeneration_ST.Services.Implementations;
@@ -87,6 +88,8 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 // 读取模板路径与文本（用于变量模板收集与占位符预校验）
                 var templatePath = System.IO.Path.Combine(_templateDirectory, scribanFileName);
                 var templateContent = System.IO.File.ReadAllText(templatePath);
+                var declaredProgramName = TemplateMetadataCache.GetProgramName(templatePath);
+                var registryKey = string.IsNullOrWhiteSpace(declaredProgramName) ? templateName : declaredProgramName;
                 var binder = new DeviceTemplateDataBinder();
 
                 // 步骤3: 批量处理同一模板的所有设备
@@ -104,7 +107,7 @@ namespace AutomaticGeneration_ST.Services.Implementations
                         {
                             // 严格模式：任何变量模板声明/解析错误都应中止该设备生成
                             var varBlocks = VariableBlockCollector.Collect(
-                                Path.Combine(_templateDirectory, scribanFileName),
+                                templatePath,
                                 device.Points.Values,
                                 device.DeviceTag,
                                 renderOnce: true);
@@ -112,13 +115,11 @@ namespace AutomaticGeneration_ST.Services.Implementations
                             // 填充 ProgramName 方便后续生成变量表
                             foreach (var entry in entries)
                             {
-                                // 使用模板分组键作为 ProgramName，确保设备级变量按模板归类（如 XV_CTRL）
-                                // 如果需要与主模板声明的程序名一致，可在此处扩展解析主模板以获取 ProgramName
-                                entry.ProgramName = templateName;
+                                entry.ProgramName = registryKey;
                             }
                             result.VariableEntries = entries;
-                            VariableEntriesRegistry.AddEntries(templateName, entries);
-                            _logger.LogInfo($"   ⇢ 已为模板 [{templateName}] 注册 {entries.Count} 条设备级变量");
+                            VariableEntriesRegistry.AddEntries(registryKey, entries);
+                            _logger.LogInfo($"   ⇢ 已为模板 [{templateName}] 注册 {entries.Count} 条设备级变量（程序名: {registryKey}）");
                         }
                         if (result != null)
                         {
@@ -253,6 +254,10 @@ namespace AutomaticGeneration_ST.Services.Implementations
 
                 var templateContent = File.ReadAllText(templatePath);
                 var template = Template.Parse(templateContent);
+                var declaredProgramName = TemplateMetadataCache.GetProgramName(templatePath);
+                var registryKey = string.IsNullOrWhiteSpace(declaredProgramName)
+                    ? $"{moduleType.ToUpper()}_CONVERT"
+                    : declaredProgramName;
 
                 // 步骤 6: 调用职责单一的渲染器，传入当前组的点位和专属模板
                 var singleResult = ioGenerator.Generate(moduleType, group.ToList(), template);
@@ -261,19 +266,17 @@ namespace AutomaticGeneration_ST.Services.Implementations
                 // 严格模式：IO映射的变量模板声明/解析错误必须中止
                 var varBlocks = VariableBlockCollector.Collect(templatePath, group.ToList());
                 var varEntries = VariableBlockParser.Parse(varBlocks);
-                // 为每条条目设置 ProgramName，保持与模板声明一致，如 AI_CONVERT/DI_CONVERT 等
-                var programName = $"{moduleType.ToUpper()}_CONVERT";
                 foreach (var ve in varEntries)
                 {
-                    ve.ProgramName = programName;
+                    ve.ProgramName = registryKey;
                 }
-        
+
                 // 保存至结果对象以及全局注册表
                 if (singleResult != null)
                 {
                     singleResult.VariableEntries = varEntries;
                 }
-                VariableEntriesRegistry.AddEntries(programName, varEntries);
+                VariableEntriesRegistry.AddEntries(registryKey, varEntries);
 
                 allIoResults.Add(singleResult);
             }

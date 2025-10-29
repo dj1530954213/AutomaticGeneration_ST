@@ -1,17 +1,21 @@
-程序名称:ESDV_CTRL
+程序名称:DEVICE_ESDV_CTRL
 子程序变量声明文件:ESDV_CTRL_VARIABLE
 (*ESD阀门:{{device_tag}}控制块调用*)
 ESDV_CTRL_{{device_tag}}(
 CS:=CS01,
 RL:={{RL}},
+{{~ if FA != null ~}}
 FA:={{FA}},
+{{~ else ~}}
+(*FA:=,*)
+{{~ end ~}}
 {{~ if RUN != null ~}}
 RUN:={{RUN}},
 {{~ else ~}}
 (*RUN:=,*)
 {{~ end ~}}
-ZIO:={{ZSH}},
-ZIC:={{ZSL}},
+ZIO:={{ZIO}},
+ZIC:={{ZIC}},
 {{~ if A_OPEN != null ~}}
 A_OPEN:={{A_OPEN}},
 {{~ else ~}}
@@ -32,11 +36,15 @@ C_OPEN:={{C_OPEN}},
 S_OPEN:={{S_OPEN}},
 C_CLOSE:={{C_CLOSE}},
 S_CLOSE:={{S_CLOSE}},
+{{~ if ESD_OUT != null ~}}
+ESD_OUT:={{ESD_OUT}},
+{{~ else ~}}
+(*ESD_OUT:=,*)
+{{~ end ~}}
 AM=>{{AM}},
-XO=>{{X0}},
+XO=>{{XO}},
 XC=>{{XC}},
-DA=>{{DA}},
-ESD_OUT=>{{ESD_OUT}}
+DA=>{{DA}}
 );
 
 {{C_AM}}:=ESDV_CTRL_{{device_tag}}.C_AM;

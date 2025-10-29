@@ -2231,10 +2231,10 @@ namespace WinFormsApp1
                     // 定义文件名映射（将模板类型映射为用户要求的文件名）
                     var fileNameMapping = new Dictionary<string, string>
                     {
-                        { "AI_CONVERT", "MAPPING_AI.txt" },
-                        { "AO_CONVERT", "MAPPING_AO.txt" },
-                        { "DI_CONVERT", "MAPPING_DI.txt" },
-                        { "DO_CONVERT", "MAPPING_DO.txt" }
+                        { "AI_CONVERT", "AI_MAPPING.txt" },
+                        { "AO_CONVERT", "AO_MAPPING.txt" },
+                        { "DI_CONVERT", "DI_MAPPING.txt" },
+                        { "DO_CONVERT", "DO_MAPPING.txt" }
                     };
                     
                     // 为每个通道类型创建独立的txt文件
@@ -2708,6 +2708,41 @@ namespace WinFormsApp1
                     logger.LogInfo($">>>     TXT文件路径: {template.Value.TxtFilePath}");
                 }
 
+                string ResolveNormalizedKey(string originalKey, List<VariableTableEntry> entries)
+                {
+                    var firstProgramName = entries?.FirstOrDefault()?.ProgramName;
+                    return string.IsNullOrWhiteSpace(firstProgramName) ? originalKey : firstProgramName;
+                }
+
+                void MergeEntries(string originalKey, List<VariableTableEntry> entries, string sourceLabel)
+                {
+                    if (entries == null || entries.Count == 0)
+                    {
+                        logger.LogInfo($">>> {sourceLabel}未提供变量，跳过合并 (Key: {originalKey})");
+                        return;
+                    }
+
+                    var normalizedKey = ResolveNormalizedKey(originalKey, entries);
+                    foreach (var entry in entries)
+                    {
+                        if (string.IsNullOrWhiteSpace(entry.ProgramName))
+                        {
+                            entry.ProgramName = normalizedKey;
+                        }
+                    }
+
+                    if (variableEntriesByTemplate.TryGetValue(normalizedKey, out var existingEntries))
+                    {
+                        existingEntries.AddRange(entries);
+                        logger.LogInfo($">>> 合并模板 {normalizedKey}: 来自{sourceLabel}新增 {entries.Count} 个变量");
+                    }
+                    else
+                    {
+                        variableEntriesByTemplate[normalizedKey] = new List<VariableTableEntry>(entries);
+                        logger.LogInfo($">>> 新增模板 {normalizedKey}: 来自{sourceLabel} {entries.Count} 个变量");
+                    }
+                }
+
                 // 2. 分析ST代码，提取变量信息
                 logger.LogInfo("开始分析ST代码...");
                 logger.LogInfo($"当前缓存中的设备ST程序类型: {string.Join(", ", currentProjectCache.DeviceSTPrograms.Keys)}");
@@ -2722,14 +2757,7 @@ namespace WinFormsApp1
                 // 合并已有的注册表变量条目与设备ST程序分析结果
                 foreach (var kv in deviceVariableEntries)
                 {
-                    if (variableEntriesByTemplate.ContainsKey(kv.Key))
-                    {
-                        variableEntriesByTemplate[kv.Key].AddRange(kv.Value);
-                    }
-                    else
-                    {
-                        variableEntriesByTemplate[kv.Key] = kv.Value;
-                    }
+                    MergeEntries(kv.Key, kv.Value, "设备程序解析");
                 }
                 
                 // 然后分析IO映射脚本
@@ -2745,16 +2773,7 @@ namespace WinFormsApp1
                 logger.LogInfo(">>> 步骤2.2: 合并分析结果");
                 foreach (var ioTemplate in ioVariableEntriesByTemplate)
                 {
-                    if (variableEntriesByTemplate.ContainsKey(ioTemplate.Key))
-                    {
-                        variableEntriesByTemplate[ioTemplate.Key].AddRange(ioTemplate.Value);
-                        logger.LogInfo($">>> 合并模板 {ioTemplate.Key}: 添加了 {ioTemplate.Value.Count} 个IO变量");
-                    }
-                    else
-                    {
-                        variableEntriesByTemplate[ioTemplate.Key] = ioTemplate.Value;
-                        logger.LogInfo($">>> 新增模板 {ioTemplate.Key}: {ioTemplate.Value.Count} 个IO变量");
-                    }
+                    MergeEntries(ioTemplate.Key, ioTemplate.Value, "IO映射解析");
                 }
 
                 // >>> 步骤2.3: 分析TCP通讯脚本
@@ -2784,16 +2803,7 @@ namespace WinFormsApp1
 
                     foreach (var tcpTemplate in tcpVariableEntriesByTemplate)
                     {
-                        if (variableEntriesByTemplate.ContainsKey(tcpTemplate.Key))
-                        {
-                            variableEntriesByTemplate[tcpTemplate.Key].AddRange(tcpTemplate.Value);
-                            logger.LogInfo($">>> 合并模板 {tcpTemplate.Key}: 添加了 {tcpTemplate.Value.Count} 个TCP变量");
-                        }
-                        else
-                        {
-                            variableEntriesByTemplate[tcpTemplate.Key] = tcpTemplate.Value;
-                            logger.LogInfo($">>> 新增模板 {tcpTemplate.Key}: {tcpTemplate.Value.Count} 个TCP变量");
-                        }
+                        MergeEntries(tcpTemplate.Key, tcpTemplate.Value, "TCP脚本解析");
                     }
                 }
 

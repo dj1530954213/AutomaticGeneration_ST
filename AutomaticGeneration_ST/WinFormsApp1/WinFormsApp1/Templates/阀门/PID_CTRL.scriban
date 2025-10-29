@@ -1,4 +1,4 @@
-程序名称:PID_CTRL
+程序名称:DEVICE_PID_CTRL
 子程序变量声明文件:PID_CTRL_VARIABLE
 (*PID控制:{{device_tag}}控制块调用*)
 PID_CTRL_{{device_tag}}(
@@ -151,82 +151,82 @@ OUT_CH=>{{OUT_CH}},
 {{~ if C_AM != null ~}}
 {{C_AM}}:=PID_CTRL_{{device_tag}}.C_AM;
 {{~ else ~}}
-(*{{C_AM}}=>,*)
+(*{{C_AM}}:=,*)
 {{~ end ~}}
 {{~ if S_AM != null ~}}
 {{S_AM}}:=PID_CTRL_{{device_tag}}.S_AM;
 {{~ else ~}}
-(*{{S_AM}}=>,*)
+(*{{S_AM}}:=,*)
 {{~ end ~}}
 {{~ if C_FP != null ~}}
 {{C_FP}}:=PID_CTRL_{{device_tag}}.C_FP;
 {{~ else ~}}
-(*{{C_FP}}=>,*)
+(*{{C_FP}}:=,*)
 {{~ end ~}}
 {{~ if S_FP != null ~}}
 {{S_FP}}:=PID_CTRL_{{device_tag}}.S_FP;
 {{~ else ~}}
-(*{{S_FP}}=>,*)
+(*{{S_FP}}:=,*)
 {{~ end ~}}
 {{~ if C_SP_P != null ~}}
 {{C_SP_P}}:=PID_CTRL_{{device_tag}}.C_SP_P;
 {{~ else ~}}
-(*{{C_SP_P}}=>,*)
+(*{{C_SP_P}}:=,*)
 {{~ end ~}}
 {{~ if C_SP_F != null ~}}
 {{C_SP_F}}:=PID_CTRL_{{device_tag}}.C_SP_F;
 {{~ else ~}}
-(*{{C_SP_F}}=>,*)
+(*{{C_SP_F}}:=,*)
 {{~ end ~}}
 {{~ if C_M_OUT != null ~}}
 {{C_M_OUT}}:=PID_CTRL_{{device_tag}}.C_M_OUT;
 {{~ else ~}}
-(*{{C_M_OUT}}=>,*)
+(*{{C_M_OUT}}:=,*)
 {{~ end ~}}
 {{~ if S_SP_P != null ~}}
 {{S_SP_P}}:=PID_CTRL_{{device_tag}}.S_SP_P;
 {{~ else ~}}
-(*{{S_SP_P}}=>,*)
+(*{{S_SP_P}}:=,*)
 {{~ end ~}}
 {{~ if S_SP_F != null ~}}
 {{S_SP_F}}:=PID_CTRL_{{device_tag}}.S_SP_F;
 {{~ else ~}}
-(*{{S_SP_F}}=>,*)
+(*{{S_SP_F}}:=,*)
 {{~ end ~}}
 {{~ if S_M_OUT != null ~}}
 {{S_M_OUT}}:=PID_CTRL_{{device_tag}}.S_M_OUT;
 {{~ else ~}}
-(*{{S_M_OUT}}=>,*)
+(*{{S_M_OUT}}:=,*)
 {{~ end ~}}
 {{~ if P_P != null ~}}
 {{P_P}}:=PID_CTRL_{{device_tag}}.P_P;
 {{~ else ~}}
-(*{{P_P}}=>,*)
+(*{{P_P}}:=,*)
 {{~ end ~}}
 {{~ if P_I != null ~}}
 {{P_I}}:=PID_CTRL_{{device_tag}}.P_I;
 {{~ else ~}}
-(*{{P_I}}=>,*)
+(*{{P_I}}:=,*)
 {{~ end ~}}
 {{~ if P_D != null ~}}
 {{P_D}}:=PID_CTRL_{{device_tag}}.P_D;
 {{~ else ~}}
-(*{{P_D}}=>,*)
+(*{{P_D}}:=,*)
 {{~ end ~}}
 {{~ if F_P != null ~}}
 {{F_P}}:=PID_CTRL_{{device_tag}}.F_P;
 {{~ else ~}}
-(*{{F_P}}=>,*)
+(*{{F_P}}:=,*)
 {{~ end ~}}
 {{~ if F_I != null ~}}
 {{F_I}}:=PID_CTRL_{{device_tag}}.F_I;
 {{~ else ~}}
-(*{{F_I}}=>,*)
+(*{{F_I}}:=,*)
 {{~ end ~}}
 {{~ if F_D != null ~}}
 {{F_D}}:=PID_CTRL_{{device_tag}}.F_D;
 {{~ else ~}}
-(*{{F_D}}=>,*)
+(*{{F_D}}:=,*)
 {{~ end ~}}
 
 
