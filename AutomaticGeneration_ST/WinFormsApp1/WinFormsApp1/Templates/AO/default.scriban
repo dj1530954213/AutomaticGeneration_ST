@@ -1,14 +1,11 @@
-程序名称:AO_CONVERT
+程序名称:MAPPING_AO
 子程序变量声明文件:AO_VARIABLE
 {{~ for point in points ~}}
 (* AO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
-ENGIN_HEX_{{ point.hmi_tag_name }}(
-    AV:={{ point.hmi_tag_name }}, 
-    MU:={{ point.range_high ?? 100.0 }},
-    MD:={{ point.range_low ?? 0.0 }},
-    WU:=65535,
-    WD:=0,
-    WH=>{{ get_address point }}
+AO_CNRT_{{ point.hmi_tag_name }}(
+IN:={{ point.hmi_tag_name }},
+ENG_MAX:=REAL#{{ point.range_high ?? 100.0 }},
+ENG_MIN:=REAL#{{ point.range_high ?? 0.0 }},
+OUT=>{{ get_address point }}
 );
-
 {{~ end ~}}

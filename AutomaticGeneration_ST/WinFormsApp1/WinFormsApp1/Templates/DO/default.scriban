@@ -1,4 +1,4 @@
-程序名称:DO_MAPPING
+程序名称:MAPPING_DO
 子程序变量声明文件:
 {{~ for point in points ~}}
 (* DO点位: {{ point.hmi_tag_name }} - {{ point.description }} *)

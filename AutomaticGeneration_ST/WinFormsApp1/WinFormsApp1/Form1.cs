@@ -2231,10 +2231,10 @@ namespace WinFormsApp1
                     // 定义文件名映射（将模板类型映射为用户要求的文件名）
                     var fileNameMapping = new Dictionary<string, string>
                     {
-                        { "AI_CONVERT", "AI_CONVERT.txt" },
-                        { "AO_CONVERT", "AO_CONVERT.txt" },
-                        { "DI_CONVERT", "DI_MAPPING.txt" },
-                        { "DO_CONVERT", "DO_MAPPING.txt" }
+                        { "AI_CONVERT", "MAPPING_AI.txt" },
+                        { "AO_CONVERT", "MAPPING_AO.txt" },
+                        { "DI_CONVERT", "MAPPING_DI.txt" },
+                        { "DO_CONVERT", "MAPPING_DO.txt" }
                     };
                     
                     // 为每个通道类型创建独立的txt文件

@@ -126,10 +126,15 @@ namespace WinFormsApp1.Utils
             }
             
             // 应用传统转换规则
-            var hardRack = rack + 1;      // 机架号+1
-            var hardSlot = slot + 1;      // 槽号+1  
-            var hardChannel = channel + 1; // 通道号+1
-            
+            //var hardRack = rack + 1;      // 机架号+1
+            //var hardSlot = slot + 2;      // 槽号+1  
+            //var hardChannel = channel + 1; // 通道号+1
+
+            /*能处理和利时多机架且固定为11槽的机架，后续需要结合敖果点表软件生成的硬件信息表来做适配*/
+            int hardRack = 2;
+            int hardSlot = (rack - 1) * 10 + slot + 2;
+            int hardChannel = channel + 1;
+
             var result = $"DPIO_{hardRack}_1_{hardSlot}_{hardChannel}";
             return ConversionResult.CreateSuccess(result);
         }

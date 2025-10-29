@@ -1,8 +1,8 @@
-程序名称:AI_CONVERT
+程序名称:MAPPING_AI
 子程序变量声明文件:AI_VARIABLE
 {{~ for point in points ~}}
 (* AI点位: {{ point.hmi_tag_name }} - {{ point.description }} *)
-AI_ALARM_{{ point.hmi_tag_name }}(
+AI_ALARM_IO_{{ point.hmi_tag_name }}(
     IN:={{ get_address point }},
     ENG_MAX:={{ point.range_high ?? 100.0 }},
     ENG_MIN:={{ point.range_low ?? 0.0 }},
@@ -14,22 +14,22 @@ AI_ALARM_{{ point.hmi_tag_name }}(
 {{~ # HH报警级别：只有当shh_value有值时才生成 ~}}
 {{~ if point.shh_value != null && point.shh_value != "" ~}}
     HH_A_EN:=TRUE,
-    HH_LIMIT:={{ point.shh_value }},
+    HH_LIMIT:={{ point.hmi_tag_name }}_HiHiLimit,
 {{~ end ~}}
 {{~ # H报警级别：只有当sh_value有值时才生成 ~}}
 {{~ if point.sh_value != null && point.sh_value != "" ~}}
     H_A_EN:=TRUE,
-    H_LIMIT:={{ point.sh_value }},
+    H_LIMIT:={{ point.hmi_tag_name }}_HiLimit,
 {{~ end ~}}
 {{~ # L报警级别：只有当sl_value有值时才生成 ~}}
 {{~ if point.sl_value != null && point.sl_value != "" ~}}
     L_A_EN:=TRUE,
-    L_LIMIT:={{ point.sl_value }},
+    L_LIMIT:={{ point.hmi_tag_name }}_LoLimit,
 {{~ end ~}}
 {{~ # LL报警级别：只有当sll_value有值时才生成 ~}}
 {{~ if point.sll_value != null && point.sll_value != "" ~}}
     LL_A_EN:=TRUE,
-    LL_LIMIT:={{ point.sll_value }},
+    LL_LIMIT:={{ point.hmi_tag_name }}_LoLoLimit,
 {{~ end ~}}
     OUT=>{{ point.hmi_tag_name }},
 {{~ # 报警输出：只有对应的报警级别存在时才生成 ~}}

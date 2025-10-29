@@ -1,30 +1,47 @@
 程序名称:ESDV_CTRL
 子程序变量声明文件:ESDV_CTRL_VARIABLE
 (*ESD阀门:{{device_tag}}控制块调用*)
-ESDV{{device_tag}}_CTRL(
+ESDV_CTRL_{{device_tag}}(
 CS:=CS01,
-ZIX:={{XS}},
+RL:={{RL}},
+FA:={{FA}},
+{{~ if RUN != null ~}}
+RUN:={{RUN}},
+{{~ else ~}}
+(*RUN:=,*)
+{{~ end ~}}
 ZIO:={{ZSH}},
 ZIC:={{ZSL}},
-DA_TIME:=T#90S,
+{{~ if A_OPEN != null ~}}
+A_OPEN:={{A_OPEN}},
+{{~ else ~}}
+(*A_OPEN:=,*)
+{{~ end ~}}
+{{~ if A_CLOSE != null ~}}
+A_CLOSE:={{A_CLOSE}},
+{{~ else ~}}
+(*A_CLOSE:=,*)
+{{~ end ~}}
 DA_RST:=RESET,
+DA_TIME:=T#90S,
 ESD_ACT:=ESD_ACTION,
 ESD_RST:=ESD_RESET,
 C_AM:={{C_AM}},
 S_AM:={{S_AM}},
 C_OPEN:={{C_OPEN}},
-C_CLOSE:={{C_CLOSE}},
 S_OPEN:={{S_OPEN}},
+C_CLOSE:={{C_CLOSE}},
 S_CLOSE:={{S_CLOSE}},
 AM=>{{AM}},
 XO=>{{X0}},
 XC=>{{XC}},
 DA=>{{DA}},
-ESD_OUT=>{{EXC}},
-C_AM=>{{C_AM}},
-S_AM=>{{S_AM}},
-C_OPEN=>{{C_OPEN}},
-C_CLOSE=>{{C_CLOSE}},
-S_OPEN=>{{S_OPEN}},
-S_CLOSE=>{{S_CLOSE}},
+ESD_OUT=>{{ESD_OUT}}
 );
+
+{{C_AM}}:=ESDV_CTRL_{{device_tag}}.C_AM;
+{{S_AM}}:=ESDV_CTRL_{{device_tag}}.S_AM;
+{{C_OPEN}}:=ESDV_CTRL_{{device_tag}}.C_OPEN;
+{{C_CLOSE}}:=ESDV_CTRL_{{device_tag}}.C_CLOSE;
+{{S_OPEN}}:=ESDV_CTRL_{{device_tag}}.S_OPEN;
+{{S_CLOSE}}:=ESDV_CTRL_{{device_tag}}.S_CLOSE;

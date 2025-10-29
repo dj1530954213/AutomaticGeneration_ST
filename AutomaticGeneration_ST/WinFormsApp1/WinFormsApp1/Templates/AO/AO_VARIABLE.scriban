@@ -1,5 +1,5 @@
 [
-变量名称:ENGIN_HEX_{{point.hmi_tag_name}}
-变量类型:ENGIN_HEX
-初始值:( IN:=0, ENG_MAX:=0, ENG_MIN:=0, MAIN_EN:=FALSE, MAIN_V:=0, HH_A_EN:=FALSE, HH_LIMIT:=0, H_A_EN:=FALSE, H_LIMIT:=0, L_A_EN:=FALSE, L_LIMIT:=0, LL_A_EN:=FALSE, LL_LIMIT:=0, OUT:=0, HH_ALARM:=FALSE, H_ALARM:=FALSE, L_ALARM:=FALSE, LL_ALARM:=FALSE )
+变量名称:AO_CNRT_{{point.hmi_tag_name}}
+变量类型:AO_CNRT
+初始值:( IN:=0, ENG_MAX:=0, ENG_MIN:=0, OUT:=0, ENG_HEX:=( AV:=0, MU:=0, MD:=0, WU:=0, WD:=0, WH:=0, temp1:=0, temp2:=0 ) )
 ]
