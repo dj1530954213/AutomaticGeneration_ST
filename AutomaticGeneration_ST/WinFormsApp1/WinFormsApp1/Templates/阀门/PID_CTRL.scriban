@@ -137,12 +137,12 @@ FP=>{{FP}},
 (*FP=>,*)
 {{~ end ~}}
 {{~ if OUT != null ~}}
-OUT=>{{OUT}},
+OUT=>{{OUT}}
 {{~ else ~}}
-(*OUT=>,*)
+(*OUT=>*)
 {{~ end ~}}
 {{~ if OUT_CH != null ~}}
-OUT_CH=>{{OUT_CH}},
+OUT_CH=>{{OUT_CH}}
 {{~ else ~}}
 (*OUT_CH=>,*)
 {{~ end ~}}
